@@ -22,8 +22,22 @@ if ($branch -ne "main") {
   Pause-And-Exit "[ERROR] Please switch to 'main' branch in Qoder and run this script again."
 }
 
-# 2. 运行构建：npm run build
-Write-Host "`n== Step 1: Build static site (npm run build) =="
+# 在构建之前，先确认 main 上没有未提交的改动
+Write-Host "`nChecking for uncommitted changes on main before build..."
+$preBuildStatus = git status --porcelain
+if ($preBuildStatus) {
+  Pause-And-Exit "[ERROR] There are uncommitted changes on 'main'. Please commit or discard them in Qoder, then run this script again."
+}
+
+# 2. 确认当前工作区干净（避免业务代码没提交就部署）
+Write-Host "`n== Step 1: Check working tree is clean on 'main' =="
+$preStatus = git status --porcelain
+if ($preStatus) {
+  Pause-And-Exit "[ERROR] There are uncommitted changes on 'main'. Please commit or discard them in Qoder (including docs/ changes), then run this script again."
+}
+
+# 3. 运行构建：npm run build
+Write-Host "`n== Step 2: Build static site (npm run build) =="
 try {
   npm.cmd run build
 } catch {
@@ -37,8 +51,8 @@ if (-not (Test-Path ".\docs")) {
 
 Write-Host "`nBuild succeeded. Output directory: .\docs"
 
-# 3. 提供操作菜单
-Write-Host "`n== Step 2: Choose next action =="
+# 4. 提供操作菜单
+Write-Host "`n== Step 3: Choose next action =="
 Write-Host "1) Start local dev server and open browser (preview)"
 Write-Host "2) Deploy to gh-pages branch (sync docs/, commit & push, then switch back to main)"
 Write-Host ""
@@ -73,14 +87,8 @@ if ($choice -ne "2") {
   Pause-And-Exit "[ERROR] Invalid choice. Please run the script again and enter 1 or 2."
 }
 
-# 4. 部署到 gh-pages 分支
+# 5. 部署到 gh-pages 分支
 Write-Host "`n== Option 2: Deploy to gh-pages =="
-
-Write-Host "`nChecking for uncommitted changes on main..."
-$status = git status --porcelain
-if ($status) {
-  Pause-And-Exit "[ERROR] There are uncommitted changes on 'main'. Please commit or discard them in Qoder, then run this script again."
-}
 
 $currentBranch = $branch
 
