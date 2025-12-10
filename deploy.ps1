@@ -1,4 +1,4 @@
-# One-click build & preview/deploy for this VuePress project
+# One-click deploy static docs from main to gh-pages (no auto build / preview)
 
 $ErrorActionPreference = 'Stop'
 
@@ -9,8 +9,20 @@ function Pause-And-Exit($msg) {
   exit 1
 }
 
+# 0. 提示构建 & 预览命令（仅提示，不自动执行）
+Write-Host "== Build & Preview (manual) =="
+Write-Host "在 main 分支上构建静态文件："
+Write-Host "  npm run build"
+Write-Host ""
+Write-Host "开发预览（可选，用于调试）："
+Write-Host "  powershell -ExecutionPolicy Bypass -File .\run-dev.ps1"
+Write-Host "  或：npm run dev"
+Write-Host ""
+Write-Host "本脚本只负责：把当前 main 分支工作区中的 .\docs 内容发布到 gh-pages。"
+Write-Host ""
+
 # 1. 确认当前在 main 分支
-Write-Host "== Step 0: Check current git branch =="
+Write-Host "== Step 1: Check current git branch =="
 
 $branch = (git rev-parse --abbrev-ref HEAD 2>$null).Trim()
 if (-not $branch) {
@@ -22,84 +34,58 @@ if ($branch -ne "main") {
   Pause-And-Exit "[ERROR] Please switch to 'main' branch in Qoder and run this script again."
 }
 
-# 在构建之前，先确认 main 上没有未提交的改动
-Write-Host "`nChecking for uncommitted changes on main before build..."
-$preBuildStatus = git status --porcelain
-if ($preBuildStatus) {
-  Pause-And-Exit "[ERROR] There are uncommitted changes on 'main'. Please commit or discard them in Qoder, then run this script again."
-}
-
-# 2. 确认当前工作区干净（避免业务代码没提交就部署）
-Write-Host "`n== Step 1: Check working tree is clean on 'main' =="
-$preStatus = git status --porcelain
-if ($preStatus) {
-  Pause-And-Exit "[ERROR] There are uncommitted changes on 'main'. Please commit or discard them in Qoder (including docs/ changes), then run this script again."
-}
-
-# 3. 运行构建：npm run build
-Write-Host "`n== Step 2: Build static site (npm run build) =="
-try {
-  npm.cmd run build
-} catch {
-  Pause-And-Exit "[ERROR] Build failed. Please check the output above."
-}
-
-# 简单检查 docs/ 是否存在
+# 2. 检查 docs/ 是否存在（要求你已经在 main 上执行过 npm run build）
+Write-Host "`n== Step 2: Check docs/ exists on main (after manual build) =="
 if (-not (Test-Path ".\docs")) {
-  Pause-And-Exit "[ERROR] Build finished but 'docs' directory not found. Check vuepress config."
+  Pause-And-Exit "[ERROR] 'docs' directory not found. Please run 'npm run build' on main first."
 }
 
-Write-Host "`nBuild succeeded. Output directory: .\docs"
+# 3. 检查 main 上是否有非 docs/ 的未提交改动（避免奇怪冲突）
+Write-Host "`n== Step 3: Check working tree on 'main' (only docs/ changes allowed) =="
+$statusLines = git status --porcelain
 
-# 4. 提供操作菜单
-Write-Host "`n== Step 3: Choose next action =="
-Write-Host "1) Start local dev server and open browser (preview)"
-Write-Host "2) Deploy to gh-pages branch (sync docs/, commit & push, then switch back to main)"
-Write-Host ""
-$choice = Read-Host "Please enter 1 or 2"
-
-if ($choice -eq "1") {
-  Write-Host "`n== Option 1: Start local dev server =="
-
-  if (Test-Path ".\run-dev.ps1") {
-    Write-Host "Running: ./run-dev.ps1"
-    Start-Process powershell -ArgumentList @(
-      "-ExecutionPolicy", "Bypass",
-      "-File", ".\run-dev.ps1"
-    )
-  } else {
-    Write-Host "run-dev.ps1 not found. Running: npm run dev"
-    Start-Process powershell -ArgumentList @(
-      "-ExecutionPolicy", "Bypass",
-      "-Command", "npm run dev"
-    )
+if ($statusLines) {
+  # 允许的行：路径在 docs/ 下
+  $nonDocs = $statusLines | Where-Object { $_ -notmatch '^[MADRCU\?\!]{1,2}\s+docs/' }
+  if ($nonDocs) {
+    Write-Host "git status --porcelain 输出如下：" -ForegroundColor Yellow
+    $statusLines | ForEach-Object { Write-Host "  $_" }
+    Pause-And-Exit "[ERROR] 'main' branch has uncommitted changes outside 'docs/'. Please commit or discard them first, then rerun this script."
   }
-
-  # 默认 VuePress dev 端口一般是 8080 或你当前显示的端口（比如 8081）
-  # 如果你习惯固定使用 8081，也可以改成 http://localhost:8081/
-  Start-Process "http://localhost:8080"
-  Write-Host "`nDev server starting in a new window, browser opened."
-  Read-Host "Press Enter to exit this script..."
-  exit 0
 }
 
-if ($choice -ne "2") {
-  Pause-And-Exit "[ERROR] Invalid choice. Please run the script again and enter 1 or 2."
-}
+Write-Host "[OK] Only docs/ changes (or clean). Continue."
 
-# 5. 部署到 gh-pages 分支
-Write-Host "`n== Option 2: Deploy to gh-pages =="
+# 4. 将当前 main 工作区的 docs/ 拷贝到临时目录
+Write-Host "`n== Step 4: Copy docs/ from main working tree to temp folder =="
+
+$tempDir  = Join-Path $env:TEMP "vuepress_deploy_docs"
+$tempDocs = Join-Path $tempDir "docs"
+
+if (Test-Path $tempDir) {
+  Remove-Item $tempDir -Recurse -Force
+}
+New-Item -ItemType Directory -Path $tempDocs | Out-Null
+
+Write-Host "Copying .\docs\* -> $tempDocs"
+Copy-Item ".\docs\*" $tempDocs -Recurse -Force
+
+# 5. 切到 gh-pages 分支
+Write-Host "`n== Step 5: Switch to gh-pages branch =="
 
 $currentBranch = $branch
 
-Write-Host "`nSwitching to gh-pages branch..."
 try {
   git checkout gh-pages
 } catch {
+  if (Test-Path $tempDir) {
+    Remove-Item $tempDir -Recurse -Force
+  }
   Pause-And-Exit "[ERROR] Failed to switch to 'gh-pages' branch. Make sure it exists locally."
 }
 
-Write-Host "`nSyncing static files from 'main:docs/' to 'gh-pages:./' ..."
+# 6. 清空当前目录（保留 .git、CNAME、LICENSE、README.md）
+Write-Host "`n== Step 6: Clean gh-pages working tree (keep .git / CNAME / LICENSE / README.md) =="
 
 Get-ChildItem -Path . -Force |
   Where-Object { $_.Name -notin @(".git", "CNAME", "LICENSE", "README.md") } |
@@ -111,33 +97,25 @@ Get-ChildItem -Path . -Force |
     }
   }
 
-$tempDir = Join-Path $env:TEMP "vuepress_deploy_docs"
-if (Test-Path $tempDir) {
-  Remove-Item $tempDir -Recurse -Force
-}
-New-Item -ItemType Directory -Path $tempDir | Out-Null
+# 7. 将临时目录中的 docs/* 拷贝到 gh-pages 根目录
+Write-Host "`n== Step 7: Copy docs/* into gh-pages root =="
 
-Write-Host "Exporting docs/ from main to temp folder..."
-git show "$currentBranch:docs" 1>$null 2>$null
-if ($LASTEXITCODE -ne 0) {
-  Pause-And-Exit "[ERROR] Cannot find 'docs' directory in branch '$currentBranch'. Did you run build on main?"
+if (-not (Test-Path $tempDocs)) {
+  if (Test-Path $tempDir) {
+    Remove-Item $tempDir -Recurse -Force
+  }
+  Pause-And-Exit "[ERROR] Temp docs directory not found. Please rerun build and then this script."
 }
 
-git archive $currentBranch docs | tar -x -C $tempDir
+Copy-Item (Join-Path $tempDocs "*") . -Recurse -Force
 
-$sourceDocs = Join-Path $tempDir "docs"
-if (-not (Test-Path $sourceDocs)) {
-  Pause-And-Exit "[ERROR] Docs export failed. Temp docs directory not found."
-}
+# 8. 提交并推送 gh-pages
+Write-Host "`n== Step 8: Commit and push on gh-pages =="
 
-Write-Host "Copying docs/* into gh-pages root..."
-Copy-Item (Join-Path $sourceDocs "*") . -Recurse -Force
-
-Write-Host "`nAdding, committing and pushing changes on gh-pages..."
 git add .
 
 try {
-  git commit -m "chore: update site"
+  git commit -m "chore: update site from main docs"
 } catch {
   Write-Host "[INFO] No changes to commit on gh-pages."
 }
@@ -145,12 +123,20 @@ try {
 try {
   git push origin gh-pages
 } catch {
-  Pause-And-Exit "[ERROR] git push origin gh-pages failed. Please check your network or credentials."
+  Write-Host ""
+  Write-Host "[ERROR] git push origin gh-pages failed. Please check your network or credentials." -ForegroundColor Yellow
+  Write-Host "你可以稍后手动在 gh-pages 分支运行：git push origin gh-pages" -ForegroundColor Yellow
 }
 
-Write-Host "`nSwitching back to '$currentBranch' branch..."
-git checkout $currentBranch
+# 9. 切回 main 分支 & 清理临时目录
+Write-Host "`n== Step 9: Switch back to '$currentBranch' branch =="
+
+git checkout $currentBranch | Out-Null
+
+if (Test-Path $tempDir) {
+  Remove-Item $tempDir -Recurse -Force
+}
 
 Write-Host "`n== Done =="
-Write-Host "Deployed latest docs to 'gh-pages' and switched back to '$currentBranch'."
+Write-Host "Deployed current main working-tree docs/ to 'gh-pages' and switched back to '$currentBranch'."
 Read-Host "Press Enter to exit..."
