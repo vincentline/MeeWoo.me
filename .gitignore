@@ -16,3 +16,41 @@ pnpm-debug.log*
 
 # other
 Personal habits.txt
+
+# node 依赖
+node_modules/
+
+# 构建产物（按你项目情况调整）
+dist/
+build/
+.tmp/
+.temp/
+
+# 日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# IDE / 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 测试/覆盖率
+coverage/
+*.lcov
+
+# 本地环境配置
+.env.local
+.env.*.local
+
+# 如果 gh-pages 分支上意外产生这些文件，也避免提交
+*.tgz
+*.zip
