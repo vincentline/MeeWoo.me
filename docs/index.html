@@ -55,7 +55,7 @@
         border-bottom: 1px solid #e3e3e3;
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: space-between;
         padding: 0 24px;
         position: relative;
         z-index: 100;
@@ -74,6 +74,8 @@
         line-height: 1.2;
         color: #2c3e50;
         transition: color 0.3s;
+        flex: 1;
+        text-align: center;
       }
 
       body.dark-mode .header-navbar-title {
@@ -81,8 +83,6 @@
       }
 
       .theme-toggle {
-        position: absolute;
-        right: 24px;
         width: 28px;
         height: 28px;
         border: none;
@@ -93,6 +93,7 @@
         align-items: center;
         justify-content: center;
         transition: opacity 0.3s;
+        flex-shrink: 0;
       }
 
       .theme-toggle:hover {
@@ -138,6 +139,12 @@
         transition: opacity 0.2s, visibility 0.2s;
       }
 
+      /* 主题切换按钮的 tooltip 在下方 */
+      .theme-toggle .tooltip-text {
+        bottom: auto;
+        top: 125%;
+      }
+
       body.dark-mode .tooltip .tooltip-text {
         background-color: #2a2a2a;
         border-color: #404040;
@@ -156,8 +163,19 @@
         border-color: #ffffff transparent transparent transparent;
       }
 
+      /* 主题切换按钮的箭头在上方 */
+      .theme-toggle .tooltip-text::after {
+        top: auto;
+        bottom: 100%;
+        border-color: transparent transparent #ffffff transparent;
+      }
+
       body.dark-mode .tooltip .tooltip-text::after {
         border-color: #2a2a2a transparent transparent transparent;
+      }
+
+      body.dark-mode .theme-toggle .tooltip-text::after {
+        border-color: transparent transparent #2a2a2a transparent;
       }
 
       .tooltip:hover .tooltip-text {
