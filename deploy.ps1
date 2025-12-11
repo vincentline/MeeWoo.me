@@ -45,9 +45,14 @@ Write-Host "`n== Step 3: Check working tree on 'main' (only docs/ changes allowe
 $statusLines = git status --porcelain
 
 if ($statusLines) {
-  # 允许的行：路径在 docs/ 下
-  $nonDocs = $statusLines | Where-Object { $_ -notmatch '^[MADRCU\?\!]{1,2}\s+docs/' }
-  if ($nonDocs) {
+  $nonDocs = @()
+  foreach ($line in $statusLines) {
+    if ($line -notmatch 'docs/') {
+      $nonDocs += $line
+    }
+  }
+  
+  if ($nonDocs.Count -gt 0) {
     Write-Host "git status --porcelain 输出如下：" -ForegroundColor Yellow
     $statusLines | ForEach-Object { Write-Host "  $_" }
     Pause-And-Exit "[ERROR] 'main' branch has uncommitted changes outside 'docs/'. Please commit or discard them first, then rerun this script."
