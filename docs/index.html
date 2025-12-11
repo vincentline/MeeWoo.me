@@ -199,7 +199,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 100px 200px 20px;
+        padding: 0px 200px 20px;
         position: relative;
       }
 
@@ -273,7 +273,7 @@
         bottom: 0;
         left: 0;
         right: 0;
-        height: 140px;
+        height: 154px;
         display: flex;
         flex-direction: row;
         align-items: stretch;
@@ -286,7 +286,7 @@
       /* 广告位 */
       .ad-slot {
         width: 240px;
-        height: 126px;
+        height: 134px;
         background-color: #b1b1b1;
         border-radius: 4px;
         flex-shrink: 0;
@@ -297,6 +297,7 @@
         flex: 0 1 auto;
         min-width: 1000px;
         max-width: fit-content;
+        height: 134px;
         background-color: #ffffff;
         border: 1px solid #e3e3e3;
         border-radius: 16px;
@@ -304,7 +305,7 @@
         padding: 16px;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 12px;
         transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
       }
 
@@ -327,6 +328,13 @@
         display: flex;
         flex-direction: row;
         gap: 16px;
+      }
+
+      .footer-actions {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
       }
 
       .tab-btn {
@@ -426,7 +434,6 @@
         flex-direction: row;
         align-items: center;
         gap: 8px;
-        height: 22px;
       }
 
       .info-label {
@@ -491,7 +498,7 @@
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 10px;
+        gap: 16px;
       }
 
       /* 颜色选择按钮 */
@@ -663,6 +670,152 @@
         border-color: #333333;
       }
 
+      /* 缩放按钮 */
+      .zoom-btn {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background-color: transparent;
+        cursor: pointer;
+        outline: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.3s;
+      }
+
+      .zoom-btn:hover {
+        opacity: 0.7;
+      }
+
+      .zoom-btn svg {
+        width: 28px;
+        height: 28px;
+      }
+
+      /* 百分比显示 */
+      .scale-percentage {
+        width: 60px;
+        font-family: 'Segoe UI', sans-serif;
+        font-weight: 400;
+        font-size: 14px;
+        line-height: 1.33;
+        color: #818181;
+        text-align: right;
+        transition: color 0.3s;
+      }
+
+      body.dark-mode .scale-percentage {
+        color: #999999;
+      }
+
+      /* 1:1按钮 */
+      .reset-scale-btn {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background-color: transparent;
+        cursor: pointer;
+        outline: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.3s, background-color 0.3s;
+        position: relative;
+        border-radius: 4px;
+      }
+
+      .reset-scale-btn:hover {
+        background-color: #f3f3f3;
+      }
+
+      .reset-scale-btn:active {
+        opacity: 0.5;
+      }
+
+      .reset-scale-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      .reset-scale-btn svg {
+        width: 28px;
+        height: 28px;
+      }
+
+      .reset-scale-btn svg rect,
+      .reset-scale-btn svg circle {
+        transition: stroke 0.3s, fill 0.3s;
+      }
+
+      body.dark-mode .reset-scale-btn svg rect {
+        stroke: #999999;
+      }
+
+      body.dark-mode .reset-scale-btn:hover {
+        background-color: #333333;
+      }
+
+      body.dark-mode .reset-scale-btn svg rect[fill],
+      body.dark-mode .reset-scale-btn svg circle {
+        fill: #999999;
+      }
+
+      /* 清空/关闭按钮 (btn03样式) */
+      .clear-btn {
+        width: 32px;
+        height: 28px;
+        border: 1px solid #e3e3e3;
+        border-radius: 16px;
+        background-color: #ffffff;
+        cursor: pointer;
+        outline: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s, border-color 0.2s;
+        position: relative;
+      }
+
+      .clear-btn:hover {
+        background-color: #f3f3f3;
+        border-color: #d0d0d0;
+      }
+
+      .clear-btn:active {
+        background-color: #e8e8e8;
+        border-color: #c0c0c0;
+      }
+
+      .clear-btn svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .clear-btn svg path {
+        stroke: #333333;
+        transition: stroke 0.3s;
+      }
+
+      body.dark-mode .clear-btn {
+        background-color: #2a2a2a;
+        border-color: #404040;
+      }
+
+      body.dark-mode .clear-btn:hover {
+        background-color: #333333;
+        border-color: #505050;
+      }
+
+      body.dark-mode .clear-btn:active {
+        background-color: #3a3a3a;
+        border-color: #5a5a5a;
+      }
+
+      body.dark-mode .clear-btn svg path {
+        stroke: #e0e0e0;
+      }
+
       /* 空状态底部提示 */
       .footer-empty-tip {
         display: flex;
@@ -796,63 +949,25 @@
 
             <!-- 非空状态 -->
             <template v-else>
-              <!-- 第一行：模块切换 + 清空按钮 -->
-              <div class="footer-row-tabs">
-                <div class="footer-tabs">
-                  <button
-                    class="tab-btn"
-                    :class="{'is-active': currentModule === 'svga'}"
-                    @click="switchModule('svga')"
-                  >
-                    SVGA
-                  </button>
-                  <button
-                    class="tab-btn tooltip"
-                    :class="{'is-active': currentModule === 'yyeva'}"
-                    @click="switchModule('yyeva')"
-                  >
-                    <span class="tooltip-text">还在开发中...</span>
-                    YYEVA-MP4
-                  </button>
-                  <button
-                    class="tab-btn tooltip"
-                    :class="{'is-active': currentModule === 'lottie'}"
-                    @click="switchModule('lottie')"
-                  >
-                    <span class="tooltip-text">还在开发中...</span>
-                    Lottie
-                  </button>
-                </div>
-                <button class="close-btn tooltip" @click="clearAll">
-                  <span class="tooltip-text">清除画布预览</span>
-                </button>
-              </div>
-
-              <!-- 第二行：文件信息 -->
-              <div class="footer-row-info">
-                <div class="info-label">文件信息：</div>
-                <div class="info-values">
-                  <span>{{ currentFileInfo.name || '-' }}</span>
-                  <span>{{ currentFileInfo.sizeText || '-' }}</span>
-                  <span v-if="currentFileInfo.fps">
-                    帧率：{{ currentFileInfo.fps }}
-                  </span>
-                  <span v-if="currentFileInfo.sizeWH">
-                    尺寸：{{ currentFileInfo.sizeWH }}
-                  </span>
-                  <span v-if="currentFileInfo.duration">
-                    时长：{{ currentFileInfo.duration }}
-                  </span>
-                  <span v-if="currentFileInfo.memoryText">
-                    内存占用：{{ currentFileInfo.memoryText }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- 第三行：控制区域 -->
+              <!-- 第一行：播放控制 + 背景色选择 + 缩放控制 -->
               <div class="footer-row-controls">
-                <!-- 左侧：颜色选择 -->
                 <div class="controls-left">
+                  <button
+                    class="play-btn"
+                    :class="{'is-playing': isPlaying}"
+                    @click="togglePlay"
+                  ></button>
+                  <div class="progress-bar" @click="onProgressBarClick">
+                    <div
+                      class="progress-fill"
+                      :style="{width: progress + '%'}"
+                    ></div>
+                  </div>
+                  <div class="progress-text">
+                    {{ currentFrame }}/{{ totalFrames }}
+                  </div>
+                </div>
+                <div class="controls-center">
                   <button
                     class="color-btn"
                     :class="{'is-active': bgColorKey === 'black'}"
@@ -900,27 +1015,75 @@
                     @click="bgColorKey = 'blue'"
                   ></button>
                 </div>
-
-                <!-- 中间：播放控制 -->
-                <div class="controls-center">
-                  <button
-                    class="play-btn"
-                    :class="{'is-playing': isPlaying}"
-                    @click="togglePlay"
-                  ></button>
-                  <div class="progress-bar" @click="onProgressBarClick">
-                    <div
-                      class="progress-fill"
-                      :style="{width: progress + '%'}"
-                    ></div>
-                  </div>
-                  <div class="progress-text">
-                    {{ currentFrame }}/{{ totalFrames }}
-                  </div>
-                </div>
-
-                <!-- 右侧：操作按钮 -->
                 <div class="controls-right">
+                  <div class="scale-percentage">{{ Math.round(viewerScale * 100) }}%</div>
+                  <button class="reset-scale-btn" @click="resetScale" title="恢复1:1尺寸">
+                    <svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="5" y="6" width="18" height="16" rx="3" fill="none" stroke="#5B5B5B" stroke-width="1.5"/>
+                      <rect x="9" y="10" width="1.5" height="8" fill="#5B5B5B"/>
+                      <rect x="17.5" y="10" width="1.5" height="8" fill="#5B5B5B"/>
+                      <circle cx="14" cy="12" r="1" fill="#5B5B5B"/>
+                      <circle cx="14" cy="16" r="1" fill="#5B5B5B"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 第二行：文件信息 -->
+              <div class="footer-row-info">
+                <div class="info-label">文件信息：</div>
+                <div class="info-values">
+                  <span>{{ currentFileInfo.name || '-' }}</span>
+                  <span>{{ currentFileInfo.sizeText || '-' }}</span>
+                  <span v-if="currentFileInfo.fps">
+                    帧率：{{ currentFileInfo.fps }}
+                  </span>
+                  <span v-if="currentFileInfo.sizeWH">
+                    尺寸：{{ currentFileInfo.sizeWH }}
+                  </span>
+                  <span v-if="currentFileInfo.duration">
+                    时长：{{ currentFileInfo.duration }}
+                  </span>
+                  <span v-if="currentFileInfo.memoryText">
+                    内存占用：{{ currentFileInfo.memoryText }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- 第三行：模块切换 + 操作按钮 -->
+              <div class="footer-row-tabs">
+                <div class="footer-tabs">
+                  <button
+                    class="tab-btn"
+                    :class="{'is-active': currentModule === 'svga'}"
+                    @click="switchModule('svga')"
+                  >
+                    SVGA
+                  </button>
+                  <button
+                    class="tab-btn tooltip"
+                    :class="{'is-active': currentModule === 'yyeva'}"
+                    @click="switchModule('yyeva')"
+                  >
+                    <span class="tooltip-text">还在开发中...</span>
+                    YYEVA-MP4
+                  </button>
+                  <button
+                    class="tab-btn tooltip"
+                    :class="{'is-active': currentModule === 'lottie'}"
+                    @click="switchModule('lottie')"
+                  >
+                    <span class="tooltip-text">还在开发中...</span>
+                    Lottie
+                  </button>
+                </div>
+                <div class="footer-actions">
+                  <button class="clear-btn" @click="clearAll" title="清空画布">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M17 7L7 17" stroke="#333333" stroke-width="1.5" stroke-linecap="round"/>
+                      <path d="M7 7L17 17" stroke="#333333" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                  </button>
                   <button class="btn-primary tooltip">
                     <span class="tooltip-text">还在开发中...</span>
                     素材图...
@@ -1267,6 +1430,12 @@
             var p = x / rect.width;
             p = Math.max(0, Math.min(1, p));
             this.progress = Math.round(p * 100);
+            
+            // 计算并立即更新当前帧数
+            if (this.totalFrames > 0) {
+              this.currentFrame = Math.round(p * (this.totalFrames - 1));
+            }
+            
             try {
               this.svgaPlayer.stepToPercentage(p, this.isPlaying);
             } catch (e) {}
@@ -1350,6 +1519,12 @@
 
           onMouseUp: function () {
             this.dragging = false;
+          },
+
+          resetScale: function () {
+            this.viewerScale = 1;
+            this.viewerOffsetX = 0;
+            this.viewerOffsetY = 0;
           },
 
           applyCanvasBackground: function () {
