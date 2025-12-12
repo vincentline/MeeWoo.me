@@ -891,6 +891,244 @@
       body.dark-mode .footer-empty-tip-sub {
         color: #999999;
       }
+
+      /* ==================== 素材弹窗 ==================== */
+
+      .material-panel {
+        position: fixed;
+        top: 0;
+        right: -420px;
+        width: 420px;
+        height: 100%;
+        background: #ffffff;
+        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.1);
+        transition: right 0.3s ease;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .material-panel.show {
+        right: 0;
+      }
+
+      body.dark-mode .material-panel {
+        background: #1a1a1a;
+        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.6);
+      }
+
+      .material-panel-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fafafa;
+      }
+
+      body.dark-mode .material-panel-header {
+        border-bottom-color: #2d2d2d;
+        background: #0d0d0d;
+      }
+
+      .material-panel-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1a1a1a;
+        letter-spacing: -0.02em;
+      }
+
+      body.dark-mode .material-panel-title {
+        color: #e0e0e0;
+      }
+
+      .material-panel-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #999;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+      }
+
+      .material-panel-close:hover {
+        background: #f0f0f0;
+        color: #333;
+      }
+
+      body.dark-mode .material-panel-close:hover {
+        background: #404040;
+        color: #e0e0e0;
+      }
+
+      .material-panel-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+      }
+
+      .material-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .material-item {
+        background: #ffffff;
+        border: 1px solid #e8e8e8;
+        border-radius: 6px;
+        padding: 12px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        transition: all 0.2s ease;
+      }
+
+      .material-item:hover {
+        border-color: #d0d0d0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      body.dark-mode .material-item {
+        background: #2d2d2d;
+        border-color: #404040;
+      }
+
+      body.dark-mode .material-item:hover {
+        border-color: #505050;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .material-item.replaced {
+        background: #fffbf0;
+        border-color: #ffd666;
+        box-shadow: 0 0 0 1px #fff7e6 inset;
+      }
+
+      body.dark-mode .material-item.replaced {
+        background: #2d2416;
+        border-color: #d48806;
+      }
+
+      .material-thumb {
+        width: 64px;
+        height: 64px;
+        border: 1px solid #e8e8e8;
+        border-radius: 4px;
+        background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNlM2UzZTMiLz48L3N2Zz4=');
+        background-repeat: repeat;
+        background-size: 8px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      .material-thumb img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+
+      .material-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .material-key {
+        font-size: 13px;
+        font-weight: 500;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      body.dark-mode .material-key {
+        color: #e0e0e0;
+      }
+
+      .material-size {
+        font-size: 12px;
+        color: #999;
+      }
+
+      body.dark-mode .material-size {
+        color: #666;
+      }
+
+      .material-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      .material-btn {
+        padding: 7px 14px;
+        font-size: 13px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        background: #409eff;
+        color: white;
+        white-space: nowrap;
+        font-weight: 500;
+        transition: all 0.2s ease;
+      }
+
+      .material-btn:hover {
+        background: #66b1ff;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(64, 158, 255, 0.3);
+      }
+
+      .material-btn:active {
+        transform: translateY(0);
+      }
+
+      .material-btn-restore {
+        background: #f59f00;
+      }
+
+      .material-btn-restore:hover {
+        background: #ffa726;
+        box-shadow: 0 2px 6px rgba(245, 159, 0, 0.3);
+      }
+
+      .material-empty {
+        text-align: center;
+        padding: 80px 20px;
+        color: #bbb;
+        font-size: 14px;
+      }
+
+      body.dark-mode .material-empty {
+        color: #666;
+      }
+
+      /* 遮罩层 */
+      .material-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 999;
+        display: none;
+      }
+
+      .material-overlay.show {
+        display: block;
+      }
     </style>
   </head>
 
@@ -1128,8 +1366,11 @@
                       <path d="M7 7L17 17" stroke="#333333" stroke-width="1.5" stroke-linecap="round"/>
                     </svg>
                   </button>
-                  <button class="btn-primary tooltip">
-                    <span class="tooltip-text">还在开发中...</span>
+                  <button class="btn-primary" @click="openMaterialPanel" v-if="currentModule === 'svga' && svga.hasFile">
+                    素材图...
+                  </button>
+                  <button class="btn-primary tooltip" v-else>
+                    <span class="tooltip-text">请先拖入 SVGA 文件</span>
                     素材图...
                   </button>
                   <button class="btn-primary tooltip">
@@ -1147,6 +1388,48 @@
 
           <!-- 右侧广告位 -->
           <div class="ad-slot"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 素材弹窗 -->
+    <div class="material-overlay" :class="{'show': showMaterialPanel}" @click="closeMaterialPanel"></div>
+    <div class="material-panel" :class="{'show': showMaterialPanel}">
+      <div class="material-panel-header">
+        <div class="material-panel-title">素材列表</div>
+        <button class="material-panel-close" @click="closeMaterialPanel">×</button>
+      </div>
+      <div class="material-panel-body">
+        <div v-if="materialList.length === 0" class="material-empty">
+          未检测到素材图片
+        </div>
+        <div v-else class="material-list">
+          <div 
+            v-for="(item, index) in materialList" 
+            :key="item.imageKey"
+            class="material-item"
+            :class="{'replaced': item.isReplaced}"
+          >
+            <div class="material-thumb">
+              <img :src="item.previewUrl" v-if="item.previewUrl" />
+            </div>
+            <div class="material-info">
+              <div class="material-key" :title="item.imageKey">{{ item.imageKey }}</div>
+              <div class="material-size">{{ item.sizeText }}</div>
+            </div>
+            <div class="material-actions">
+              <button class="material-btn" @click="replaceMaterial(index)">
+                替换此图片
+              </button>
+              <button 
+                v-if="item.isReplaced" 
+                class="material-btn material-btn-restore" 
+                @click="restoreMaterial(index)"
+              >
+                恢复
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1221,7 +1504,13 @@
             // 播放器实例
             svgaPlayer: null,
             svgaParser: null,
-            svgaObjectUrl: null
+            svgaObjectUrl: null,
+
+            // 素材替换
+            showMaterialPanel: false,
+            materialList: [],
+            originalVideoItem: null,
+            replacedImages: {}
           };
         },
         computed: {
@@ -1417,6 +1706,12 @@
             if (!this.svgaPlayer) return;
 
             var _this = this;
+            
+            // 保存原始 videoItem 以便后续素材替换
+            this.originalVideoItem = videoItem;
+            
+            // 提取素材列表
+            this.extractMaterialList(videoItem);
             
             // 调试：输出 videoItem 结构
             console.log('SVGA videoItem:', videoItem);
@@ -1750,6 +2045,152 @@
             var canvas = container.querySelector('canvas');
             if (canvas) {
               canvas.style.backgroundColor = this.currentBgColor;
+            }
+          },
+
+          /* 素材替换功能 */
+
+          openMaterialPanel: function () {
+            if (!this.svga.hasFile || !this.originalVideoItem) return;
+            this.showMaterialPanel = true;
+          },
+
+          closeMaterialPanel: function () {
+            this.showMaterialPanel = false;
+          },
+
+          extractMaterialList: function (videoItem) {
+            var _this = this;
+            this.materialList = [];
+            this.replacedImages = {};
+            
+            if (!videoItem || !videoItem.images) return;
+            
+            var imageKeys = Object.keys(videoItem.images);
+            imageKeys.forEach(function (imageKey) {
+              var imgData = videoItem.images[imageKey];
+              var previewUrl = '';
+              
+              // 处理图片数据，生成预览 URL
+              if (imgData && typeof imgData === 'string') {
+                previewUrl = imgData.startsWith('data:') ? imgData : ('data:image/png;base64,' + imgData);
+              }
+              
+              // 获取图片尺寸（异步）
+              var img = new Image();
+              var materialItem = {
+                imageKey: imageKey,
+                previewUrl: previewUrl,
+                sizeText: '计算中...',
+                isReplaced: false,
+                originalData: imgData
+              };
+              
+              _this.materialList.push(materialItem);
+              
+              img.onload = function () {
+                var bytes = this.width * this.height * 4;
+                materialItem.sizeText = _this.formatBytes(bytes) + ' (' + this.width + ' × ' + this.height + ')';
+              };
+              
+              img.onerror = function () {
+                materialItem.sizeText = '-';
+              };
+              
+              if (previewUrl) {
+                img.src = previewUrl;
+              }
+            });
+          },
+
+          replaceMaterial: function (index) {
+            var _this = this;
+            var material = this.materialList[index];
+            if (!material) return;
+            
+            // 创建文件选择器
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/png,image/jpeg,image/jpg';
+            
+            input.onchange = function (e) {
+              var file = e.target.files[0];
+              if (!file) return;
+              
+              // 读取文件为 base64
+              var reader = new FileReader();
+              reader.onload = function (evt) {
+                var dataUrl = evt.target.result;
+                
+                // 更新预览
+                material.previewUrl = dataUrl;
+                material.isReplaced = true;
+                
+                // 保存替换的图片
+                _this.replacedImages[material.imageKey] = dataUrl;
+                
+                // 重新渲染 SVGA
+                _this.applyReplacedMaterials();
+                
+                // 计算新图片尺寸
+                var img = new Image();
+                img.onload = function () {
+                  var bytes = this.width * this.height * 4;
+                  material.sizeText = _this.formatBytes(bytes) + ' (' + this.width + ' × ' + this.height + ')';
+                };
+                img.src = dataUrl;
+              };
+              
+              reader.readAsDataURL(file);
+            };
+            
+            input.click();
+          },
+
+          restoreMaterial: function (index) {
+            var material = this.materialList[index];
+            if (!material || !material.isReplaced) return;
+            
+            // 恢复原始图片
+            var originalData = material.originalData;
+            material.previewUrl = originalData.startsWith('data:') ? originalData : ('data:image/png;base64,' + originalData);
+            material.isReplaced = false;
+            
+            // 移除替换记录
+            delete this.replacedImages[material.imageKey];
+            
+            // 重新渲染 SVGA
+            this.applyReplacedMaterials();
+            
+            // 重新计算尺寸
+            var _this = this;
+            var img = new Image();
+            img.onload = function () {
+              var bytes = this.width * this.height * 4;
+              material.sizeText = _this.formatBytes(bytes) + ' (' + this.width + ' × ' + this.height + ')';
+            };
+            img.src = material.previewUrl;
+          },
+
+          applyReplacedMaterials: function () {
+            if (!this.svgaPlayer || !this.originalVideoItem) return;
+            
+            var _this = this;
+            
+            // 清除之前的动态替换
+            this.svgaPlayer.clearDynamicObjects();
+            
+            // 应用所有替换的图片
+            Object.keys(this.replacedImages).forEach(function (imageKey) {
+              var imageUrl = _this.replacedImages[imageKey];
+              _this.svgaPlayer.setImage(imageUrl, imageKey);
+            });
+            
+            // 重启播放
+            if (this.isPlaying) {
+              this.svgaPlayer.startAnimation();
+            } else {
+              this.svgaPlayer.stepToFrame(this.currentFrame);
             }
           },
 

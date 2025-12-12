@@ -1,4 +1,3 @@
-NEW_FILE_CODE
 # 一键安装依赖并启动本项目的 VuePress 开发服务器
 # One-click install & run for this project (ASCII only)
 
