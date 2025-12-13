@@ -837,6 +837,32 @@
         color: #999999;
       }
 
+      /* 缩放按钮 */
+      .zoom-btn {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background-color: transparent;
+        cursor: pointer;
+        outline: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin: 0 4px;
+        transition: opacity 0.3s;
+      }
+      
+      .zoom-btn:hover {
+        opacity: 0.8;
+      }
+      
+      .zoom-icon {
+        width: 28px;
+        height: 28px;
+        display: block;
+      }
+      
       /* 1:1按钮 */
       .reset-scale-btn {
         width: 28px;
@@ -848,48 +874,22 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: opacity 0.3s, background-color 0.3s;
-        position: relative;
-        border-radius: 4px;
+        padding: 0;
+        margin-left: 4px;
+        transition: opacity 0.3s;
       }
-
+      
       .reset-scale-btn:hover {
-        background-color: #f3f3f3;
+        opacity: 0.8;
       }
-
-      .reset-scale-btn:active {
-        opacity: 0.5;
-      }
-
-      .reset-scale-btn:disabled {
-        opacity: 0.3;
-        cursor: not-allowed;
-      }
-
-      .reset-scale-btn svg {
+      
+      .one-to-one-icon {
         width: 28px;
         height: 28px;
+        display: block;
       }
 
-      .reset-scale-btn svg rect,
-      .reset-scale-btn svg circle {
-        transition: stroke 0.3s, fill 0.3s;
-      }
-
-      body.dark-mode .reset-scale-btn svg rect {
-        stroke: #999999;
-      }
-
-      body.dark-mode .reset-scale-btn:hover {
-        background-color: #333333;
-      }
-
-      body.dark-mode .reset-scale-btn svg rect[fill],
-      body.dark-mode .reset-scale-btn svg circle {
-        fill: #999999;
-      }
-
-      /* 清空/关闭按钮 (btn03样式) */
+/* 清空/关闭按钮 (btn03样式) */
       .clear-btn {
         width: 32px;
         height: 28px;
@@ -1029,7 +1029,7 @@
         flex-direction: column;
         align-items: flex-start;
         padding: 0px;
-        gap: 4px;
+        gap: 8px;
         width: 320px;
         flex: none;
         order: 0;
@@ -1064,7 +1064,7 @@
         font-style: normal;
         font-weight: 400;
         font-size: 12px;
-        line-height: 16px;
+        line-height: 20px;
         display: flex;
         align-items: center;
         color: #818181;
@@ -1092,7 +1092,7 @@
         height: 32px;
         padding: 0 12px;
         border: 1px solid #e3e3e3;
-        border-radius: 4px;
+        border-radius: 8px;
         font-family: 'Segoe UI';
         font-size: 14px;
         color: #333333;
@@ -1735,14 +1735,14 @@
                 </div>
                 <div class="controls-right">
                   <div class="scale-percentage">{{ Math.round(viewerScale * 100) }}%</div>
+                  <button class="zoom-btn" @click="zoomOut" title="缩小">
+                    <img :src="zoomOutIcon" class="zoom-icon" />
+                  </button>
+                  <button class="zoom-btn" @click="zoomIn" title="放大">
+                    <img :src="zoomInIcon" class="zoom-icon" />
+                  </button>
                   <button class="reset-scale-btn" @click="resetScale" title="恢复1:1尺寸">
-                    <svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="5" y="6" width="18" height="16" rx="3" fill="none" stroke="#5B5B5B" stroke-width="1.5"/>
-                      <rect x="9" y="10" width="1.5" height="8" fill="#5B5B5B"/>
-                      <rect x="17.5" y="10" width="1.5" height="8" fill="#5B5B5B"/>
-                      <circle cx="14" cy="12" r="1" fill="#5B5B5B"/>
-                      <circle cx="14" cy="16" r="1" fill="#5B5B5B"/>
-                    </svg>
+                    <img :src="oneToOneIcon" class="one-to-one-icon" />
                   </button>
                 </div>
               </div>
@@ -2492,6 +2492,16 @@
             this.viewerOffsetX = 0;
             this.viewerOffsetY = 0;
           },
+          
+          zoomIn: function () {
+            // 放大，每次增加 10%
+            this.viewerScale = Math.min(this.viewerScale + 0.1, 5); // 最大 500%
+          },
+          
+          zoomOut: function () {
+            // 缩小，每次减少 10%
+            this.viewerScale = Math.max(this.viewerScale - 0.1, 0.1); // 最小 10%
+          },
 
           applyCanvasBackground: function () {
             var container = this.$refs.svgaContainer;
@@ -3114,6 +3124,27 @@
             return this.materialList.filter(function(item) {
               return item.imageKey.toLowerCase().indexOf(query) !== -1;
             });
+          },
+          
+          zoomInIcon: function () {
+            if (this.isDarkMode) {
+              return 'assets/img/zoom_in_dark.png';
+            }
+            return 'assets/img/zoom_in.png';
+          },
+          
+          zoomOutIcon: function () {
+            if (this.isDarkMode) {
+              return 'assets/img/zoom_out_dark.png';
+            }
+            return 'assets/img/zoom_out.png';
+          },
+          
+          oneToOneIcon: function () {
+            if (this.isDarkMode) {
+              return 'assets/img/one2one_dark.png';
+            }
+            return 'assets/img/one2one.png';
           },
           
           viewerContainerStyle: function () {
