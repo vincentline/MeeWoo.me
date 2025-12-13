@@ -1809,6 +1809,9 @@
                       <path d="M7 7L17 17" stroke="#333333" stroke-width="1.5" stroke-linecap="round"/>
                     </svg>
                   </button>
+                  <button class="btn-primary" @click="triggerReuploadSVGA" v-if="currentModule === 'svga' && svga.hasFile">
+                    重传SVGA
+                  </button>
                   <button class="btn-primary" @click="openMaterialPanel" v-if="currentModule === 'svga' && svga.hasFile">
                     素材图...
                   </button>
@@ -2053,6 +2056,32 @@
           /* 模块切换 */
           switchModule: function (key) {
             this.currentModule = key;
+          },
+
+          triggerReuploadSVGA: function () {
+            // 触发隐藏的文件输入框
+            var fileInput = document.getElementById('reupload-svga-input');
+            if (fileInput) {
+              fileInput.click();
+            }
+          },
+          
+          handleReuploadSVGA: function (event) {
+            var file = event.target.files[0];
+            if (!file) return;
+            
+            // 检查文件格式
+            if (!file.name.toLowerCase().endsWith('.svga')) {
+              alert('请选择 .svga 文件');
+              event.target.value = ''; // 清空输入
+              return;
+            }
+            
+            // 重用现有的加载逻辑
+            this.loadSVGA(file);
+            
+            // 清空输入，允许重复选择同一文件
+            event.target.value = '';
           },
 
           /* 清空画布 */
@@ -3118,6 +3147,7 @@
           }
         },
         mounted: function () {
+          var _this = this;
           this.initSvgaPlayer();
           var savedTheme = localStorage.getItem('theme');
           if (savedTheme === 'dark') {
@@ -3126,8 +3156,24 @@
           }
           // 加载 help.md
           this.loadHelpContent();
+          
+          // 绑定重传SVGA文件输入框的事件
+          var reuploadInput = document.getElementById('reupload-svga-input');
+          if (reuploadInput) {
+            reuploadInput.addEventListener('change', function(event) {
+              _this.handleReuploadSVGA(event);
+            });
+          }
         }
       });
     </script>
+    
+    <!-- 隐藏的文件输入框，用于重传SVGA -->
+    <input 
+      type="file" 
+      id="reupload-svga-input" 
+      accept=".svga" 
+      style="display: none;"
+    />
   </body>
 </html>
