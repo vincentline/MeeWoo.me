@@ -54,3 +54,6 @@ coverage/
 # 如果 gh-pages 分支上意外产生这些文件，也避免提交
 *.tgz
 *.zip
+
+# ffmpeg.wasm 本地文件（仅用于开发环境）
+docs/ffmpeg/

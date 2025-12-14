@@ -100,6 +100,44 @@ mcp_FramelinkFigmaMCP_download_figma_images({
   - `requiresImageDimensions`：是否需要尺寸信息
 - `pngScale`（可选）：PNG 导出倍率，默认为 2
 
+## ✅ 完整调用示例（已验证）
+
+### 示例：获取 Figma 文件完整数据
+
+```javascript
+// 工具调用
+mcp_FramelinkFigmaMCP_get_figma_data({
+  fileKey: "你的文件key"
+})
+
+// 返回数据示例
+{
+  "name": "设计文件名称",
+  "lastModified": "2025-12-14T07:30:36Z",
+  "thumbnailUrl": "...",
+  "version": "123456",
+  "document": {
+    "id": "0:0",
+    "name": "Document",
+    "type": "DOCUMENT",
+    "children": [
+      // 页面和节点数据...
+    ]
+  }
+}
+```
+
+### 注意事项
+
+1. **获取 fileKey 的方法**：
+   - Figma 文件 URL: `https://www.figma.com/file/ABC123XYZ/FileName`
+   - 提取中间的 `ABC123XYZ` 即为 fileKey
+
+2. **常见错误**：
+   - `404 Not Found`：文件不存在或没有访问权限
+   - `403 Forbidden`：未配置 Figma Access Token
+   - `429 Too Many Requests`：API 请求超限，需等待后重试
+
 ## 实际应用场景
 
 ### 场景 1：设计稿到代码工作流
