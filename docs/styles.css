@@ -342,9 +342,9 @@ body.dark-mode .help-popup {
 }
 
 .empty-state-icon {
-  width: 100px;
-  height: 100px;
-  margin-bottom: 8px;
+  width: 300px;
+  height: 300px;
+  margin-bottom: 28px;
 }
 
 .empty-state-icon svg {
@@ -360,6 +360,7 @@ body.dark-mode .help-popup {
   color: #5b5b5b;
   text-align: center;
   pointer-events: auto;
+  margin-bottom: 150px;
 }
 
 .empty-state-text em {

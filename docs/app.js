@@ -71,6 +71,10 @@ new Vue({
             svgaPlayer: null,
             svgaParser: null,
             svgaObjectUrl: null,
+            
+            // 空状态SVGA播放器
+            emptyStateSvgaPlayer: null,
+            emptyStateSvgaParser: null,
 
             // 素材替换
             showMaterialPanel: false,
@@ -253,6 +257,53 @@ new Vue({
             if (!container) return;
             this.svgaPlayer = new SVGA.Player(container);
             this.svgaParser = new SVGA.Parser();
+          },
+          
+          initEmptyStateSvgaPlayer: function () {
+            var _this = this;
+            var container = this.$refs.emptyStateSvgaContainer;
+            if (!container) {
+              // 如果容器还没有渲染，等待DOM更新后重试
+              this.$nextTick(function() {
+                _this.initEmptyStateSvgaPlayer();
+              });
+              return;
+            }
+            
+            // 创建空状态SVGA播放器
+            this.emptyStateSvgaPlayer = new SVGA.Player(container);
+            this.emptyStateSvgaParser = new SVGA.Parser();
+            
+            // 动态读取SVGA文件列表
+            fetch('assets/svga/file-list.json')
+              .then(function(response) {
+                if (!response.ok) {
+                  throw new Error('无法加载文件列表');
+                }
+                return response.json();
+              })
+              .then(function(fileList) {
+                if (!fileList || fileList.length === 0) {
+                  console.warn('没有配置空状态SVGA文件');
+                  return;
+                }
+                
+                // 随机选择一个文件
+                var randomIndex = Math.floor(Math.random() * fileList.length);
+                var fileName = fileList[randomIndex];
+                var svgaUrl = 'assets/svga/' + fileName;
+                
+                // 加载并播放SVGA
+                _this.emptyStateSvgaParser.load(svgaUrl, function(videoItem) {
+                  _this.emptyStateSvgaPlayer.setVideoItem(videoItem);
+                  _this.emptyStateSvgaPlayer.startAnimation();
+                }, function(error) {
+                  console.error('加载空状态SVGA失败:', error);
+                });
+              })
+              .catch(function(error) {
+                console.error('读取SVGA文件列表失败:', error);
+              });
           },
 
           loadSvga: function (file) {
@@ -1021,6 +1072,11 @@ new Vue({
             
             if (!this.svgaPlayer || !this.svga.hasFile || !this.originalVideoItem) {
               alert('请先加载 SVGA 文件');
+              return;
+            }
+            
+            // 添加确认弹窗
+            if (!confirm('确认要导出GIF吗？')) {
               return;
             }
 
@@ -1823,6 +1879,7 @@ new Vue({
         mounted: function () {
           var _this = this;
           this.initSvgaPlayer();
+          this.initEmptyStateSvgaPlayer();
           var savedTheme = localStorage.getItem('theme');
           if (savedTheme === 'dark') {
             this.isDarkMode = true;

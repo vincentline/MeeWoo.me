@@ -7,6 +7,12 @@
 
     <!-- Vue 2 -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <!-- Vue 备用CDN -->
+    <script>
+      if (typeof Vue === 'undefined') {
+        document.write('<script src="https://unpkg.com/vue@2.6.14/dist/vue.js"><\/script>');
+      }
+    </script>
     <!-- Marked.js for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
     <!-- SVGA / Lottie -->
@@ -91,19 +97,7 @@
           <!-- 空状态覆盖层 -->
           <div v-if="isEmpty" class="empty-state-overlay">
             <div class="empty-state-icon">
-              <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M12.5 4.17L87.5 4.17L87.5 79.17L25 95.83L12.5 79.17L12.5 4.17Z"
-                  fill="none"
-                  stroke="#D3D3D3"
-                  stroke-width="2"
-                />
-                <path
-                  d="M25 79.17L25 95.83M25 79.17L87.5 79.17M25 79.17L12.5 79.17"
-                  stroke="#D3D3D3"
-                  stroke-width="2"
-                />
-              </svg>
+              <div ref="emptyStateSvgaContainer" style="width: 300px; height: 300px;"></div>
             </div>
             <div class="empty-state-text" @click="triggerFileUpload" style="cursor: pointer;">
               将文件拖到此处预览动画,或<em>点击上传</em>
