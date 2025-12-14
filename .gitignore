@@ -57,3 +57,15 @@ coverage/
 
 # ffmpeg.wasm 本地文件（仅用于开发环境）
 docs/ffmpeg/
+
+# Qoder工具生成的Wiki文档（仅本地使用）
+.qoder/
+
+# VuePress样式配置（可选，如果不需要提交）
+.vuepress/
+
+# 临时测试文件
+figma-mcp-example.md
+
+# package-lock.json（可选，建议忽略避免冲突）
+package-lock.json
