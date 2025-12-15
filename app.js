@@ -157,9 +157,8 @@ new Vue({
 
           triggerReuploadSVGA: function () {
             // 触发隐藏的文件输入框
-            var fileInput = document.getElementById('reupload-svga-input');
-            if (fileInput) {
-              fileInput.click();
+            if (this.$refs.reuploadSvgaInput) {
+              this.$refs.reuploadSvgaInput.click();
             }
           },
           
@@ -1946,13 +1945,5 @@ new Vue({
           });
           // 加载 help.md
           this.loadHelpContent();
-          
-          // 绑定重传SVGA文件输入框的事件
-          var reuploadInput = document.getElementById('reupload-svga-input');
-          if (reuploadInput) {
-            reuploadInput.addEventListener('change', function(event) {
-              _this.handleReuploadSVGA(event);
-            });
-          }
         }
       });

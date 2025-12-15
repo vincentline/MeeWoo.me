@@ -587,16 +587,17 @@
           </div>
         </div>
       </div>
+      
+      <!-- 隐藏的文件输入框，用于重传SVGA -->
+      <input 
+        type="file" 
+        ref="reuploadSvgaInput"
+        accept=".svga" 
+        style="display: none;"
+        @change="handleReuploadSVGA"
+      />
     </div>
 
     <script src="app.js"></script>
-    
-    <!-- 隐藏的文件输入框，用于重传SVGA -->
-    <input 
-      type="file" 
-      id="reupload-svga-input" 
-      accept=".svga" 
-      style="display: none;"
-    />
   </body>
 </html>
