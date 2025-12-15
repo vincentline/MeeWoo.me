@@ -1,18 +1,8 @@
 {
-  "name": "a-view",
+  "name": "svga-preview",
   "version": "1.0.0",
-  "description": "svga,lottie动画在线预览",
-  "main": "index.js",
-  "scripts": {
-    "dev": "vuepress dev .",
-    "build": "vuepress build ."
-  },
+  "description": "SVGA/Lottie动画在线预览工具",
+  "private": true,
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "element-ui": "^2.15.1"
-  },
-  "devDependencies": {
-    "vuepress": "^1.8.2"
-  }
+  "license": "ISC"
 }
