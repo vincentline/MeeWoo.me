@@ -328,6 +328,10 @@ body.dark-mode .help-popup {
   left: 0 !important;
   transform: none !important;
   margin: 0 !important;
+  /* 启用高质量图像渲染，减少锯齿 */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: smooth;
+  -ms-interpolation-mode: bicubic;
 }
 
 /* 空状态覆盖层 */
@@ -599,7 +603,7 @@ body.dark-mode .info-item-value {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: right;
   gap: 8px;
 }
 
@@ -682,7 +686,7 @@ body.dark-mode .info-item-value {
 
 /* 进度条 */
 .progress-bar {
-  width: 200px;
+  width: 260px;
   height: 16px;
   background-color: #f3f3f3;
   border-radius: 0;
@@ -2130,6 +2134,125 @@ body.dark-mode .mp4-mute-toggle.active {
 
 .mp4-mute-toggle.active .mp4-mute-toggle-handle {
   transform: translateX(20px);
+}
+
+/* Disabled状态样式 */
+/* 下拉选择框disabled */
+.mp4-select-wrapper.disabled {
+  background: #F3F3F3;
+  border: 1px solid #E6E6E6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.mp4-select-wrapper.disabled .mp4-select-text {
+  color: #D3D3D3;
+}
+
+.mp4-select-wrapper.disabled .mp4-select-icon svg {
+  stroke: #D3D3D3;
+}
+
+.mp4-select-wrapper.disabled:hover {
+  background: #F3F3F3;
+  border: 1px solid #E6E6E6;
+}
+
+/* 输入框wrapper disabled */
+.mp4-size-input-wrapper:has(input:disabled),
+.mp4-value-input-wrapper:has(input:disabled) {
+  background: #F3F3F3;
+  border: 1px solid #E6E6E6;
+  padding: 0 15px;
+  pointer-events: none;
+}
+
+.mp4-size-input-wrapper:has(input:disabled):hover,
+.mp4-value-input-wrapper:has(input:disabled):hover {
+  background: #F3F3F3;
+  border: 1px solid #E6E6E6;
+  padding: 0 15px;
+}
+
+.mp4-size-input-wrapper:has(input:disabled):focus-within,
+.mp4-value-input-wrapper:has(input:disabled):focus-within {
+  background: #F3F3F3;
+  border: 1px solid #E6E6E6;
+  padding: 0 15px;
+}
+
+/* 输入框disabled */
+.mp4-input:disabled {
+  color: #D3D3D3;
+  cursor: not-allowed;
+}
+
+/* 静音开关disabled */
+.mp4-mute-toggle.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* 单位文字disabled */
+.mp4-config-section.disabled .mp4-value-unit {
+  color: #D3D3D3;
+}
+
+.mp4-config-section.disabled .mp4-size-lock svg {
+  stroke: #D3D3D3;
+}
+
+body.dark-mode .mp4-config-section.disabled .mp4-value-unit {
+  color: #666666;
+}
+
+body.dark-mode .mp4-config-section.disabled .mp4-size-lock svg {
+  stroke: #666666;
+}
+
+/* 暗黑模式disabled状态 */
+body.dark-mode .mp4-select-wrapper.disabled {
+  background: #2a2a2a;
+  border: 1px solid #404040;
+}
+
+body.dark-mode .mp4-select-wrapper.disabled .mp4-select-text {
+  color: #666666;
+}
+
+body.dark-mode .mp4-select-wrapper.disabled .mp4-select-icon svg {
+  stroke: #666666;
+}
+
+body.dark-mode .mp4-select-wrapper.disabled:hover {
+  background: #2a2a2a;
+  border: 1px solid #404040;
+}
+
+body.dark-mode .mp4-size-input-wrapper:has(input:disabled),
+body.dark-mode .mp4-value-input-wrapper:has(input:disabled) {
+  background: #2a2a2a;
+  border: 1px solid #404040;
+  padding: 0 15px;
+}
+
+body.dark-mode .mp4-size-input-wrapper:has(input:disabled):hover,
+body.dark-mode .mp4-value-input-wrapper:has(input:disabled):hover {
+  background: #2a2a2a;
+  border: 1px solid #404040;
+  padding: 0 15px;
+}
+
+body.dark-mode .mp4-size-input-wrapper:has(input:disabled):focus-within,
+body.dark-mode .mp4-value-input-wrapper:has(input:disabled):focus-within {
+  background: #2a2a2a;
+  border: 1px solid #404040;
+  padding: 0 15px;
+}
+
+body.dark-mode .mp4-input:disabled {
+  color: #666666;
 }
 
 /* 底部按钮 */

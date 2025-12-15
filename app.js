@@ -1196,7 +1196,11 @@ new Vue({
                   var tempCanvas = document.createElement('canvas');
                   tempCanvas.width = canvas.width;
                   tempCanvas.height = canvas.height;
-                  var tempCtx = tempCanvas.getContext('2d');
+                  var tempCtx = tempCanvas.getContext('2d', { alpha: true });
+                  
+                  // 启用高质量抗锯齿
+                  tempCtx.imageSmoothingEnabled = true;
+                  tempCtx.imageSmoothingQuality = 'high';
                   
                   // 填充背景色
                   var bgColor = '#ffffff'; // 默认白色
@@ -1272,15 +1276,20 @@ new Vue({
             this.mp4Config.width = videoItem.videoSize.width;
             this.mp4Config.height = videoItem.videoSize.height;
             
-            // 如果localStorage有记录的配置，读取
+            // 默认使用SVGA原始帧率
+            var originalFps = videoItem.FPS || videoItem.fps || 30;
+            this.mp4Config.fps = originalFps;
+            
+            // 读取localStorage中保存的配置（包括帧率和压缩质量）
             try {
-              var savedQuality = localStorage.getItem('mp4_quality');
               var savedFps = localStorage.getItem('mp4_fps');
-              if (savedQuality !== null) {
-                this.mp4Config.quality = parseInt(savedQuality);
-              }
               if (savedFps !== null) {
                 this.mp4Config.fps = parseInt(savedFps);
+              }
+              
+              var savedQuality = localStorage.getItem('mp4_quality');
+              if (savedQuality !== null) {
+                this.mp4Config.quality = parseInt(savedQuality);
               }
             } catch (e) {}
 
@@ -1362,6 +1371,18 @@ new Vue({
             if (!this.svgaPlayer || !this.svga.hasFile || !this.originalVideoItem) {
               alert('请先加载 SVGA 文件');
               return;
+            }
+            
+            // 检查SVGA是否包含音频
+            var videoItem = this.originalVideoItem;
+            var hasAudio = videoItem.audios && videoItem.audios.length > 0;
+            
+            // 如果有音频但未选择静音，提示用户
+            if (hasAudio && !this.mp4Config.muted) {
+              var confirmMsg = '检测到SVGA包含音频，但当前版本暂不支持音频转换。\n\n建议您：\n1. 勾选“静音”选项后再转换\n2. 或者直接继续（生成的MP4将没有声音）\n\n是否继续？';
+              if (!confirm(confirmMsg)) {
+                return;
+              }
             }
 
             // 参数验证
@@ -1491,7 +1512,7 @@ new Vue({
             }
           },
 
-          // 提取序列帧
+          // 提取序列帧（直接使用主播放器Canvas）
           extractFrames: async function () {
             var _this = this;
             var videoItem = this.originalVideoItem;
@@ -1508,63 +1529,65 @@ new Vue({
 
             var frames = [];
             
-            // 获取canvas元素（与GIF导出相同的方式）
-            var container = this.$refs.svgaContainer;
-            if (!container) {
-              throw new Error('无法获取画布元素');
-            }
-            var playerCanvas = container.querySelector('canvas');
-            if (!playerCanvas) {
-              throw new Error('无法获取Canvas元素');
-            }
-            
             // 保存当前播放状态
             var wasPlaying = this.isPlaying;
             if (wasPlaying) {
               this.svgaPlayer.pauseAnimation();
             }
-
-            for (var i = 0; i < totalFrames; i++) {
-              if (this.mp4ConvertCancelled) {
-                // 恢复播放状态
-                if (wasPlaying) {
-                  this.svgaPlayer.startAnimation();
-                }
-                throw new Error('用户取消转换');
-              }
-
-              // 更新进度
-              this.mp4ConvertProgress = Math.round((i + 1) / totalFrames * 100);
-              this.mp4ConvertMessage = '提取序列帧 ' + (i + 1) + '/' + totalFrames;
-
-              // 跳转到指定帧
-              this.svgaPlayer.stepToFrame(i, true);
-
-              // 等待渲染完成
-              await new Promise(function(r) { setTimeout(r, 20); });
-
-              // 创建临时Canvas
-              var tempCanvas = document.createElement('canvas');
-              tempCanvas.width = targetWidth;
-              tempCanvas.height = targetHeight;
-              var tempCtx = tempCanvas.getContext('2d');
-
-              // 绘制当前帧（从原始尺寸缩放到目标尺寸）
-              tempCtx.drawImage(playerCanvas, 0, 0, originalWidth, originalHeight, 0, 0, targetWidth, targetHeight);
-
-              // 获取ImageData
-              var imageData = tempCtx.getImageData(0, 0, targetWidth, targetHeight);
-              frames.push(imageData);
-
-              // 让出线程，避免阻塞UI
-              if (i % 5 === 0) {
-                await new Promise(function(r) { setTimeout(r, 0); });
-              }
+            
+            // 直接使用主播放器的Canvas
+            var playerCanvas = this.$refs.svgaContainer.querySelector('canvas');
+            if (!playerCanvas) {
+              throw new Error('无法获取播放器Canvas');
             }
 
-            // 恢复播放状态
-            if (wasPlaying) {
-              this.svgaPlayer.startAnimation();
+            try {
+              // 逐帧提取
+              for (var i = 0; i < totalFrames; i++) {
+                if (this.mp4ConvertCancelled) {
+                  throw new Error('用户取消转换');
+                }
+
+                // 更新进度
+                this.mp4ConvertProgress = Math.round((i + 1) / totalFrames * 100);
+                this.mp4ConvertMessage = '提取序列帧 ' + (i + 1) + '/' + totalFrames;
+
+                // 跳转到指定帧
+                this.svgaPlayer.stepToFrame(i, false);
+
+                // 等待渲染完成
+                await new Promise(function(r) { setTimeout(r, 100); });
+
+                // 创建目标尺寸Canvas
+                var tempCanvas = document.createElement('canvas');
+                tempCanvas.width = targetWidth;
+                tempCanvas.height = targetHeight;
+                var tempCtx = tempCanvas.getContext('2d', { 
+                  alpha: true,
+                  willReadFrequently: true
+                });
+                
+                // 禁用图像平滑
+                tempCtx.imageSmoothingEnabled = false;
+                
+                // 清空并绘制
+                tempCtx.clearRect(0, 0, targetWidth, targetHeight);
+                tempCtx.drawImage(playerCanvas, 0, 0, playerCanvas.width, playerCanvas.height, 0, 0, targetWidth, targetHeight);
+                
+                // 获取ImageData
+                var imageData = tempCtx.getImageData(0, 0, targetWidth, targetHeight);
+                frames.push(imageData);
+
+                // 让出线程，避免阻塞UI
+                if (i % 5 === 0) {
+                  await new Promise(function(r) { setTimeout(r, 0); });
+                }
+              }
+            } finally {
+              // 恢复播放状态
+              if (wasPlaying) {
+                this.svgaPlayer.startAnimation();
+              }
             }
 
             return frames;
@@ -1603,49 +1626,78 @@ new Vue({
             var width = imageData.width;
             var height = imageData.height;
 
-            // 创建双倍宽度的Canvas
+            // 创建双倍宽度的Canvas（必须带alpha通道，避免黑色底色）
             var dualCanvas = document.createElement('canvas');
             dualCanvas.width = width * 2;
             dualCanvas.height = height;
-            var dualCtx = dualCanvas.getContext('2d');
+            var dualCtx = dualCanvas.getContext('2d', { 
+              alpha: true,  // 必须为true，避免黑色底色
+              willReadFrequently: true 
+            });
+            
+            // 禁用所有图像平滑/抗锯齿
+            dualCtx.imageSmoothingEnabled = false;
+            
+            // 清空为透明背景（重要！）
+            dualCtx.clearRect(0, 0, width * 2, height);
 
             // 创建左侧和右侧的ImageData
             var leftData = dualCtx.createImageData(width, height);
             var rightData = dualCtx.createImageData(width, height);
 
-            // 分离通道
+            // 逐像素分离通道
             for (var i = 0; i < imageData.data.length; i += 4) {
               var r = imageData.data[i + 0];
               var g = imageData.data[i + 1];
               var b = imageData.data[i + 2];
               var a = imageData.data[i + 3];
 
-              if (isColorLeftAlphaRight) {
-                // 左彩右灰：左侧RGB，右侧Alpha灰度图
-                leftData.data[i + 0] = r;
-                leftData.data[i + 1] = g;
-                leftData.data[i + 2] = b;
-                leftData.data[i + 3] = 255;
+              // Canvas的getImageData返回预乘Alpha的数据，必须反预乘才能恢复原始颜色
+              var finalR = r;
+              var finalG = g;
+              var finalB = b;
+              
+              if (a > 0 && a < 255) {
+                // 反预乘公式：原始颜色 = 预乘颜色 * 255 / alpha
+                finalR = Math.min(255, Math.round(r * 255 / a));
+                finalG = Math.min(255, Math.round(g * 255 / a));
+                finalB = Math.min(255, Math.round(b * 255 / a));
+              } else if (a === 0) {
+                // 完全透明：颜色置为黑色
+                finalR = 0;
+                finalG = 0;
+                finalB = 0;
+              }
+              // a === 255：不需要处理，直接使用原值
 
-                rightData.data[i + 0] = a;
+              if (isColorLeftAlphaRight) {
+                // 左彩右灰：左侧RGB保留半透明，右侧Alpha灰度图必须alpha=255
+                leftData.data[i + 0] = finalR;
+                leftData.data[i + 1] = finalG;
+                leftData.data[i + 2] = finalB;
+                leftData.data[i + 3] = a;  // 保留原始alpha
+
+                // 右侧灰度图：灰度值=alpha，但alpha必须设为255（避免putImageData预乘）
+                rightData.data[i + 0] = a;  // 灰度值=alpha值
                 rightData.data[i + 1] = a;
                 rightData.data[i + 2] = a;
-                rightData.data[i + 3] = 255;
+                rightData.data[i + 3] = 255;  // 必须255，避免灰度被预乘变暗
               } else {
-                // 左灰右彩：左侧Alpha灰度图，右侧RGB
+                // 左灰右彩：左侧Alpha灰度图必须alpha=255，右侧RGB保留半透明
+                // 左侧灰度图：灰度值=alpha，但alpha必须设为255（避免putImageData预乘）
                 leftData.data[i + 0] = a;
                 leftData.data[i + 1] = a;
                 leftData.data[i + 2] = a;
-                leftData.data[i + 3] = 255;
+                leftData.data[i + 3] = 255;  // 必须255，避免灰度被预乘变暗
 
-                rightData.data[i + 0] = r;
-                rightData.data[i + 1] = g;
-                rightData.data[i + 2] = b;
-                rightData.data[i + 3] = 255;
+                rightData.data[i + 0] = finalR;
+                rightData.data[i + 1] = finalG;
+                rightData.data[i + 2] = finalB;
+                rightData.data[i + 3] = a;  // 保留原始alpha
               }
             }
 
-            // 绘制到双通道Canvas
+            // 使用putImageData直接写入，避免任何图像处理
             dualCtx.putImageData(leftData, 0, 0);
             dualCtx.putImageData(rightData, width, 0);
 
@@ -1698,10 +1750,16 @@ new Vue({
               var ffmpegArgs = [
                 '-framerate', String(fps),
                 '-i', 'frame_%04d.png',
+                // 添加黑色底色：在PNG下方叠加黑色层
+                '-vf', 'format=rgba,colorchannelmixer=aa=1,split[bg][fg];[bg]drawbox=c=black@1:replace=1:t=fill[bg];[bg][fg]overlay=format=auto',
                 '-c:v', 'libx264',
-                '-pix_fmt', 'yuv420p',
+                '-profile:v', 'high',
+                '-level', '4.0',
+                '-pix_fmt', 'yuv420p',  // Windows兼容性
                 '-crf', String(crf),
-                '-preset', 'fast'
+                '-preset', 'medium',
+                '-sws_flags', 'neighbor',  // 使用最近邻插值，避免颜色混合
+                '-movflags', '+faststart'
               ];
 
               // 如果静音，不添加音频轨道
@@ -1735,6 +1793,7 @@ new Vue({
               return mp4Blob;
 
             } catch (error) {
+              console.error('[FFmpeg编码] 错误:', error);
               // 清理可能残留的文件
               for (var k = 0; k < frameCount; k++) {
                 try {
