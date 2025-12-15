@@ -17,6 +17,10 @@
     <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
     <!-- SVGA / Lottie -->
     <script src="https://cdn.jsdelivr.net/npm/svgaplayerweb@2.3.1/build/svga.min.js"></script>
+    <!-- svga-web用于帧提取（支持强制canvas2d渲染） -->
+    <script src="https://cdn.jsdelivr.net/npm/svga-web@2.4.2/svga-web.min.js"></script>
+    <!-- Howler.js for SVGA audio support -->
+    <script src="https://cdn.jsdelivr.net/npm/howler@2.0.15/dist/howler.core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.7.6/lottie.min.js"></script>
     <!-- GIF.js for GIF export -->
     <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
@@ -424,15 +428,15 @@
           <!-- SVGA信息 -->
           <div class="mp4-info-section">
             <div class="mp4-info-row">SVGA尺寸：{{ svga.fileInfo.sizeWH }}    时长：{{ svga.fileInfo.duration }}</div>
-            <div class="mp4-compress-hint">压缩开大</div>
+            <div class="mp4-compress-hint">带Key信息的SVGA，转换后就没有了。压缩质量调越低，文件就越小，画面越糊。</div>
           </div>
 
           <!-- 配置区域 -->
-          <div class="mp4-config-section">
+          <div class="mp4-config-section" :class="{disabled: isConvertingMP4}">
             <!-- 遮罩位置 -->
             <div class="mp4-config-item">
               <div class="mp4-config-label">遮罩位置：</div>
-              <div class="mp4-select-wrapper" :class="{open: showChannelModeDropdown}" @click="toggleChannelModeDropdown">
+              <div class="mp4-select-wrapper" :class="{open: showChannelModeDropdown, disabled: isConvertingMP4}" @click="!isConvertingMP4 && toggleChannelModeDropdown()">
                 <div class="mp4-select-text">
                   {{ mp4Config.channelMode === 'color-left-alpha-right' ? '左彩右灰' : '左灰右彩' }}
                 </div>
@@ -471,6 +475,7 @@
                     class="mp4-input" 
                     v-model.number="mp4Config.width" 
                     @input="onMP4WidthChange"
+                    :disabled="isConvertingMP4"
                     min="0"
                     max="3000"
                   />
@@ -486,6 +491,7 @@
                     class="mp4-input" 
                     v-model.number="mp4Config.height" 
                     @input="onMP4HeightChange"
+                    :disabled="isConvertingMP4"
                     min="0"
                     max="3000"
                   />
@@ -502,6 +508,7 @@
                     type="number" 
                     class="mp4-input" 
                     v-model.number="mp4Config.quality" 
+                    :disabled="isConvertingMP4"
                     min="1"
                     max="100"
                   />
@@ -519,6 +526,7 @@
                     type="number" 
                     class="mp4-input" 
                     v-model.number="mp4Config.fps" 
+                    :disabled="isConvertingMP4"
                     min="1"
                     max="120"
                   />
@@ -530,7 +538,7 @@
             <!-- 静音 -->
             <div class="mp4-config-item">
               <div class="mp4-config-label">静音</div>
-              <div class="mp4-mute-toggle" :class="{active: mp4Config.muted}" @click="mp4Config.muted = !mp4Config.muted">
+              <div class="mp4-mute-toggle" :class="{active: mp4Config.muted, disabled: isConvertingMP4}" @click="!isConvertingMP4 && (mp4Config.muted = !mp4Config.muted)">
                 <div class="mp4-mute-toggle-handle"></div>
               </div>
             </div>
