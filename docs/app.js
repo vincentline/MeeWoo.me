@@ -82,6 +82,10 @@ new Vue({
             materialSearchQuery: '',
             originalVideoItem: null,
             replacedImages: {},
+            
+            // 音频数据（从原始SVGA文件提取）
+            svgaAudioData: null, // { audioKey: Uint8Array }
+            svgaMovieData: null, // protobuf解析后的MovieEntity
 
             // GIF 导出状态
             isExportingGIF: false,
@@ -109,6 +113,77 @@ new Vue({
           };
         },
         methods: {
+          /* 动态加载库文件 */
+          
+          loadScript: function(url, checkFn) {
+            return new Promise(function(resolve, reject) {
+              // 如果已加载，直接返回
+              if (checkFn && checkFn()) {
+                resolve();
+                return;
+              }
+              var script = document.createElement('script');
+              script.src = url;
+              script.onload = function() {
+                // 等待全局变量可用
+                var maxWait = 30;
+                var check = function() {
+                  if (!checkFn || checkFn()) {
+                    resolve();
+                  } else if (maxWait-- > 0) {
+                    setTimeout(check, 100);
+                  } else {
+                    reject(new Error('库加载超时'));
+                  }
+                };
+                check();
+              };
+              script.onerror = function() {
+                reject(new Error('加载失败: ' + url));
+              };
+              document.head.appendChild(script);
+            });
+          },
+          
+          // 加载Marked.js
+          loadMarked: function() {
+            return this.loadScript(
+              'https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js',
+              function() { return typeof marked !== 'undefined'; }
+            );
+          },
+          
+          // 加载GIF.js
+          loadGifJs: function() {
+            return this.loadScript(
+              'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js',
+              function() { return typeof GIF !== 'undefined'; }
+            );
+          },
+          
+          // 加载Protobuf + Pako
+          loadProtobufAndPako: function() {
+            var _this = this;
+            return Promise.all([
+              this.loadScript(
+                'https://cdn.jsdelivr.net/npm/protobufjs@7.2.5/dist/protobuf.min.js',
+                function() { return typeof protobuf !== 'undefined'; }
+              ),
+              this.loadScript(
+                'https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js',
+                function() { return typeof pako !== 'undefined'; }
+              )
+            ]);
+          },
+          
+          // 加载SVGA-Web（用于帧提取）
+          loadSvgaWeb: function() {
+            return this.loadScript(
+              'https://cdn.jsdelivr.net/npm/svga-web@2.4.2/svga-web.min.js',
+              function() { return typeof SVGA !== 'undefined' && SVGA.Downloader; }
+            );
+          },
+
           /* 拖拽上传 */
 
           onDragOver: function () {
@@ -240,15 +315,17 @@ new Vue({
 
           loadHelpContent: function () {
             var _this = this;
-            fetch('./help.md')
-              .then(function(response) { return response.text(); })
-              .then(function(markdown) {
-                _this.helpContent = marked.parse(markdown);
-              })
-              .catch(function(error) {
-                console.error('加载帮助文档失败:', error);
-                _this.helpContent = '<p>无法加载帮助文档</p>';
-              });
+            // 先加载Marked库，再加载帮助文档
+            this.loadMarked().then(function() {
+              return fetch('./help.md');
+            }).then(function(response) {
+              return response.text();
+            }).then(function(markdown) {
+              _this.helpContent = marked.parse(markdown);
+            }).catch(function(error) {
+              console.error('加载帮助文档失败:', error);
+              _this.helpContent = '<p>无法加载帮助文档</p>';
+            });
           },
 
           initSvgaPlayer: function () {
@@ -328,6 +405,10 @@ new Vue({
             var reader = new FileReader();
             reader.onload = function (e) {
               var arrayBuffer = e.target.result;
+              
+              // 同步解析SVGA二进制数据以提取音频
+              _this.parseSvgaAudioData(arrayBuffer);
+              
               var blob = new Blob([arrayBuffer], {
                 type: 'application/octet-stream'
               });
@@ -726,6 +807,65 @@ new Vue({
               document.body.removeChild(textarea);
             }
           },
+          
+          /* 解析SVGA二进制数据以提取音频 */
+          parseSvgaAudioData: async function (arrayBuffer) {
+            var _this = this;
+            
+            // 动态加载 protobuf 和 pako
+            try {
+              await this.loadProtobufAndPako();
+            } catch (err) {
+              // 加载失败时静默跳过音频提取
+              return;
+            }
+            
+            try {
+              var uint8Array = new Uint8Array(arrayBuffer);
+              var inflatedData = pako.inflate(uint8Array);
+              
+              protobuf.load('svga.proto', function(err, root) {
+                if (err) return;
+                
+                try {
+                  var MovieEntity = root.lookupType('com.opensource.svga.MovieEntity');
+                  var movieData = MovieEntity.decode(inflatedData);
+                  _this.svgaMovieData = movieData;
+                  
+                  // 提取音频数据
+                  if (movieData.audios && movieData.audios.length > 0 && movieData.images) {
+                    var audioData = {};
+                    movieData.audios.forEach(function(audio) {
+                      var audioKey = audio.audioKey;
+                      
+                      // 尝试多种可能的key格式
+                      var possibleKeys = [
+                        audioKey,
+                        audioKey + '.mp3',
+                        audioKey + '.wav',
+                        'audio_' + audioKey,
+                        audioKey.replace(/\.[^.]+$/, '')
+                      ];
+                      
+                      possibleKeys.forEach(function(key) {
+                        if (movieData.images[key]) {
+                          audioData[audioKey] = movieData.images[key];
+                        }
+                      });
+                    });
+                    
+                    if (Object.keys(audioData).length > 0) {
+                      _this.svgaAudioData = audioData;
+                    }
+                  }
+                } catch (decodeErr) {
+                  console.error('SVGA解析失败:', decodeErr);
+                }
+              });
+            } catch (err) {
+              console.error('音频提取失败:', err);
+            }
+          },
 
           extractMaterialList: function (videoItem) {
             var _this = this;
@@ -764,8 +904,8 @@ new Vue({
                 materialItem.fileSizeText = _this.formatBytes(bytes);
                 materialItem.sizeText = this.width + 'px*' + this.height + 'px';
                 // 保存原始宽高，用于后续图片替换时的缩放
-                materialItem.width = this.width;
-                materialItem.height = this.height;
+                materialItem.originalWidth = this.width;
+                materialItem.originalHeight = this.height;
               };
               
               img.onerror = function () {
@@ -777,6 +917,63 @@ new Vue({
                 img.src = previewUrl;
               }
             });
+          },
+
+          /* 图片缩放处理：最短边缩放并居中裁剪 */
+          scaleImageToFill: function(sourceImg, targetWidth, targetHeight) {
+            var canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            var ctx = canvas.getContext('2d');
+            
+            var sourceWidth = sourceImg.width;
+            var sourceHeight = sourceImg.height;
+            
+            // 计算缩放比例（最短边缩放）
+            var scaleX = targetWidth / sourceWidth;
+            var scaleY = targetHeight / sourceHeight;
+            var scale = Math.max(scaleX, scaleY);
+            
+            // 缩放后的尺寸
+            var scaledWidth = sourceWidth * scale;
+            var scaledHeight = sourceHeight * scale;
+            
+            // 居中偏移
+            var offsetX = (targetWidth - scaledWidth) / 2;
+            var offsetY = (targetHeight - scaledHeight) / 2;
+            
+            // 清空画布（透明背景）
+            ctx.clearRect(0, 0, targetWidth, targetHeight);
+            
+            // 绘制缩放后的图片
+            ctx.drawImage(sourceImg, offsetX, offsetY, scaledWidth, scaledHeight);
+            
+            return canvas;
+          },
+          
+          /* 获取原始图片的目标尺寸 */
+          getOriginalImageSize: function(imageKey) {
+            if (!this.originalVideoItem || !this.originalVideoItem.images) {
+              return null;
+            }
+            
+            // 从原始videoItem中获取图片数据
+            var imageData = this.originalVideoItem.images[imageKey];
+            if (!imageData) return null;
+            
+            // 返回图片尺寸（已经缓存在materialList中）
+            var material = this.materialList.find(function(m) { 
+              return m.imageKey === imageKey; 
+            });
+            
+            if (material && material.originalWidth && material.originalHeight) {
+              return {
+                width: material.originalWidth,
+                height: material.originalHeight
+              };
+            }
+            
+            return null;
           },
 
           replaceMaterial: function (index) {
@@ -801,9 +998,21 @@ new Vue({
                 // 加载上传的图片
                 var uploadedImg = new Image();
                 uploadedImg.onload = function () {
-                  // 直接使用上传的图片，不进行缩放
-                  // SVGA 播放器会自动处理图片尺寸
-                  var resizedDataUrl = uploadedDataUrl;
+                  var resizedDataUrl;
+                  
+                  // 获取原始图片的目标尺寸
+                  if (material.originalWidth && material.originalHeight) {
+                    // 应用“最短边缩放并居中填充”策略
+                    var scaledCanvas = _this.scaleImageToFill(
+                      uploadedImg, 
+                      material.originalWidth, 
+                      material.originalHeight
+                    );
+                    resizedDataUrl = scaledCanvas.toDataURL('image/png');
+                  } else {
+                    // 如果没有原始尺寸信息，直接使用上传的图片
+                    resizedDataUrl = uploadedDataUrl;
+                  }
                   
                   // 更新预览
                   material.previewUrl = resizedDataUrl;
@@ -814,11 +1023,13 @@ new Vue({
                   newReplacedImages[material.imageKey] = resizedDataUrl;
                   _this.replacedImages = newReplacedImages;
                   
-                  // 更新文件大小信息（使用上传图片的实际尺寸）
-                  var bytes = uploadedImg.width * uploadedImg.height * 4;
+                  // 更新文件大小信息（使用缩放后图片的尺寸）
+                  var finalWidth = material.originalWidth || uploadedImg.width;
+                  var finalHeight = material.originalHeight || uploadedImg.height;
+                  var bytes = finalWidth * finalHeight * 4;
                   material.fileSize = bytes;
                   material.fileSizeText = _this.formatBytes(bytes);
-                  material.sizeText = uploadedImg.width + 'px*' + uploadedImg.height + 'px';
+                  material.sizeText = finalWidth + 'px*' + finalHeight + 'px';
                   
                   // 延迟后应用到 SVGA
                   setTimeout(function() {
@@ -944,7 +1155,7 @@ new Vue({
             this.closeMaterialPanel();
           },
 
-          exportNewSVGA: function () {
+          exportNewSVGA: async function () {
             var _this = this;
             
             if (!this.svga.hasFile || !this.originalVideoItem || !this.svga.file) {
@@ -959,6 +1170,14 @@ new Vue({
 
             var processing = confirm('即将导出替换后的 SVGA 文件。继续吗？');
             if (!processing) return;
+
+            // 动态加载 protobuf 和 pako
+            try {
+              await this.loadProtobufAndPako();
+            } catch (err) {
+              alert('库加载失败，请检查网络');
+              return;
+            }
 
             try {
               // 读取原始 SVGA 文件
@@ -987,30 +1206,41 @@ new Vue({
                       
                       // 替换图片数据
                       var replacedCount = 0;
+                      var imagesToProcess = [];
+                      
+                      // 收集需要替换的图片
                       for (var imageKey in _this.replacedImages) {
                         if (_this.replacedImages.hasOwnProperty(imageKey)) {
                           // 检查 images 字典中是否存在该 key
                           if (movieData.images && movieData.images[imageKey]) {
-                            var base64Data = _this.replacedImages[imageKey];
-                            // 移除 data:image/xxx;base64, 前缀
-                            var base64String = base64Data.split(',')[1] || base64Data;
-                            // 转换为 Uint8Array
-                            var binaryString = atob(base64String);
-                            var bytes = new Uint8Array(binaryString.length);
-                            for (var i = 0; i < binaryString.length; i++) {
-                              bytes[i] = binaryString.charCodeAt(i);
-                            }
-                            // 直接替换 protobuf 消息中的 bytes 字段
-                            movieData.images[imageKey] = bytes;
-                            replacedCount++;
+                            imagesToProcess.push({
+                              imageKey: imageKey,
+                              base64Data: _this.replacedImages[imageKey]
+                            });
                           }
                         }
                       }
                       
-                      if (replacedCount === 0) {
+                      if (imagesToProcess.length === 0) {
                         alert('未找到需要替换的图片');
                         return;
                       }
+                      
+                      // 处理所有图片（已经在replaceMaterial中缩放过，直接使用）
+                      imagesToProcess.forEach(function(item) {
+                        var base64Data = item.base64Data;
+                        // 移除 data:image/xxx;base64, 前缀
+                        var base64String = base64Data.split(',')[1] || base64Data;
+                        // 转换为 Uint8Array
+                        var binaryString = atob(base64String);
+                        var bytes = new Uint8Array(binaryString.length);
+                        for (var i = 0; i < binaryString.length; i++) {
+                          bytes[i] = binaryString.charCodeAt(i);
+                        }
+                        // 直接替换 protobuf 消息中的 bytes 字段
+                        movieData.images[item.imageKey] = bytes;
+                        replacedCount++;
+                      });
                       
                       // 直接编码 protobuf 消息
                       var buffer = MovieEntity.encode(movieData).finish();
@@ -1056,7 +1286,7 @@ new Vue({
 
           /* GIF 导出功能 */
 
-          exportGIF: function () {
+          exportGIF: async function () {
             var _this = this;
             
             if (!this.svgaPlayer || !this.svga.hasFile || !this.originalVideoItem) {
@@ -1069,9 +1299,11 @@ new Vue({
               return;
             }
 
-            // 检查 gif.js 是否加载
-            if (typeof GIF === 'undefined') {
-              alert('GIF 导出库未加载，请刷新页面重试');
+            // 动态加载 GIF.js
+            try {
+              await this.loadGifJs();
+            } catch (err) {
+              alert('GIF导出库加载失败，请检查网络');
               return;
             }
 
@@ -1366,9 +1598,22 @@ new Vue({
             var videoItem = this.originalVideoItem;
             var hasAudio = videoItem.audios && videoItem.audios.length > 0;
             
-            // 如果有音频但未选择静音，提示用户
+            // 如果有音频且未选择静音，提示用户
             if (hasAudio && !this.mp4Config.muted) {
-              var confirmMsg = '检测到SVGA包含音频，但当前版本暂不支持音频转换。\n\n建议您：\n1. 勾选“静音”选项后再转换\n2. 或者直接继续（生成的MP4将没有声音）\n\n是否继续？';
+              var audioExtracted = this.svgaAudioData && Object.keys(this.svgaAudioData).length > 0;
+              var confirmMsg = '';
+              
+              if (audioExtracted) {
+                // 成功提取到音频
+                var audioKeys = Object.keys(this.svgaAudioData);
+                var audioSize = this.svgaAudioData[audioKeys[0]].length;
+                var audioSizeKB = (audioSize / 1024).toFixed(1);
+                confirmMsg = '✅ 检测到SVGA包含音频\n\n音频文件：' + audioKeys[0] + '\n文件大小：' + audioSizeKB + 'KB\n\n将尝试将音频合成到MP4文件中。\n\n是否继续？';
+              } else {
+                // 检测到音频但未能提取
+                confirmMsg = '⚠️ 检测到SVGA包含音频，但未能提取音频数据\n\n可能原因：\n1. 音频文件格式不支持\n2. SVGA文件结构异常\n\n请查看控制台调试信息并反馈给开发者。\n\n建议：\n1. 勾选“静音”后再转换\n2. 或直接继续（生成的MP4将没有声音）\n\n是否继续？';
+              }
+              
               if (!confirm(confirmMsg)) {
                 return;
               }
@@ -1445,6 +1690,33 @@ new Vue({
               this.mp4ConvertProgress = 100;
               this.downloadMP4(mp4Blob);
               
+              // 提示音频状态
+              setTimeout(function() {
+                var hasAudioData = _this.svgaAudioData && Object.keys(_this.svgaAudioData).length > 0;
+                var msg = '';
+                
+                if (muted) {
+                  // 用户选择静音
+                  msg = '✅ 转换完成！\n\n已按您的要求生成静音MP4文件。';
+                } else if (!hasAudioData) {
+                  // 无音频数据
+                  msg = '✅ 转换完成！\n\nSVGA文件不包含音频，已生成静音MP4文件。';
+                } else if (audioWritten) {
+                  // 成功合成音频
+                  msg = '✅ 转换完成！\n\n已成功将SVGA中的音频合成到MP4文件中。\n\n请播放检查音频效果，如有问题请反馈。';
+                } else if (audioError) {
+                  // 音频处理失败
+                  msg = '⚠️ 转换完成，但音频处理失败\n\n错误原因：' + audioError + '\n\n已生成不带声音的MP4文件。';
+                } else {
+                  // 其他情况
+                  msg = '✅ 转换完成！';
+                }
+                
+                if (msg) {
+                  alert(msg);
+                }
+              }, 500);
+              
             } catch (error) {
               if (error.message !== '用户取消转换') {
                 console.error('MP4转换失败:', error);
@@ -1474,25 +1746,46 @@ new Vue({
             this.ffmpegLoading = true;
 
             try {
-              // 检查 FFmpeg 是否可用 (0.11版本暴露的是FFmpeg全局对象)
+              // 动态加载 FFmpeg 库（如果尚未加载）
               if (typeof FFmpeg === 'undefined' || typeof FFmpeg.createFFmpeg === 'undefined') {
-                throw new Error('FFmpeg库未加载，请刷新页面重试');
+                this.mp4ConvertMessage = '正在加载FFmpeg库...';
+                
+                await new Promise(function(resolve, reject) {
+                  var script = document.createElement('script');
+                  script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
+                  script.onload = resolve;
+                  script.onerror = function() {
+                    reject(new Error('FFmpeg库加载失败，请检查网络'));
+                  };
+                  document.head.appendChild(script);
+                });
+                
+                // 等待FFmpeg对象可用
+                var maxWait = 50; // 最多等待5秒
+                while ((typeof FFmpeg === 'undefined' || typeof FFmpeg.createFFmpeg === 'undefined') && maxWait > 0) {
+                  await new Promise(function(r) { setTimeout(r, 100); });
+                  maxWait--;
+                }
+                
+                if (typeof FFmpeg === 'undefined' || typeof FFmpeg.createFFmpeg === 'undefined') {
+                  throw new Error('FFmpeg库加载超时');
+                }
               }
 
-              // 创建ffmpeg实例
+              // 创建ffmpeg实例（配置使用CDN加载核心文件）
               this.ffmpeg = FFmpeg.createFFmpeg({
-                log: true,
+                log: false,
+                corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
                 progress: function(p) {
-                  console.log('[FFmpeg Progress]', p);
+                  // 静默处理进度
                 }
               });
 
               // 加载 ffmpeg core
-              this.mp4ConvertMessage = '正在加载编码器(约25MB)...';
+              this.mp4ConvertMessage = '正在加载编码器（约25MB，首次加载较慢）...';
               await this.ffmpeg.load();
 
               this.ffmpegLoaded = true;
-              console.log('FFmpeg 加载成功');
             } catch (error) {
               console.error('FFmpeg 加载失败:', error);
               throw new Error('加载转换器失败：' + error.message);
@@ -1735,10 +2028,47 @@ new Vue({
               
               this.mp4ConvertMessage = '正在编码视频...';
               this.mp4ConvertProgress = 50;
+              
+              // 检查是否有音频数据
+              var hasAudioData = this.svgaAudioData && Object.keys(this.svgaAudioData).length > 0;
+              var audioWritten = false;
+              var audioError = null;
+              
+              // 仅在有音频数据且未静音时处理音频
+              if (hasAudioData && !muted) {
+                try {
+                  var audioKeys = Object.keys(this.svgaAudioData);
+                  var audioKey = audioKeys[0];
+                  var audioData = this.svgaAudioData[audioKey];
+                  
+                  if (!audioData || audioData.length === 0) {
+                    throw new Error('音频数据为空');
+                  }
+                  
+                  ffmpeg.FS('writeFile', 'audio.mp3', audioData);
+                  audioWritten = true;
+                  
+                } catch (audioErr) {
+                  audioError = audioErr.message || '未知错误';
+                  
+                  var continueMsg = '音频处理失败：' + audioError + '\n\n是否继续转换（生成的MP4将没有声音）？';
+                  if (!confirm(continueMsg)) {
+                    throw new Error('用户取消转换');
+                  }
+                }
+              }
 
               var ffmpegArgs = [
                 '-framerate', String(fps),
-                '-i', 'frame_%04d.png',
+                '-i', 'frame_%04d.png'
+              ];
+              
+              // 如果有音频，添加音频输入
+              if (audioWritten) {
+                ffmpegArgs.push('-i', 'audio.mp3');
+              }
+              
+              ffmpegArgs.push(
                 // 添加黑色底色：在PNG下方叠加黑色层
                 '-vf', 'format=rgba,colorchannelmixer=aa=1,split[bg][fg];[bg]drawbox=c=black@1:replace=1:t=fill[bg];[bg][fg]overlay=format=auto',
                 '-c:v', 'libx264',
@@ -1749,17 +2079,51 @@ new Vue({
                 '-preset', 'medium',
                 '-sws_flags', 'neighbor',  // 使用最近邻插值，避免颜色混合
                 '-movflags', '+faststart'
-              ];
+              );
 
-              // 如果静音，不添加音频轨道
-              if (muted) {
+              // 处理音频轨道
+              if (muted || !audioWritten) {
                 ffmpegArgs.push('-an');
+              } else {
+                ffmpegArgs.push(
+                  '-c:a', 'aac',
+                  '-b:a', '128k',
+                  '-shortest'
+                );
               }
 
               ffmpegArgs.push('output.mp4');
 
-              // 0.11版本使用run方法
-              await ffmpeg.run.apply(ffmpeg, ffmpegArgs);
+              // 执行FFmpeg编码
+              try {
+                await ffmpeg.run.apply(ffmpeg, ffmpegArgs);
+              } catch (ffmpegErr) {
+                // 检查是否是音频相关错误
+                var errorMsg = String(ffmpegErr.message || ffmpegErr);
+                if (audioWritten && (errorMsg.includes('audio') || errorMsg.includes('aac'))) {
+                  var retryMsg = '音频编码失败：' + errorMsg + '\n\n是否尝试不带音频重新编码？';
+                  if (confirm(retryMsg)) {
+                    // 移除音频相关参数，添加-an
+                    var retryArgs = ffmpegArgs.filter(function(arg, idx) {
+                      if (arg === 'audio.mp3') return false;
+                      if (arg === '-i' && ffmpegArgs[idx + 1] === 'audio.mp3') return false;
+                      if (arg === '-c:a' || arg === '-b:a' || arg === '-shortest') return false;
+                      if (ffmpegArgs[idx - 1] === '-c:a' || ffmpegArgs[idx - 1] === '-b:a') return false;
+                      return true;
+                    });
+                    
+                    var outputIdx = retryArgs.indexOf('output.mp4');
+                    retryArgs.splice(outputIdx, 0, '-an');
+                    
+                    await ffmpeg.run.apply(ffmpeg, retryArgs);
+                    audioWritten = false;
+                  } else {
+                    throw ffmpegErr;
+                  }
+                } else {
+                  throw ffmpegErr;
+                }
+              }
 
               this.mp4ConvertProgress = 90;
               this.mp4ConvertMessage = '正在读取输出文件...';
@@ -1778,6 +2142,11 @@ new Vue({
               try {
                 ffmpeg.FS('unlink', 'output.mp4');
               } catch (e) {}
+              if (audioWritten) {
+                try {
+                  ffmpeg.FS('unlink', 'audio.mp3');
+                } catch (e) {}
+              }
 
               return mp4Blob;
 
