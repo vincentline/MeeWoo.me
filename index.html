@@ -5,34 +5,33 @@
     <title>SVGA、带通道MP4、Lottie动画在线预览</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+    <!-- 外部样式表（优先加载） -->
+    <link rel="stylesheet" href="styles.css" />
+    
+    <!-- ===== 关键资源（页面渲染必需） ===== -->
     <!-- Vue 2 -->
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
-    <!-- Vue 备用CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
     <script>
       if (typeof Vue === 'undefined') {
-        document.write('<script src="https://unpkg.com/vue@2.6.14/dist/vue.js"><\/script>');
+        document.write('<script src="https://unpkg.com/vue@2.6.14/dist/vue.min.js"><\/script>');
       }
     </script>
-    <!-- Marked.js for Markdown parsing -->
-    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
-    <!-- SVGA / Lottie -->
+    <!-- SVGA播放器（核心功能） -->
     <script src="https://cdn.jsdelivr.net/npm/svgaplayerweb@2.3.1/build/svga.min.js"></script>
-    <!-- svga-web用于帧提取（支持强制canvas2d渲染） -->
-    <script src="https://cdn.jsdelivr.net/npm/svga-web@2.4.2/svga-web.min.js"></script>
-    <!-- Howler.js for SVGA audio support -->
-    <script src="https://cdn.jsdelivr.net/npm/howler@2.0.15/dist/howler.core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.7.6/lottie.min.js"></script>
-    <!-- GIF.js for GIF export -->
-    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
-    <!-- protobuf.js for SVGA export -->
-    <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.2.5/dist/protobuf.min.js"></script>
-    <!-- pako for zlib compression -->
-    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
-    <!-- FFmpeg.wasm for MP4 encoding (0.11版本不需要SharedArrayBuffer) -->
-    <script src="ffmpeg/ffmpeg-0.11.min.js"></script>
-
-    <!-- 外部样式表 -->
-    <link rel="stylesheet" href="styles.css" />
+    
+    <!-- ===== 非关键资源（延迟加载） ===== -->
+    <!-- Lottie播放器 - 延迟加载 -->
+    <script defer src="https://cdn.jsdelivr.net/npm/lottie-web@5.7.6/build/player/lottie.min.js"></script>
+    <!-- Howler音频 - 延迟加载 -->
+    <script defer src="https://cdn.jsdelivr.net/npm/howler@2.0.15/dist/howler.core.min.js"></script>
+    
+    <!-- ===== 按需加载的资源（在app.js中动态加载） ===== -->
+    <!-- marked.min.js - 帮助文档时加载 -->
+    <!-- gif.js - 导出GIF时加载 -->
+    <!-- protobuf.min.js - 导出SVGA时加载 -->
+    <!-- pako.min.js - 导出SVGA时加载 -->
+    <!-- svga-web.min.js - 转MP4帧提取时加载 -->
+    <!-- ffmpeg.wasm - 转MP4时加载 -->
   </head>
 
   <body>
@@ -341,7 +340,7 @@
             <div class="stats-divider"></div>
             <div class="stats-content">
               <div class="stats-title">图像资源：{{ materialList.length }} 个    内存占用：{{ svga.fileInfo.memoryText }}</div>
-              <div class="stats-help">你可以替换素材图片，然后导出新的SVGA。<br>选择替换的图片尺寸尽量和原图一致，否则会出现错位问题。</div>
+              <div class="stats-help">你可以替换素材图片，然后导出新的SVGA。<br>替换后的图片将自动缩放填充至原图尺寸，保持比例居中显示。</div>
             </div>
           </div>
           
