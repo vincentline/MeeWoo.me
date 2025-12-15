@@ -175,7 +175,7 @@ new Vue({
             }
             
             // 重用现有的加载逻辑
-            this.loadSVGA(file);
+            this.loadSvga(file);
             
             // 清空输入，允许重复选择同一文件
             event.target.value = '';
@@ -479,7 +479,6 @@ new Vue({
                   if (processedCount === imageCount && totalBytes > 0) {
                     var mb = totalBytes / 1048576;
                     _this.svga.fileInfo.memoryText = mb.toFixed(2) + 'M';
-                    console.log('总内存占用:', mb.toFixed(4) + 'M', '总字节数:', totalBytes);
                   } else if (needLoadCount > 0) {
                     _this.svga.fileInfo.memoryText = '计算中...';
                   } else if (totalBytes === 0) {
@@ -709,10 +708,7 @@ new Vue({
             var _this = this;
             // 使用 Clipboard API 复制文本
             if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(name).then(function() {
-                // 可以添加一个简单的提示
-                console.log('已复制: ' + name);
-              }).catch(function(err) {
+              navigator.clipboard.writeText(name).catch(function(err) {
                 console.error('复制失败:', err);
               });
             } else {
@@ -725,7 +721,6 @@ new Vue({
               textarea.select();
               try {
                 document.execCommand('copy');
-                console.log('已复制: ' + name);
               } catch (err) {
                 console.error('复制失败:', err);
               }
@@ -810,9 +805,6 @@ new Vue({
                   // 直接使用上传的图片，不进行缩放
                   // SVGA 播放器会自动处理图片尺寸
                   var resizedDataUrl = uploadedDataUrl;
-                  
-                  console.log('使用原始上传图片，尺寸:', uploadedImg.width, 'x', uploadedImg.height);
-                  console.log('Base64 数据长度:', resizedDataUrl.length);
                   
                   // 更新预览
                   material.previewUrl = resizedDataUrl;
@@ -927,8 +919,6 @@ new Vue({
               
               img.onerror = function() {
                 console.error('图片加载失败:', imageKey);
-                console.error('图片 URL 长度:', imageUrl ? imageUrl.length : 0);
-                console.error('图片 URL 前100个字符:', imageUrl ? imageUrl.substring(0, 100) : '');
                 loadedCount++;
                 
                 // 即使有错误也继续
