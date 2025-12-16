@@ -1,11 +1,14 @@
-# Start a simple HTTP server for static files
+# Start a HTTP server with SharedArrayBuffer support for FFmpeg.wasm
 
-Write-Output "Start static server..."
-Write-Output "URL: http://localhost:8080/index.html"
+Write-Output "Starting server with SharedArrayBuffer support..."
+Write-Output "URL: http://localhost:8081/index.html"
+Write-Output ""
+Write-Output "Note: This server enables Cross-Origin-Opener-Policy headers"
+Write-Output "      required by FFmpeg.wasm and other WASM libraries."
 Write-Output ""
 Write-Output "Press Ctrl+C to stop"
 Write-Output ""
 
-# Use Python simple HTTP server
+# Use custom Python server with COOP/COEP headers
 cd docs
-python -m http.server 8080
+python run-server.py
