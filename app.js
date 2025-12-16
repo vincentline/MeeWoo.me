@@ -2508,6 +2508,21 @@ function initApp() {
 
           // 加载 ffmpeg.wasm (0.11版本)
           loadFFmpeg: async function () {
+            // 检查 SharedArrayBuffer 支持
+            // FFmpeg.wasm 需要 SharedArrayBuffer，这要求页面必须处于"跨域隔离"(Cross-Origin Isolation)状态
+            // 即必须有 Cross-Origin-Opener-Policy: same-origin 和 Cross-Origin-Embedder-Policy: require-corp 响应头
+            if (typeof SharedArrayBuffer === 'undefined') {
+              var errorMsg = '您的浏览器环境不支持 SharedArrayBuffer，无法加载 FFmpeg。\n\n' +
+                '这通常是因为网站未开启"跨域隔离"(Cross-Origin Isolation)。\n' +
+                '如果是线上部署，请检查：\n' +
+                '1. 必须使用 HTTPS 访问（localhost 除外）\n' +
+                '2. Service Worker (coi-serviceworker.js) 必须正确加载并运行\n' +
+                '3. 请打开控制台(Console)查看是否有 Service Worker 相关报错';
+              
+              alert(errorMsg); // 弹窗提醒用户，比控制台更明显
+              throw new Error(errorMsg);
+            }
+
             if (this.ffmpegLoaded) return;
             if (this.ffmpegLoading) {
               // 等待加载完成
