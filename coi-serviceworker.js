@@ -1,4 +1,5 @@
-/*! coi-serviceworker v0.1.7 - Guido Zuidhof and contributors, licensed under MIT */
+/*! coi-serviceworker v0.1.8-fixed - Guido Zuidhof and contributors, licensed under MIT */
+/*! Modified to prevent infinite reload loop */
 let coi = {
   shouldRegister: () => true,
   shouldDeregister: () => false,
