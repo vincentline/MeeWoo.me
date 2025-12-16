@@ -1,6 +1,6 @@
 /*! coi-serviceworker v0.1.7 - Guido Zuidhof and contributors, licensed under MIT */
 let coi = {
-  shouldRegister: () => true,
+  shouldRegister: () => !window.crossOriginIsolated,
   shouldDeregister: () => false,
   coepCredentialless: () => true,
   coepDegrade: () => true,
@@ -168,8 +168,22 @@ if (typeof window === 'undefined') {
       navigator.serviceWorker.register(coisrc).then(
         (registration) => {
           if (!coi.quiet) console.log('[COI] Service worker registered', registration.scope);
-          sessionStorage.setItem('coiReloadedBySelf', 'registered');
-          coi.doReload();
+
+          if (reloadedBySelf) {
+            coi.doReload();
+          } else {
+            registration.addEventListener("updatefound", () => {
+              if (!coi.quiet) console.log('[COI] Service worker update found, reloading...');
+              sessionStorage.setItem('coiReloadedBySelf', 'registered');
+              coi.doReload();
+            });
+            // 如果已经在注册中但未激活，可能需要reload
+            if (registration.active && !navigator.serviceWorker.controller) {
+               if (!coi.quiet) console.log('[COI] Service worker active but not controlling, reloading...');
+               sessionStorage.setItem('coiReloadedBySelf', 'registered');
+               coi.doReload();
+            }
+          }
         },
         (err) => {
           if (!coi.quiet) console.error('[COI] Service worker registration failed', err);
