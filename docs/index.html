@@ -136,7 +136,7 @@
             </div>
 
             <!-- 中间主控制区 -->
-            <div class="footer-main" :class="{'footer-main-empty': isEmpty}">
+            <div class="footer-main">
             <!-- 空状态 -->
             <template v-if="isEmpty">
               <div class="footer-empty-tip">
@@ -273,86 +273,63 @@
                 </div>
               </div>
 
-              <!-- 第三行：操作按钮 -->
+              <!-- 第三行：模块切换 + 操作按钮 -->
               <div class="footer-row-tabs">
-                <!-- SVGA 模式 -->
-                <template v-if="currentModule === 'svga'">
-                  <div class="footer-actions-left">
-                    <button class="btn-primary" @click="triggerReuploadSVGA" v-if="svga.hasFile">
-                      重传SVGA
-                    </button>
-                  </div>
-                  <div class="footer-actions">
-                    <button 
-                      class="btn-primary"
-                      :class="{'tooltip': !svga.hasFile}"
-                      :disabled="!svga.hasFile || isExportingGIF"
-                      @click="exportGIF"
-                    >
-                      <span v-if="!svga.hasFile" class="tooltip-text">请先拖入 SVGA 文件</span>
-                      {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '导出GIF' }}
-                    </button>
-                    <button class="btn-primary" @click="openMaterialPanel" v-if="svga.hasFile">
-                      素材图替换
-                    </button>
-                    <button class="btn-primary tooltip" v-else>
-                      <span class="tooltip-text">请先拖入 SVGA 文件</span>
-                      素材图替换
-                    </button>
-                    <button 
-                      class="btn-secondary"
-                      :class="{'tooltip': !svga.hasFile}"
-                      :disabled="!svga.hasFile"
-                      @click="openMP4Panel"
-                    >
-                      <span v-if="!svga.hasFile" class="tooltip-text">请先拖入 SVGA 文件</span>
-                      转MP4
-                    </button>
-                  </div>
-                </template>
-                
-                <!-- YYEVA 模式 -->
-                <template v-else-if="currentModule === 'yyeva'">
-                  <div class="footer-actions-left">
-                    <button class="btn-primary" @click="triggerChangePreviewFile">
-                      更换预览文件
-                    </button>
-                    <button class="btn-primary tooltip">
-                      <span class="tooltip-text">正在开发中...</span>
-                      测试key
-                    </button>
-                  </div>
-                  <div class="footer-actions">
-                    <button 
-                      class="btn-primary"
-                      :class="{'tooltip': !yyeva.hasFile}"
-                      :disabled="!yyeva.hasFile || isExportingGIF"
-                      @click="exportYyevaGIF"
-                    >
-                      <span v-if="!yyeva.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
-                      {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '导出GIF' }}
-                    </button>
-                    <button class="btn-primary tooltip">
-                      <span class="tooltip-text">正在开发中...</span>
-                      转SVGA
-                    </button>
-                  </div>
-                </template>
-                
-                <!-- Lottie 模式 -->
-                <template v-else>
-                  <div class="footer-actions-left">
-                    <button class="btn-primary" @click="triggerChangePreviewFile">
-                      更换预览文件
-                    </button>
-                  </div>
-                  <div class="footer-actions">
-                    <button class="btn-primary tooltip">
-                      <span class="tooltip-text">正在开发中...</span>
-                      导出GIF
-                    </button>
-                  </div>
-                </template>
+                <div class="footer-tabs">
+                  <button
+                    class="tab-btn"
+                    :class="{'is-active': currentModule === 'svga'}"
+                    @click="switchModule('svga')"
+                  >
+                    SVGA
+                  </button>
+                  <button
+                    class="tab-btn tooltip"
+                    :class="{'is-active': currentModule === 'yyeva'}"
+                    @click="switchModule('yyeva')"
+                  >
+                    <span class="tooltip-text">还在开发中...</span>
+                    YYEVA-MP4
+                  </button>
+                  <button
+                    class="tab-btn tooltip"
+                    :class="{'is-active': currentModule === 'lottie'}"
+                    @click="switchModule('lottie')"
+                  >
+                    <span class="tooltip-text">还在开发中...</span>
+                    Lottie
+                  </button>
+                </div>
+                <div class="footer-actions">
+                  <button class="btn-primary" @click="triggerReuploadSVGA" v-if="currentModule === 'svga' && svga.hasFile">
+                    重传SVGA
+                  </button>
+                  <button 
+                    class="btn-primary"
+                    :class="{'tooltip': !svga.hasFile}"
+                    :disabled="!svga.hasFile || isExportingGIF"
+                    @click="exportGIF"
+                  >
+                    <span v-if="!svga.hasFile" class="tooltip-text">请先拖入 SVGA 文件</span>
+                    {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '导出GIF' }}
+                  </button>
+                  <button class="btn-primary" @click="openMaterialPanel" v-if="currentModule === 'svga' && svga.hasFile">
+                    素材图替换
+                  </button>
+                  <button class="btn-primary tooltip" v-else>
+                    <span class="tooltip-text">请先拖入 SVGA 文件</span>
+                    素材图替换
+                  </button>
+                  <button 
+                    class="btn-secondary"
+                    :class="{'tooltip': !svga.hasFile}"
+                    :disabled="!svga.hasFile"
+                    @click="openMP4Panel"
+                  >
+                    <span v-if="!svga.hasFile" class="tooltip-text">请先拖入 SVGA 文件</span>
+                    转MP4
+                  </button>
+                </div>
               </div>
             </template>
             </div>
@@ -627,15 +604,6 @@
         accept=".svga" 
         style="display: none;"
         @change="handleReuploadSVGA"
-      />
-      
-      <!-- 隐藏的文件输入框，用于更换预览文件（支持SVGA和MP4） -->
-      <input 
-        type="file" 
-        ref="changePreviewFileInput"
-        accept=".svga,.mp4" 
-        style="display: none;"
-        @change="handleChangePreviewFile"
       />
     </div>
 
