@@ -793,50 +793,62 @@ body.dark-mode .info-item-value {
 .play-btn {
   width: 28px;
   height: 28px;
-  border-radius: 16px;
+  border-radius: 4px;
   border: none;
-  background-color: #5b5b5b;
+  background-color: transparent;
+  background-image: url('assets/img/play_Default.png');
+  background-size: 20px 20px;
+  background-position: center;
+  background-repeat: no-repeat;
   cursor: pointer;
   outline: none;
-  position: relative;
   transition: all 0.2s;
 }
 
 .play-btn:hover {
-  border: 1px solid #333333;
+  background-image: url('assets/img/play_hover.png');
 }
 
 .play-btn:active {
-  background-color: #333333;
+  background-image: url('assets/img/play_press.png');
 }
 
-.play-btn::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-40%, -50%);
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 6px 0 6px 10px;
-  border-color: transparent transparent transparent #ffffff;
+/* 播放中状态（暂停按钮） */
+.play-btn.is-playing {
+  background-image: url('assets/img/stop_Default.png');
 }
 
-.play-btn.is-playing::before {
-  border: none;
-  width: 8px;
-  height: 12px;
-  background: linear-gradient(
-    to right,
-    #ffffff 0,
-    #ffffff 3px,
-    transparent 3px,
-    transparent 5px,
-    #ffffff 5px,
-    #ffffff 8px
-  );
-  transform: translate(-50%, -50%);
+.play-btn.is-playing:hover {
+  background-image: url('assets/img/stop_hover.png');
+}
+
+.play-btn.is-playing:active {
+  background-image: url('assets/img/stop_press.png');
+}
+
+/* 暗黑模式 */
+body.dark-mode .play-btn {
+  background-image: url('assets/img/play_Default_dark.png');
+}
+
+body.dark-mode .play-btn:hover {
+  background-image: url('assets/img/play_hover_dark.png');
+}
+
+body.dark-mode .play-btn:active {
+  background-image: url('assets/img/play_press_dark.png');
+}
+
+body.dark-mode .play-btn.is-playing {
+  background-image: url('assets/img/stop_Default_dark.png');
+}
+
+body.dark-mode .play-btn.is-playing:hover {
+  background-image: url('assets/img/stop_hover_dark.png');
+}
+
+body.dark-mode .play-btn.is-playing:active {
+  background-image: url('assets/img/stop_press_dark.png');
 }
 
 /* 静音按钮 */
