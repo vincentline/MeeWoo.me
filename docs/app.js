@@ -665,53 +665,85 @@ function initApp() {
 
           loadSvga: function (file) {
             var _this = this;
-            this.currentModule = 'svga';
             
-            // 清理YYEVA资源（如果正在播放MP4）
-            this.cleanupYyeva();
-
-            // 重置视图状态（垂直位置会在加载完成后动态计算）
-            this.viewerScale = 1;
-            this.viewerOffsetX = 0;
-            this.viewerOffsetY = 0;
-
-            this.svga.hasFile = true;
-            this.svga.file = file;
-            this.svga.fileInfo.name = file.name;
-            this.svga.fileInfo.size = file.size;
-            this.svga.fileInfo.sizeText = this.formatBytes(file.size);
-
-            this.progress = 0;
-            this.currentFrame = 0;
-            this.totalFrames = 0;
-            this.isPlaying = false;
-
-            var reader = new FileReader();
-            reader.onload = function (e) {
+            // 预验证SVGA文件
+            var tempReader = new FileReader();
+            tempReader.onload = function (e) {
               var arrayBuffer = e.target.result;
-              
-              // 同步解析SVGA二进制数据以提取音频
-              _this.parseSvgaAudioData(arrayBuffer);
-              
               var blob = new Blob([arrayBuffer], {
                 type: 'application/octet-stream'
               });
-              if (_this.svgaObjectUrl) {
-                URL.revokeObjectURL(_this.svgaObjectUrl);
-              }
-              _this.svgaObjectUrl = URL.createObjectURL(blob);
-
-              _this.svgaParser.load(
-                _this.svgaObjectUrl,
+              var tempObjectUrl = URL.createObjectURL(blob);
+              var tempParser = new SVGA.Parser();
+              
+              // 尝试解析SVGA
+              tempParser.load(
+                tempObjectUrl,
                 function (videoItem) {
-                  _this.onSvgaLoaded(videoItem);
+                  // 解析成功，清理临时资源
+                  URL.revokeObjectURL(tempObjectUrl);
+                  
+                  // 现在才开始清理旧内容并加载新内容
+                  _this.currentModule = 'svga';
+                  
+                  // SVGA模式不关闭任何弹窗，保持当前状态
+                  
+                  // 清理YYEVA资源（如果正在播放MP4）
+                  _this.cleanupYyeva();
+
+                  // 重置视图状态（垂直位置会在加载完成后动态计算）
+                  _this.viewerScale = 1;
+                  _this.viewerOffsetX = 0;
+                  _this.viewerOffsetY = 0;
+
+                  _this.svga.hasFile = true;
+                  _this.svga.file = file;
+                  _this.svga.fileInfo.name = file.name;
+                  _this.svga.fileInfo.size = file.size;
+                  _this.svga.fileInfo.sizeText = _this.formatBytes(file.size);
+
+                  _this.progress = 0;
+                  _this.currentFrame = 0;
+                  _this.totalFrames = 0;
+                  _this.isPlaying = false;
+
+                  // 重新读取文件并加载
+                  var reader = new FileReader();
+                  reader.onload = function (e) {
+                    var arrayBuffer = e.target.result;
+                    
+                    // 同步解析SVGA二进制数据以提取音频
+                    _this.parseSvgaAudioData(arrayBuffer);
+                    
+                    var blob = new Blob([arrayBuffer], {
+                      type: 'application/octet-stream'
+                    });
+                    if (_this.svgaObjectUrl) {
+                      URL.revokeObjectURL(_this.svgaObjectUrl);
+                    }
+                    _this.svgaObjectUrl = URL.createObjectURL(blob);
+
+                    _this.svgaParser.load(
+                      _this.svgaObjectUrl,
+                      function (videoItem) {
+                        _this.onSvgaLoaded(videoItem);
+                      },
+                      function () {
+                        alert('SVGA 解析失败');
+                      }
+                    );
+                  };
+                  reader.readAsArrayBuffer(file);
                 },
                 function () {
+                  // 验证失败，清理临时资源
+                  URL.revokeObjectURL(tempObjectUrl);
                   alert('SVGA 解析失败');
+                  // 不清理当前播放内容
                 }
               );
             };
-            reader.readAsArrayBuffer(file);
+            tempReader.readAsArrayBuffer(file);
           },
 
           onSvgaLoaded: function (videoItem) {
@@ -986,6 +1018,10 @@ function initApp() {
             // 清理YYEVA资源（如果正在播放MP4）
             this.cleanupYyeva();
             
+            // 切换到Lottie模式，关闭SVGA特有的弹窗
+            this.showMaterialPanel = false;
+            this.showMP4Panel = false;
+            
             // 重置视图状态
             this.viewerScale = 1;
             this.viewerOffsetX = 0;
@@ -1012,96 +1048,121 @@ function initApp() {
           loadYyevaPlaceholder: function (file) {
             var _this = this;
             
-            // 释放之前的资源
-            this.cleanupYyeva();
+            // 创建临时视频元素用于预验证
+            var tempObjectUrl = URL.createObjectURL(file);
+            var tempVideo = document.createElement('video');
+            tempVideo.src = tempObjectUrl;
+            tempVideo.crossOrigin = 'anonymous';
+            tempVideo.muted = true; // 预验证时静音
             
-            // 重置视图状态
-            this.viewerScale = 1;
-            this.viewerOffsetX = 0;
-            this.viewerOffsetY = 0;
+            // 预验证文件格式
+            tempVideo.onloadedmetadata = function() {
+              var videoWidth = tempVideo.videoWidth;
+              var videoHeight = tempVideo.videoHeight;
+              
+              // 检查是否是左右并排布局
+              if (videoWidth < videoHeight * 0.8) {
+                // 不支持的格式，清理临时资源
+                URL.revokeObjectURL(tempObjectUrl);
+                alert('不支持的视频格式，请上传左右并排布局的YYEVA-MP4文件');
+                return; // 直接返回，不影响当前播放内容
+              }
+              
+              // 验证通过，清理临时资源
+              URL.revokeObjectURL(tempObjectUrl);
+              
+              // 现在才清理旧内容，开始加载新内容
+              _this.cleanupYyeva();
+              
+              // 切换到YYEVA模式，关闭SVGA特有的弹窗
+              _this.showMaterialPanel = false;
+              _this.showMP4Panel = false;
+              
+              // 重置视图状态
+              _this.viewerScale = 1;
+              _this.viewerOffsetX = 0;
+              _this.viewerOffsetY = 0;
 
-            this.yyeva.hasFile = true;
-            this.yyeva.file = file;
-            this.yyeva.fileInfo.name = file.name;
-            this.yyeva.fileInfo.size = file.size;
-            this.yyeva.fileInfo.sizeText = this.formatBytes(file.size);
-            this.currentModule = 'yyeva';
-            
-            // 创建objectUrl
-            this.yyevaObjectUrl = URL.createObjectURL(file);
-            
-            // 创建视频元素
-            var video = document.createElement('video');
-            video.src = this.yyevaObjectUrl;
-            video.crossOrigin = 'anonymous';
-            video.muted = false; // 允许播放声音
-            video.loop = true;
-            video.playsInline = true;
-            this.yyevaVideo = video;
-            
-            // 加载视频元数据
-            video.onloadedmetadata = function() {
-              var videoWidth = video.videoWidth;
-              var videoHeight = video.videoHeight;
+              _this.yyeva.hasFile = true;
+              _this.yyeva.file = file;
+              _this.yyeva.fileInfo.name = file.name;
+              _this.yyeva.fileInfo.size = file.size;
+              _this.yyeva.fileInfo.sizeText = _this.formatBytes(file.size);
+              _this.currentModule = 'yyeva';
               
-              _this.yyeva.originalWidth = videoWidth;
-              _this.yyeva.originalHeight = videoHeight;
+              // 创建正式objectUrl
+              _this.yyevaObjectUrl = URL.createObjectURL(file);
               
-              // 自动识别 alpha 位置：左右并排的视频宽度是高度的约两倍
-              // 支持横屏（1500×750）和竖屏（1500×1700）的左右并排格式
-              if (videoWidth >= videoHeight * 0.8) {
-                // 左右并排布局（宽度至少是高度的0.8個）
+              // 创建视频元素
+              var video = document.createElement('video');
+              video.src = _this.yyevaObjectUrl;
+              video.crossOrigin = 'anonymous';
+              video.muted = false; // 允许播放声音
+              video.loop = true;
+              video.playsInline = true;
+              _this.yyevaVideo = video;
+              
+              // 加载视频元数据
+              video.onloadedmetadata = function() {
+                _this.yyeva.originalWidth = videoWidth;
+                _this.yyeva.originalHeight = videoHeight;
+                
+                // 左右并排布局
                 _this.yyeva.displayWidth = Math.floor(videoWidth / 2);
                 _this.yyeva.displayHeight = videoHeight;
                 // 检测 alpha 在左还是在右（通过分析第一帧）
                 _this.detectAlphaPosition(video);
-              } else {
-                // 上下并排或普通视频（暂不支持）
-                alert('不支持的视频格式，请上传左右并排布局的YYEVA-MP4文件');
-                _this.cleanupYyeva();
-                return;
-              }
-              
-              // 设置显示信息
-              _this.yyeva.fileInfo.sizeWH = _this.yyeva.displayWidth + 'x' + _this.yyeva.displayHeight;
-              
-              // 计算帧率和时长
-              var duration = video.duration;
-              _this.yyeva.fileInfo.duration = duration.toFixed(2) + 's';
-              // 假设30fps（MP4没有直接获取帧率的方法）
-              _this.yyeva.fileInfo.fps = '30 FPS';
-              _this.totalFrames = Math.round(duration * 30);
-              
-              // 初始化Canvas
-              _this.initYyevaCanvas();
-              
-              // 启动过渡：先显示宽度变化，400ms后显示内容并开始播放
-              _this.footerTransitioning = true;
-              _this.footerContentVisible = false;
-              
-              setTimeout(function() {
-                // 过渡完成，显示内容
-                _this.footerTransitioning = false;
-                _this.footerContentVisible = true;
                 
-                // 再等待50ms让内容渲染，然后开始播放
+                // 设置显示信息
+                _this.yyeva.fileInfo.sizeWH = _this.yyeva.displayWidth + 'x' + _this.yyeva.displayHeight;
+                
+                // 计算帧率和时长
+                var duration = video.duration;
+                _this.yyeva.fileInfo.duration = duration.toFixed(2) + 's';
+                // 假设30fps（MP4没有直接获取帧率的方法）
+                _this.yyeva.fileInfo.fps = '30 FPS';
+                _this.totalFrames = Math.round(duration * 30);
+                
+                // 初始化Canvas
+                _this.initYyevaCanvas();
+                
+                // 启动过渡：先显示宽度变化，400ms后显示内容并开始播放
+                _this.footerTransitioning = true;
+                _this.footerContentVisible = false;
+                
                 setTimeout(function() {
-                  video.play().then(function() {
-                    _this.isPlaying = true;
-                    _this.startYyevaRenderLoop();
-                  }).catch(function(err) {
-                    console.error('YYEVA播放失败:', err);
-                  });
-                }, 50);
-              }, 400);
+                  // 过渡完成，显示内容
+                  _this.footerTransitioning = false;
+                  _this.footerContentVisible = true;
+                  
+                  // 再等待50ms让内容渲染，然后开始播放
+                  setTimeout(function() {
+                    video.play().then(function() {
+                      _this.isPlaying = true;
+                      _this.startYyevaRenderLoop();
+                    }).catch(function(err) {
+                      console.error('YYEVA播放失败:', err);
+                    });
+                  }, 50);
+                }, 400);
+              };
+              
+              video.onerror = function() {
+                alert('视频加载失败，请检查文件格式');
+                _this.cleanupYyeva();
+              };
+              
+              video.load();
             };
             
-            video.onerror = function() {
+            tempVideo.onerror = function() {
+              // 验证失败，清理临时资源
+              URL.revokeObjectURL(tempObjectUrl);
               alert('视频加载失败，请检查文件格式');
-              _this.cleanupYyeva();
+              // 不清理当前播放内容
             };
             
-            video.load();
+            tempVideo.load();
           },
           
           // 检测 alpha 通道位置
