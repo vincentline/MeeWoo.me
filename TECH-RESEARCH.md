@@ -1841,20 +1841,330 @@ document.addEventListener('keydown', function(e) {
 
 ---
 
+#### 4. 空格键控制播放/暂停 ✅
+**实现时间**：2024-12-17
+
+**功能描述**：
+- 所有模式（SVGA/YYEVA/Lottie）均支持空格键控制
+- 智能判断：输入框获得焦点时不响应
+- 防止默认行为：阻止空格滚动页面
+
+**核心技术**：
+- 事件监听：`document.addEventListener('keydown')`
+- 焦点检测：`document.activeElement`
+- 条件判断：`!isInputFocused && !isEmpty`
+
+**关键代码位置**：
+```javascript
+// docs/app.js - mounted
+document.addEventListener('keydown', function(e) {
+  if (e.keyCode === 32 || e.key === ' ') {
+    var activeElement = document.activeElement;
+    var isInputFocused = activeElement && (
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.isContentEditable
+    );
+    
+    if (!isInputFocused && !_this.isEmpty) {
+      e.preventDefault();
+      _this.togglePlay();
+    }
+  }
+});
+```
+
+**技术亮点**：
+- 兼容性处理：同时支持keyCode和key属性
+- 不干扰输入：检测焦点在输入框时不触发
+- 复用现有逻辑：直接调用`togglePlay()`方法
+
+---
+
+#### 5. 拖拽异常格式不变更页面状态 ✅
+**实现时间**：2024-12-17
+
+**问题描述**：
+- 拖入不支持的文件格式后，虽然会弹出提示，但当前播放的动画会被清空
+- 原因：在验证文件格式之前就清理了旧内容
+
+**解决方案**：
+- **YYEVA模式**：创建临时视频元素预验证格式，验证通过才清理旧内容
+- **SVGA模式**：使用临时Parser预解析，解析成功才清理旧内容
+
+**关键代码位置**：
+```javascript
+// docs/app.js - loadYyevaPlaceholder
+// 创建临时视频元素用于预验证
+var tempObjectUrl = URL.createObjectURL(file);
+var tempVideo = document.createElement('video');
+tempVideo.src = tempObjectUrl;
+
+tempVideo.onloadedmetadata = function() {
+  var videoWidth = tempVideo.videoWidth;
+  var videoHeight = tempVideo.videoHeight;
+  
+  // 检查是否是左右并排布局
+  if (videoWidth < videoHeight * 0.8) {
+    URL.revokeObjectURL(tempObjectUrl);
+    alert('不支持的视频格式');
+    return; // 直接返回，不影响当前播放内容
+  }
+  
+  // 验证通过，现在才清理旧内容
+  _this.cleanupSvga();
+  _this.cleanupYyeva();
+  // ...
+};
+
+// docs/app.js - loadSvga
+var tempReader = new FileReader();
+tempReader.onload = function (e) {
+  var tempParser = new SVGA.Parser();
+  
+  tempParser.load(tempObjectUrl,
+    function success(videoItem) {
+      // 验证通过，现在才清理旧内容
+      _this.cleanupYyeva();
+      // ...
+    },
+    function error() {
+      alert('SVGA 解析失败');
+      // 不清理当前播放内容
+    }
+  );
+};
+```
+
+**技术亮点**：
+- 预验证机制：先验证文件有效性，再清理旧内容
+- 错误隔离：验证失败时不影响当前播放
+- 资源管理：临时资源及时清理
+
+---
+
+#### 6. 模式切换时关闭非当前模式弹窗 ✅
+**实现时间**：2024-12-17
+
+**功能描述**：
+- 从 SVGA 切换到 YYEVA/Lottie：关闭素材替换和转MP4弹窗
+- 同模式切换（SVGA→SVGA）：保持弹窗状态
+
+**核心技术**：
+- 模式切换检测：在`loadYyevaPlaceholder`和`loadLottiePlaceholder`中检测
+- 弹窗状态管理：`showMaterialPanel`和`showMP4Panel`
+
+**关键代码位置**：
+```javascript
+// docs/app.js - loadYyevaPlaceholder / loadLottiePlaceholder
+// 切换到YYEVA/Lottie模式，关闭SVGA特有的弹窗
+_this.showMaterialPanel = false;
+_this.showMP4Panel = false;
+```
+
+**技术亮点**：
+- 智能判断：同模式不关闭弹窗，跨模式才关闭
+- 用户体验优化：避免无效弹窗干扰
+
+---
+
+#### 7. 模式切换时自动取消转格式任务 ✅
+**实现时间**：2024-12-17
+
+**功能描述**：
+- 检测正在进行的GIF导出或MP4转换
+- 自动取消任务并显示Toast提示
+- Toast位置：顶部标题栏下方24px，3秒自动隐藏
+
+**核心技术**：
+- 任务状态检测：`isExportingGIF`和`isConvertingMP4`
+- Toast组件：Vue过渡动画 + 自动隐藏定时器
+
+**关键代码位置**：
+```javascript
+// docs/app.js - data
+toastVisible: false,
+toastMessage: '',
+toastTimer: null,
+
+// 显示Toast
+showToast: function(message) {
+  if (this.toastTimer) {
+    clearTimeout(this.toastTimer);
+  }
+  this.toastMessage = message;
+  this.toastVisible = true;
+  this.toastTimer = setTimeout(function() {
+    _this.toastVisible = false;
+  }, 3000);
+},
+
+// 取消正在进行的任务
+cancelOngoingTasks: function() {
+  var cancelledTasks = [];
+  
+  if (this.isExportingGIF) {
+    this.isExportingGIF = false;
+    this.gifExportProgress = 0;
+    cancelledTasks.push('GIF导出');
+  }
+  
+  if (this.isConvertingMP4) {
+    this.isConvertingMP4 = false;
+    this.mp4ConvertProgress = 0;
+    this.mp4ConvertCancelled = true;
+    cancelledTasks.push('转换MP4');
+  }
+  
+  if (cancelledTasks.length > 0) {
+    this.showToast('已取消：' + cancelledTasks.join('、'));
+  }
+}
+
+// 模式切换时调用
+_this.cancelOngoingTasks();
+```
+
+**HTML结构**：
+```html
+<!-- docs/index.html -->
+<transition name="toast-fade">
+  <div v-if="toastVisible" class="toast-container">
+    <div class="toast-message">{{ toastMessage }}</div>
+  </div>
+</transition>
+```
+
+**CSS样式**：
+```css
+/* docs/styles.css */
+.toast-container {
+  position: fixed;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+}
+
+.toast-message {
+  background: #ffffff;
+  border: 1px solid #e3e3e3;
+  border-radius: 8px;
+  padding: 12px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px);
+}
+```
+
+**技术亮点**：
+- 一次性取消所有任务，集中显示提示
+- 支持暗黑模式自动适配
+- 平滑的淡入淡出动画
+
+---
+
+#### 8. 模式切换时进度条错乱修复 ✅
+**实现时间**：2024-12-17
+
+**问题描述**：
+- 从 SVGA 切换到 YYEVA 后，进度条出现错乱
+- 按暂停后进度条还在走
+- 原因：SVGA播放器的事件回调没有被清理
+
+**解决方案**：
+- 创建`cleanupSvga`方法，彻底清理SVGA播放器
+- 在切换到YYEVA/Lottie时调用`cleanupSvga()`
+
+**关键代码位置**：
+```javascript
+// docs/app.js
+cleanupSvga: function() {
+  // 停止并清理SVGA播放器
+  if (this.svgaPlayer) {
+    try {
+      this.svgaPlayer.stopAnimation();
+      this.svgaPlayer.clear();
+    } catch (e) {
+      console.warn('清理SVGA播放器失败:', e);
+    }
+    this.svgaPlayer = null;
+  }
+  
+  // 清理SVGA音频
+  if (this.svgaAudioPlayer) {
+    try {
+      this.svgaAudioPlayer.stop();
+      this.svgaAudioPlayer.unload();
+    } catch (e) {
+      console.warn('清理SVGA音频失败:', e);
+    }
+    this.svgaAudioPlayer = null;
+  }
+  
+  // 清理objectUrl
+  if (this.svgaObjectUrl) {
+    URL.revokeObjectURL(this.svgaObjectUrl);
+    this.svgaObjectUrl = null;
+  }
+  
+  // 清空容器内容
+  var container = this.$refs.svgaContainer;
+  if (container) {
+    container.innerHTML = '';
+  }
+  
+  // 重置SVGA状态
+  this.svga = {
+    hasFile: false,
+    file: null,
+    fileInfo: { name: '', size: 0, sizeText: '', fps: null, sizeWH: '' }
+  };
+  
+  // 重置播放状态
+  this.isPlaying = false;
+  this.progress = 0;
+  this.currentFrame = 0;
+  this.totalFrames = 0;
+},
+
+// 在模式切换时调用
+_this.cleanupSvga(); // 清理SVGA资源
+_this.cleanupYyeva(); // 清理YYEVA资源
+```
+
+**技术亮点**：
+- 彻底清理播放器实例和事件回调
+- 重置所有相关状态变量
+- DOM和内存双重清理，防止内存泄漏
+
+---
+
 ### 代码质量优化
 
 #### 变量命名规范化
 - `handleNewAction` → `downloadMaterial`：更语义化的方法名
 - 删除重复的`_this2`声明，统一使用`_this`
+- 修复错别字：“如枟”被误写为“如枟”
 
 #### 代码结构优化
 - 播放器实例管理：加载前彻底清理旧实例
 - 过渡动画逻辑：所有模式统一处理
 - 事件监听管理：在mounted钩子中集中注册
+- 代码复用：`clearAll`方法调用`cleanupSvga()`，移除重复代码
 
 ---
 
-*最后更新：2024-12-17*
+*最后更日：2024-12-17*
 *阶段2完成日期：2024-12-13*
 *SVGA转MP4音频合成功能完成日期：2024-12-15*
 *阶段3体验优化功能完成日期：2024-12-17*
