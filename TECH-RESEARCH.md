@@ -2168,3 +2168,215 @@ _this.cleanupYyeva(); // 清理YYEVA资源
 *阶段2完成日期：2024-12-13*
 *SVGA转MP4音频合成功能完成日期：2024-12-15*
 *阶段3体验优化功能完成日期：2024-12-17*
+
+---
+
+## 10. SVGA转MP4性能优化与锯齿修复 🚀
+
+### 10.1 功能概述
+**实现时间**：2024-12-18
+
+**核心优化**：
+- 合并双通道合成与JPEG转换，减少一次遍历
+- 修复彩色通道锯齿问题
+- 修复FFmpeg编码卡死问题
+- 移除音频检测确认弹窗
+- 拖入同类文件时刷新弹窗
+
+### 10.2 技术实现
+
+#### 10.2.1 流程优化：合并双通道合成与JPEG转换
+
+**优化前**（三个阶段）：
+```
+extractFrames → composeDualChannelFrames(返回Canvas数组) → encodeToMP4(Canvas转JPEG再写入)
+```
+
+**优化后**（两个阶段）：
+```
+extractFrames → composeDualChannelFrames(直接返回JPEG Uint8Array) → encodeToMP4(直接写入)
+```
+
+**收益**：
+- 减少1次帧遍历
+- 减少中间Canvas对象创建
+- 内存占用更低（不再存储Canvas对象）
+
+**关键代码位置**：
+```javascript
+// docs/app.js - composeDualChannelFrames方法
+composeDualChannelFrames: async function (frames) {
+  var jpegFrames = [];  // 直接返回JPEG的Uint8Array
+  
+  // 复用Canvas避免重复创建
+  var dualCanvas = document.createElement('canvas');
+  var blackBgCanvas = document.createElement('canvas');
+  
+  for (var i = 0; i < frameCount; i++) {
+    // 1. 合成双通道
+    // 2. 直接合成黑底并转换为JPEG
+    var blob = await blackBgCanvas.toBlob('image/jpeg', jpegQuality);
+    jpegFrames.push(new Uint8Array(await blob.arrayBuffer()));
+  }
+  
+  return jpegFrames;
+}
+```
+
+---
+
+#### 10.2.2 锯齿修复：彩色通道与黑底混合
+
+**问题原因**：
+- 彩色通道保留了原始alpha（半透明）
+- 转JPEG时直接复制RGB，没有与黑底混合
+- 导致边缘颜色突变，产生锯齿
+
+**修复方案**：
+```javascript
+// 修复前（错误）
+for (var k = 0; k < dualData.length; k += 4) {
+  blackBgData[k + 0] = dualData[k + 0];  // 直接复制，忽略alpha
+  blackBgData[k + 1] = dualData[k + 1];
+  blackBgData[k + 2] = dualData[k + 2];
+  blackBgData[k + 3] = 255;
+}
+
+// 修复后（正确）
+for (var k = 0; k < dualData.length; k += 4) {
+  var pixelAlpha = dualData[k + 3];
+  
+  if (pixelAlpha === 255) {
+    // 不透明像素：直接复制
+    blackBgData[k + 0] = dualData[k + 0];
+    blackBgData[k + 1] = dualData[k + 1];
+    blackBgData[k + 2] = dualData[k + 2];
+  } else if (pixelAlpha === 0) {
+    // 完全透明：黑色
+    blackBgData[k + 0] = 0;
+    blackBgData[k + 1] = 0;
+    blackBgData[k + 2] = 0;
+  } else {
+    // 半透明像素：RGB与黑底混合
+    blackBgData[k + 0] = Math.round(dualData[k + 0] * pixelAlpha / 255);
+    blackBgData[k + 1] = Math.round(dualData[k + 1] * pixelAlpha / 255);
+    blackBgData[k + 2] = Math.round(dualData[k + 2] * pixelAlpha / 255);
+  }
+  blackBgData[k + 3] = 255;
+}
+```
+
+**混合公式**：
+```
+最终颜色 = RGB × alpha / 255 + 黑底色(0) × (255 - alpha) / 255
+         = RGB × alpha / 255
+```
+
+---
+
+#### 10.2.3 FFmpeg编码卡死修复
+
+**问题原因**：
+1. `veryfast` preset在ffmpeg.wasm中计算太密集，导致线程阻塞
+2. `-thread_queue_size`参数位置错误（放在了输出参数中）
+
+**修复方案**：
+```javascript
+// 修复前（错误）
+var ffmpegArgs = [
+  '-framerate', '30',
+  '-i', 'frame_%04d.jpg'
+];
+ffmpegArgs.push(
+  '-thread_queue_size', '512',  // ✗ 放在输出参数中
+  '-preset', 'veryfast',         // ✗ 计算太密集
+  // ...
+);
+
+// 修复后（正确）
+var ffmpegArgs = [
+  '-thread_queue_size', '512',  // ✓ 放在-i之前
+  '-framerate', '30',
+  '-i', 'frame_%04d.jpg'
+];
+ffmpegArgs.push(
+  '-preset', 'fast',             // ✓ 降低CPU负载
+  '-tune', 'animation',
+  // ...
+);
+```
+
+**关键调整**：
+| 参数 | 优化前 | 修复后 |
+|------|--------|--------|
+| preset | veryfast（卡死） | **fast**（稳定） |
+| thread_queue_size位置 | 输出参数中 | **-i之前** |
+
+---
+
+#### 10.2.4 拖入同类文件时刷新弹窗
+
+**功能描述**：
+播放动画时拖入同类文件，如果当前有打开的侧边弹窗，先关闭再重新打开，确保弹窗内容刷新。
+
+**关键代码位置**：
+```javascript
+// docs/app.js - loadSvga
+// 记录当前弹窗状态
+var wasMP4PanelOpen = _this.showMP4Panel;
+var wasMaterialPanelOpen = _this.showMaterialPanel;
+
+// 先关闭弹窗
+if (wasMP4PanelOpen) _this.showMP4Panel = false;
+if (wasMaterialPanelOpen) _this.showMaterialPanel = false;
+
+// 加载完成后恢复弹窗（延迟100ms确保初始化完成）
+setTimeout(function() {
+  if (wasMP4PanelOpen) _this.showMP4Panel = true;
+  if (wasMaterialPanelOpen) _this.showMaterialPanel = true;
+}, 100);
+```
+
+---
+
+#### 10.2.5 移除音频检测确认弹窗
+
+**移除原因**：
+- MP4音频合成功能已稳定，无需每次确认
+- 减少用户操作步骤
+
+**移除的弹窗**：
+- “✅ 检测到SVGA包含音频...是否继续？”
+- “⚠️ 检测到SVGA包含音频，但未能提取...是否继续？”
+
+**保留的功能**：
+- 音频自动合成（无需确认）
+- 音频处理失败时的提示弹窗（在编码阶段）
+- 静音选项
+
+---
+
+### 10.3 性能对比
+
+| 指标 | 优化前 | 优化后 | 提升 |
+|------|--------|--------|------|
+| 帧处理遍历次数 | 2次 | 1次 | 50% |
+| 中间对象创建 | Canvas数组 | JPEG Uint8Array | 更低内存 |
+| 锯齿问题 | 有 | 无 | ✓ |
+| FFmpeg卡死 | 有 | 无 | ✓ |
+| 用户确认弹窗 | 2次 | 0次 | 更流畅 |
+
+---
+
+### 10.4 代码位置
+
+**docs/app.js**：
+- `composeDualChannelFrames()` - 合并后的双通道合成+JPEG转换
+- `encodeToMP4()` - 简化后的MP4编码（直接写入JPEG）
+- `startMP4Conversion()` - 移除音频确认弹窗
+- `loadSvga()` - 添加弹窗刷新逻辑
+
+---
+
+*最后更新：2024-12-18*
+*SVGA转MP4性能优化完成日期：2024-12-18*
