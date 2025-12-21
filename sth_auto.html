@@ -1551,7 +1551,7 @@
               ctx.shadowBlur = 0;
             }
             
-            var strokeW = customStyle && customStyle.strokeWidth !== undefined ? customStyle.strokeWidth : baseStyle.strokeWidth;
+            var strokeW = customStyle && customStyle.strokeWidth !== undefined ? customStyle.strokeWidth : (customStyle ? 0 : baseStyle.strokeWidth);
             if (strokeW > 0) {
               ctx.strokeStyle = (customStyle && customStyle.strokeColor) || baseStyle.strokeColor;
               ctx.lineWidth = strokeW * scale;
