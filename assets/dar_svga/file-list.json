@@ -1,15 +1,25 @@
-﻿[
+[
   {
     "name": "D02",
     "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/D02.svga",
     "textStyle": {
       "name01": {
         "fontWeight": "700",
+        "textShadow": "0px 2px 1.5px #694D41",
         "gradient": {
-          "colors": ["#FFFFFF", "#FFFFFF", "#FDEA91", "#FDEA91"],
-          "positions": [0, 0.1971, 0.7981, 1]
-        },
-        "textShadow": "0px 2px 1.5px #694D41"
+          "colors": [
+            "#FFFFFF",
+            "#FFFFFF",
+            "#FDEA91",
+            "#FDEA91"
+          ],
+          "positions": [
+            0.0,
+            0.1971,
+            0.7981,
+            1.0
+          ]
+        }
       }
     }
   },
@@ -19,11 +29,21 @@
     "textStyle": {
       "name01": {
         "fontWeight": "700",
+        "textShadow": "0px 2px 1.5px #694D41",
         "gradient": {
-          "colors": ["#FFFFFF", "#FFFFFF", "#FDEA91", "#FDEA91"],
-          "positions": [0, 0.1971, 0.7981, 1]
-        },
-        "textShadow": "0px 2px 1.5px #694D41"
+          "colors": [
+            "#FFFFFF",
+            "#FFFFFF",
+            "#FDEA91",
+            "#FDEA91"
+          ],
+          "positions": [
+            0.0,
+            0.1971,
+            0.7981,
+            1.0
+          ]
+        }
       }
     }
   },
@@ -45,6 +65,7 @@
     "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/D08.svga",
     "textStyle": {
       "name01": {
+        "fontWeight": "700",
         "fillColor": "#FFF6B2",
         "textShadow": "0px 2.5px 1px #A12424"
       }
@@ -88,13 +109,31 @@
     "textStyle": {
       "name01": {
         "fontWeight": "700",
-        "gradient": {
-          "colors": ["#FFFAC5", "#FEFBD8", "#FFFFFF", "#FFE45B", "#FFC351", "#FFEE82", "#FFFFFF", "#FFFFFF"],
-          "positions": [0, 0.2019, 0.5, 0.58, 0.62, 0.72, 0.95, 1]
-        },
         "strokeColor": "#633434",
         "strokeWidth": 1,
-        "textShadow": "0px 0px 3px #FFFFFF"
+        "textShadow": "0px 0px 3px #FFFFFF",
+        "gradient": {
+          "colors": [
+            "#FFFAC5",
+            "#FEFBD8",
+            "#FFFFFF",
+            "#FFE45B",
+            "#FFC351",
+            "#FFEE82",
+            "#FFFFFF",
+            "#FFFFFF"
+          ],
+          "positions": [
+            0.0,
+            0.2019,
+            0.5,
+            0.58,
+            0.62,
+            0.72,
+            0.95,
+            1.0
+          ]
+        }
       },
       "Username01": {
         "fontWeight": "700",
@@ -111,11 +150,21 @@
     "textStyle": {
       "name01": {
         "fontWeight": "700",
+        "textShadow": "0px 2px 1.5px #694D41",
         "gradient": {
-          "colors": ["#FFFFFF", "#FFFFFF", "#FDEA91", "#FDEA91"],
-          "positions": [0, 0.1971, 0.7981, 1]
-        },
-        "textShadow": "0px 2px 1.5px #694D41"
+          "colors": [
+            "#FFFFFF",
+            "#FFFFFF",
+            "#FDEA91",
+            "#FDEA91"
+          ],
+          "positions": [
+            0.0,
+            0.1971,
+            0.7981,
+            1.0
+          ]
+        }
       }
     }
   },
@@ -125,11 +174,29 @@
     "textStyle": {
       "name01": {
         "fontWeight": "700",
+        "textShadow": "1px 2px 1px #373737",
         "gradient": {
-          "colors": ["#FFFAC5", "#FEFBD8", "#FFFFFF", "#FFE45B", "#FFC351", "#FFEE82", "#FFFFFF", "#FFFFFF"],
-          "positions": [0, 0.2019, 0.5, 0.58, 0.62, 0.72, 0.95, 1]
-        },
-        "textShadow": "1px 2px 1px #373737"
+          "colors": [
+            "#FFFAC5",
+            "#FEFBD8",
+            "#FFFFFF",
+            "#FFE45B",
+            "#FFC351",
+            "#FFEE82",
+            "#FFFFFF",
+            "#FFFFFF"
+          ],
+          "positions": [
+            0.0,
+            0.2019,
+            0.5,
+            0.58,
+            0.62,
+            0.72,
+            0.95,
+            1.0
+          ]
+        }
       }
     }
   },
@@ -139,19 +206,35 @@
     "textStyle": {
       "name01": {
         "fontWeight": "700",
+        "textShadow": "0px 2px 6px rgba(0, 0, 0, 0.7)",
         "gradient": {
-          "colors": ["#CDA0FF", "#EDAFFF", "#FFFFFF"],
-          "positions": [0, 0.5, 1]
-        },
-        "textShadow": "0px 2px 6px rgba(0, 0, 0, 0.7)"
+          "colors": [
+            "#CDA0FF",
+            "#EDAFFF",
+            "#FFFFFF"
+          ],
+          "positions": [
+            0.0,
+            0.5,
+            1.0
+          ]
+        }
       },
       "Username01": {
         "fontWeight": "700",
+        "textShadow": "0px 2px 6px rgba(0, 0, 0, 0.7)",
         "gradient": {
-          "colors": ["#A61F32", "#F68A30", "#FFE664"],
-          "positions": [0.1587, 0.5, 0.8462]
-        },
-        "textShadow": "0px 2px 6px rgba(0, 0, 0, 0.7)"
+          "colors": [
+            "#A61F32",
+            "#F68A30",
+            "#FFE664"
+          ],
+          "positions": [
+            0.1587,
+            0.5,
+            0.8462
+          ]
+        }
       }
     }
   },
@@ -162,8 +245,26 @@
       "name01": {
         "fontWeight": "700",
         "gradient": {
-          "colors": ["#F9EB50", "#FDFA8A", "#FBFFCD", "#FFE45B", "#F38F00", "#F9BC2F", "#FFDF50", "#FFE985"],
-          "positions": [0, 0.2019, 0.5, 0.58, 0.62, 0.72, 0.95, 1]
+          "colors": [
+            "#F9EB50",
+            "#FDFA8A",
+            "#FBFFCD",
+            "#FFE45B",
+            "#F38F00",
+            "#F9BC2F",
+            "#FFDF50",
+            "#FFE985"
+          ],
+          "positions": [
+            0.0,
+            0.2019,
+            0.5,
+            0.58,
+            0.62,
+            0.72,
+            0.95,
+            1.0
+          ]
         },
         "multiShadow": [
           "0px 1px 0px #BB3000",
@@ -174,8 +275,26 @@
       "Username01": {
         "fontWeight": "700",
         "gradient": {
-          "colors": ["#FFFAC5", "#FEFBD8", "#FFFFFF", "#FFF16A", "#FDE84B", "#FFF3A2", "#FFFFFF", "#FFFFFF"],
-          "positions": [0, 0.2019, 0.56, 0.58, 0.6, 0.72, 0.95, 1]
+          "colors": [
+            "#FFFAC5",
+            "#FEFBD8",
+            "#FFFFFF",
+            "#FFF16A",
+            "#FDE84B",
+            "#FFF3A2",
+            "#FFFFFF",
+            "#FFFFFF"
+          ],
+          "positions": [
+            0.0,
+            0.2019,
+            0.56,
+            0.58,
+            0.6,
+            0.72,
+            0.95,
+            1.0
+          ]
         },
         "multiShadow": [
           "0px 1px 0px #EF9A4B",
@@ -191,12 +310,28 @@
     "textStyle": {
       "name01": {
         "fontWeight": "700",
-        "gradient": {
-          "colors": ["#FFEABD", "#FEFBD8", "#FFFFFF", "#FFF16A", "#FFB87B", "#FFE096", "#FFFFFF"],
-          "positions": [0, 0.2019, 0.56, 0.58, 0.6, 0.7837, 1]
-        },
         "strokeColor": "#FFF3B9",
         "strokeWidth": 1,
+        "gradient": {
+          "colors": [
+            "#FFEABD",
+            "#FEFBD8",
+            "#FFFFFF",
+            "#FFF16A",
+            "#FFB87B",
+            "#FFE096",
+            "#FFFFFF"
+          ],
+          "positions": [
+            0.0,
+            0.2019,
+            0.56,
+            0.58,
+            0.6,
+            0.7837,
+            1.0
+          ]
+        },
         "multiShadow": [
           "0px 1px 0px #EF9A4B",
           "0px 2px 6px rgba(0, 0, 0, 0.7)"
@@ -210,11 +345,19 @@
     "textStyle": {
       "name01": {
         "fontWeight": "700",
+        "textShadow": "0px 2px 6px rgba(0, 0, 0, 0.7)",
         "gradient": {
-          "colors": ["#A0C8FA", "#2D25CB", "#5456F3"],
-          "positions": [0.1154, 0.5481, 1]
-        },
-        "textShadow": "0px 2px 6px rgba(0, 0, 0, 0.7)"
+          "colors": [
+            "#A0C8FA",
+            "#2D25CB",
+            "#5456F3"
+          ],
+          "positions": [
+            0.1154,
+            0.5481,
+            1.0
+          ]
+        }
       }
     }
   },
@@ -224,13 +367,90 @@
     "textStyle": {
       "name01": {
         "fontWeight": "700",
+        "textShadow": "0px 2px 1.5px #694D41",
         "gradient": {
-          "colors": ["#FFFFFF", "#FFFFFF", "#FDEA91", "#FDEA91"],
-          "positions": [0, 0.1971, 0.7981, 1]
-        },
-        "textShadow": "0px 2px 1.5px #694D41"
+          "colors": [
+            "#FFFFFF",
+            "#FFFFFF",
+            "#FDEA91",
+            "#FDEA91"
+          ],
+          "positions": [
+            0.0,
+            0.1971,
+            0.7981,
+            1.0
+          ]
+        }
       }
     }
   },
-  {"name": "H11", "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/H11.svga"}
+  {
+    "name": "H11",
+    "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/H11.svga",
+    "textStyle": {
+      "name01": {
+        "fontWeight": "700"
+      }
+    }
+  },
+  {
+    "name": "D62",
+    "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/D62.svga",
+    "textStyle": {
+      "name01": {
+        "fontWeight": "700",
+        "textShadow": "1px 3px 1px #000000",
+        "gradient": {
+          "colors": [
+            "#FFF189",
+            "#FFC919",
+            "#FFA411"
+          ],
+          "positions": [
+            0.0,
+            0.5,
+            1.0
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "Dbaodao",
+    "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/Dbaodao.svga",
+    "textStyle": {
+      "name01": {
+        "fontWeight": "700",
+        "fillColor": "#FFDE45",
+        "textShadow": "0px 2.5px 2px #330703"
+      }
+    }
+  },
+  {
+    "name": "Dheijin",
+    "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/Dheijin.svga",
+    "textStyle": {
+      "name01": {
+        "fontWeight": "700",
+        "fillColor": "#FFFFFF",
+        "strokeColor": "#D3A386",
+        "strokeWidth": 3
+      }
+    }
+  },
+  {
+    "name": "Dzijin",
+    "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/Dzijin.svga",
+    "textStyle": {
+      "name01": {
+        "fontWeight": "700",
+        "fillColor": "#FFDE45",
+        "multiShadow": [
+          "2px -2px 1px #FFFFFF",
+          "-1px 2px 1px #A97008"
+        ]
+      }
+    }
+  }
 ]
