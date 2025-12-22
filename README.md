@@ -6,7 +6,7 @@
 
 ## 在线地址
 
-- 页面入口：<https://svga.duohuo.net>
+- 页面入口：<https://svga.saysth.design/>
 
 （打开即用，无需安装或下载依赖。）
 
