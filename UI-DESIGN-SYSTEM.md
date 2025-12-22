@@ -1,6 +1,8 @@
 # UI 设计系统规范
 
 > 本文档基于项目现有代码梳理而成，定义了统一的设计令牌（Design Tokens）和组件规范，确保各页面视觉风格一致。
+> 
+> **文件路径**：`docs/assets/css/styles.css`
 
 ---
 
@@ -10,59 +12,71 @@
 
 #### 主色调
 ```css
---primary-blue: #409eff;      /* 主要操作按钮 */
---primary-gray: #5b5b5b;      /* 次要按钮 */
---primary-red: #ff4444;       /* 危险操作（清空、删除） */
+--primary-blue: #409eff;      /* 主要操作、链接、进度条 */
+--primary-gray: #5b5b5b;      /* 次要按钮、强调文字 */
+--primary-red: #ff4444;       /* 危险操作（清空、删除、取消转换） */
+--primary-red-hover: #FF8888; /* 危险操作hover */
+--primary-red-active: #FF5252;/* 危险操作active */
 ```
 
 #### 文字颜色
 ```css
 /* 浅色模式 */
---text-primary: #333333;      /* 主要文字 */
---text-secondary: #818181;    /* 次要文字 */
---text-tertiary: #999999;     /* 辅助文字 */
---text-disabled: #cccccc;     /* 禁用状态 */
+--text-primary: #333333;      /* 主要文字、标题 */
+--text-secondary: #818181;    /* 次要文字、标签 */
+--text-tertiary: #999999;     /* 辅助文字、占位符 */
+--text-muted: #AAAAAA;        /* 帮助说明文字 */
+--text-disabled: #D3D3D3;     /* 禁用状态 */
+--text-title: #2c3e50;        /* 导航标题 */
 
 /* 暗黑模式 */
 --text-primary-dark: #e0e0e0;
---text-secondary-dark: #a0a0a0;
+--text-secondary-dark: #999999;
 --text-tertiary-dark: #808080;
+--text-muted-dark: #666666;
+--text-disabled-dark: #666666;
 ```
 
 #### 背景颜色
 ```css
 /* 浅色模式 */
---bg-base: #fcfcfc;           /* 页面基础背景 */
---bg-elevated: #ffffff;       /* 卡片/弹窗背景 */
---bg-hover: #f5f5f5;          /* Hover状态背景 */
---bg-active: #eeeeee;         /* Active状态背景 */
+--bg-base: #fcfcfc;           /* 页面基础背景（带点阵图案） */
+--bg-elevated: #ffffff;       /* 卡片/弹窗/导航栏背景 */
+--bg-input: #F3F3F3;          /* 输入框背景 */
+--bg-hover: #F5F5F7;          /* Hover状态背景 */
+--bg-active: #E8E8ED;         /* Active状态背景 */
 
 /* 暗黑模式 */
---bg-base-dark: #1a1a1a;
---bg-elevated-dark: #2a2a2a;
---bg-hover-dark: #333333;
---bg-active-dark: #404040;
+--bg-base-dark: #1a1a1a;      /* 页面基础背景（带点阵图案） */
+--bg-elevated-dark: #2a2a2a;  /* 卡片/弹窗背景 */
+--bg-input-dark: #3a3a3a;     /* 输入框背景 */
+--bg-hover-dark: #333333;     /* Hover状态背景 */
+--bg-active-dark: #404040;    /* Active状态背景 */
 ```
 
 #### 边框颜色
 ```css
 /* 浅色模式 */
---border-light: #F3F3F3;      /* 浅边框 */
---border-base: #e3e3e3;       /* 基础边框 */
---border-medium: #d0d0d0;     /* 中等边框 */
---border-strong: #b0b0b0;     /* 强调边框 */
+--border-light: #F3F3F3;      /* 浅边框（输入框、分隔线） */
+--border-base: #e3e3e3;       /* 基础边框（卡片、按钮） */
+--border-medium: #CCCCCC;     /* 中等边框（hover状态） */
+--border-strong: #5b5b5b;     /* 强调边框（active状态） */
 
 /* 暗黑模式 */
+--border-light-dark: #404040;
 --border-base-dark: #404040;
---border-strong-dark: #505050;
+--border-medium-dark: #505050;
+--border-strong-dark: #666666;
 ```
 
 #### 功能性颜色
 ```css
 --success: #67c23a;           /* 成功状态 */
 --warning: #e6a23c;           /* 警告状态 */
---danger: #f56c6c;            /* 危险状态 */
+--danger: #ff4444;            /* 危险状态（清空/取消） */
 --info: #909399;              /* 信息提示 */
+--link: #409eff;              /* 链接颜色 */
+--link-dark: #66b1ff;         /* 暗黑模式链接 */
 ```
 
 ### 1.2 字体系统
@@ -70,18 +84,18 @@
 #### 字体家族
 ```css
 --font-family-base: 'Segoe UI', 'Noto Sans SC', -apple-system, 
-                    BlinkMacSystemFont, 'Helvetica Neue', 
-                    'PingFang SC', 'Microsoft YaHei', sans-serif;
+                    BlinkMacSystemFont, sans-serif;
 ```
 
 #### 字号规范
 ```css
---font-size-xs: 11px;         /* 辅助说明文字 */
---font-size-sm: 12px;         /* 次要文字 */
---font-size-base: 13px;       /* 基础文字 */
---font-size-md: 14px;         /* 中等文字 */
---font-size-lg: 16px;         /* 大标题 */
---font-size-xl: 20px;         /* 特大标题 */
+--font-size-xs: 10px;         /* 阶段/进度说明 */
+--font-size-sm: 12px;         /* 标题标签、帮助说明 */
+--font-size-base: 13px;       /* 按钮文字、搜索框 */
+--font-size-md: 14px;         /* 信息文字、输入框 */
+--font-size-lg: 16px;         /* 配置标签、选择器文字 */
+--font-size-xl: 20px;         /* 空状态提示 */
+--font-size-xxl: 120px;       /* 404错误码 */
 ```
 
 #### 字重规范
@@ -124,32 +138,59 @@
 ### 1.4 圆角系统
 
 ```css
---radius-sm: 8px;             /* 小组件：按钮、输入框、标签 */
---radius-md: 12px;            /* 中等组件：卡片、面板 */
---radius-lg: 16px;            /* 大组件：弹窗、大按钮 */
---radius-full: 9999px;        /* 圆形：头像、徽章 */
+--radius-none: 0;             /* 无圆角：进度条 */
+--radius-sm: 8px;             /* 小组件：按钮、输入框、标签、Tooltip */
+--radius-md: 12px;            /* 中等组件：选择器、输入包裹器 */
+--radius-lg: 16px;            /* 大组件：弹窗、底部控制栏、大按钮 */
+--radius-full: 9999px;        /* 圆形：头像、颜色按钮、开关 */
 ```
 
 ### 1.5 阴影系统
 
 ```css
---shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);          /* 轻微浮起 */
---shadow-base: 0 4px 12px rgba(0, 0, 0, 0.12);       /* 基础阴影 */
---shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);         /* 强调阴影 */
---shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.2);         /* 大型弹窗 */
+/* 浅色模式 */
+--shadow-tooltip: 0px 6px 10px rgba(51, 51, 51, 0.2);      /* Tooltip阴影 */
+--shadow-popup: 0px 2px 8px rgba(51, 51, 51, 0.2);         /* Help弹窗阴影 */
+--shadow-panel: 0px 10px 32px rgba(51, 51, 51, 0.2);       /* 底部控制栏/侧边弹窗 */
+--shadow-toast: 0px 4px 12px rgba(0, 0, 0, 0.15);          /* Toast提示 */
+--shadow-dropdown: 0px 2px 8px rgba(0, 0, 0, 0.15);        /* 下拉菜单 */
 
 /* 暗黑模式 */
---shadow-base-dark: 0 4px 12px rgba(0, 0, 0, 0.5);
---shadow-lg-dark: 0 8px 24px rgba(0, 0, 0, 0.6);
+--shadow-tooltip-dark: 0px 6px 10px rgba(0, 0, 0, 0.5);
+--shadow-popup-dark: 0px 2px 8px rgba(0, 0, 0, 0.5);
+--shadow-panel-dark: 0px 10px 32px rgba(0, 0, 0, 0.5);
+--shadow-toast-dark: 0px 4px 12px rgba(0, 0, 0, 0.5);
+--shadow-dropdown-dark: 0px 4px 12px rgba(0, 0, 0, 0.5);
 ```
 
 ### 1.6 过渡动画
 
 ```css
---transition-fast: 0.15s ease;       /* 快速响应：按钮hover */
---transition-base: 0.2s ease;        /* 基础过渡：表单元素 */
---transition-slow: 0.3s ease;        /* 缓慢过渡：弹窗展开 */
---transition-bezier: cubic-bezier(0.4, 0, 0.2, 1);  /* 自定义缓动 */
+--transition-fast: 0.15s ease;       /* 快速响应：按钮点击 */
+--transition-base: 0.2s ease;        /* 基础过渡：hover状态 */
+--transition-slow: 0.3s ease;        /* 缓慢过渡：弹窗展开、主题切换、背景色 */
+--transition-panel: 0.3s cubic-bezier(0.4, 0, 0.2, 1);  /* 侧边弹窗滑动 */
+```
+
+### 1.7 动画关键帧
+
+```css
+/* 骨架屏加载旋转 */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 库加载指示器滑入 */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
 ```
 
 ---
@@ -226,57 +267,68 @@ body.dark-mode .btn-primary:hover {
 }
 ```
 
-#### Tab 按钮
+#### Tab 按钮（模块切换）
 ```html
-<button class="tab-btn active">选项一</button>
-<button class="tab-btn">选项二</button>
+<button class="tab-btn is-active">SVGA</button>
+<button class="tab-btn">双通道MP4</button>
+<button class="tab-btn">Lottie</button>
 ```
 
 ```css
 .tab-btn {
   height: 28px;
-  padding: 0 12px;
-  background: transparent;
-  border: 1px solid transparent;
+  padding: 0 8px;
+  background: #ffffff;
+  border: 1px solid #f3f3f3;
   border-radius: 8px;
-  color: #818181;
-  font-size: 13px;
+  color: #333333;
+  font-size: 16px;
+  font-weight: 400;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .tab-btn:hover {
-  background: #f5f5f5;
-  color: #333333;
+  background: #fcfcfc;
+  border-color: #e3e3e3;
 }
 
-.tab-btn.active {
-  background: #ffffff;
-  border-color: #e3e3e3;
-  color: #333333;
+.tab-btn.is-active {
+  background: #5b5b5b;
+  border-color: #5b5b5b;
+  color: #ffffff;
+}
+
+.tab-btn.is-active:hover {
+  border-color: #333333;
+}
+
+.tab-btn.is-active:active {
+  background: #333333;
 }
 
 /* 暗黑模式 */
 body.dark-mode .tab-btn {
-  color: #a0a0a0;
+  background: #1a1a1a;
+  border-color: #404040;
+  color: #e0e0e0;
 }
 
 body.dark-mode .tab-btn:hover {
   background: #333333;
-  color: #e0e0e0;
+  border-color: #555555;
 }
 
-body.dark-mode .tab-btn.active {
-  background: #2a2a2a;
-  border-color: #404040;
-  color: #e0e0e0;
+body.dark-mode .tab-btn.is-active {
+  background: #666666;
+  border-color: #666666;
 }
 ```
 
-#### 清空画布按钮（特殊样式）
+#### 清空画布按钮（带危险警告样式）
 ```html
 <button class="clear-canvas-btn" title="清空画布">
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
     <path d="M17 7L7 17" stroke="#333333" stroke-width="1.5" stroke-linecap="round"/>
     <path d="M7 7L17 17" stroke="#333333" stroke-width="1.5" stroke-linecap="round"/>
   </svg>
@@ -287,33 +339,27 @@ body.dark-mode .tab-btn.active {
 .clear-canvas-btn {
   width: 32px;
   height: 28px;
-  background: #ffffff;
-  border: 1px solid #F3F3F3;
+  background: #E6E6E6;
+  border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color 0.15s;
 }
 
 .clear-canvas-btn:hover {
-  background: #fff5f5;
-  border-color: #ffe3e3;
-}
-
-.clear-canvas-btn:hover svg path {
-  stroke: #ff4444;
+  background: #FF8888;  /* 危险警告色 */
 }
 
 .clear-canvas-btn:active {
-  background: #ffebeb;
+  background: #FF5252;
 }
 
 /* 暗黑模式 */
 body.dark-mode .clear-canvas-btn {
-  background: #2a2a2a;
-  border-color: #404040;
+  background: #404040;
 }
 
 body.dark-mode .clear-canvas-btn svg path {
@@ -321,269 +367,462 @@ body.dark-mode .clear-canvas-btn svg path {
 }
 
 body.dark-mode .clear-canvas-btn:hover {
-  background: #3a2020;
-  border-color: #503030;
+  background: #FF8888;
 }
 
 body.dark-mode .clear-canvas-btn:hover svg path {
-  stroke: #ff6666;
+  stroke: #333333;
 }
 ```
 
 #### 图标按钮（Icon Button）
 ```html
-<button class="icon-btn" title="帮助">
-  <svg>...</svg>
+<button class="zoom-btn" title="放大">
+  <img class="zoom-icon" src="assets/img/zoom_in.png">
 </button>
 ```
 
 ```css
-.icon-btn {
+.zoom-btn {
   width: 28px;
   height: 28px;
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  position: relative;
 }
 
-.icon-btn:hover {
-  background: #f5f5f5;
+.zoom-btn .zoom-icon {
+  width: 28px;
+  height: 28px;
+  transition: opacity 0.2s;
 }
 
-.icon-btn:active {
-  background: #eeeeee;
+.zoom-btn:hover .zoom-icon {
+  opacity: 0;
+}
+
+.zoom-btn::after {
+  content: '';
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  background-image: var(--zoom-hover-icon);
+  background-size: contain;
+}
+
+.zoom-btn:hover::after {
+  opacity: 1;
+}
+```
+
+#### 播放/暂停按钮
+```html
+<button class="play-btn"></button>
+<button class="play-btn is-playing"></button>
+```
+
+```css
+.play-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: none;
+  background-color: transparent;
+  background-image: url('assets/img/play_Default.png');
+  background-size: 20px 20px;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.play-btn:hover {
+  background-image: url('assets/img/play_hover.png');
+}
+
+.play-btn:active {
+  background-image: url('assets/img/play_press.png');
+}
+
+/* 播放中状态（暂停按钮） */
+.play-btn.is-playing {
+  background-image: url('assets/img/stop_Default.png');
+}
+
+.play-btn.is-playing:hover {
+  background-image: url('assets/img/stop_hover.png');
+}
+
+.play-btn.is-playing:active {
+  background-image: url('assets/img/stop_press.png');
 }
 
 /* 暗黑模式 */
-body.dark-mode .icon-btn:hover {
-  background: #333333;
+body.dark-mode .play-btn {
+  background-image: url('assets/img/play_Default_dark.png');
+}
+
+body.dark-mode .play-btn:hover {
+  background-image: url('assets/img/play_hover_dark.png');
+}
+
+body.dark-mode .play-btn.is-playing {
+  background-image: url('assets/img/stop_Default_dark.png');
+}
+```
+
+#### 静音按钮
+```html
+<button class="mute-btn"></button>
+<button class="mute-btn is-muted"></button>
+<button class="mute-btn is-disabled"></button>
+```
+
+```css
+.mute-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: none;
+  background-color: transparent;
+  background-image: url('assets/img/mute_Default.png');
+  background-size: 20px 20px;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 4px;
+}
+
+/* 静音状态（已开启静音） */
+.mute-btn.is-muted {
+  background-image: url('assets/img/mute_on_Default.png');
+}
+
+/* 禁用状态（无音频） */
+.mute-btn.is-disabled {
+  background-image: url('assets/img/mute_disabled.png');
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+```
+
+#### Help按钮（固定位置 + 悬浮弹窗）
+```html
+<div class="help-button">
+  <div class="help-popup">帮助内容...</div>
+</div>
+```
+
+```css
+.help-button {
+  width: 40px;
+  height: 40px;
+  position: fixed;
+  right: 8px;
+  top: 44px;
+  z-index: 1000;
+  background: none;
+  background-image: url('../img/help.png');
+  background-size: 40px 40px;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.help-button:hover {
+  background-image: url('../img/help_hover.png');
+}
+
+body.dark-mode .help-button {
+  background-image: url('../img/help_dark.png');
+}
+
+body.dark-mode .help-button:hover {
+  background-image: url('../img/help_hover_dark.png');
+}
+
+.help-button:hover .help-popup {
+  visibility: visible;
+  opacity: 1;
+}
+
+.help-popup {
+  visibility: hidden;
+  opacity: 0;
+  position: fixed;
+  top: 92px;
+  right: 8px;
+  width: 360px;
+  max-height: 70vh;
+  background: #FFFFFF;
+  border: 1px solid #E3E3E3;
+  box-shadow: 0px 2px 8px rgba(51, 51, 51, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+  overflow-y: auto;
+  z-index: 2000;
+  transition: opacity 0.2s, visibility 0.2s;
+  font-size: 13px;
+  line-height: 2;
+  color: #5b5b5b;
+}
+
+body.dark-mode .help-popup {
+  background: #2a2a2a;
+  border-color: #404040;
+  color: #999999;
 }
 ```
 
 ### 2.2 输入框组件（Input）
 
-#### 基础输入框
+#### 选择器包裹器（用于下拉选择）
 ```html
-<input type="text" class="input-base" placeholder="请输入内容">
+<div class="mp4-select-wrapper" :class="{open: isOpen, disabled: isDisabled}">
+  <span class="mp4-select-text">1920</span>
+  <div class="mp4-select-icon"><svg>...</svg></div>
+  <div class="mp4-select-dropdown">
+    <div class="mp4-select-option">1920</div>
+    <div class="mp4-select-option selected">1280</div>
+  </div>
+</div>
 ```
 
 ```css
-.input-base {
-  height: 28px;
-  padding: 0 12px;
-  background: #ffffff;
-  border: 1px solid #e3e3e3;
-  border-radius: 8px;
-  color: #333333;
-  font-size: 13px;
-  font-family: var(--font-family-base);
+.mp4-select-wrapper {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  gap: 4px;
+  width: 218px;
+  min-width: 200px;
+  height: 44px;
+  background: #F3F3F3;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
   transition: all 0.2s ease;
 }
 
-.input-base::placeholder {
-  color: #999999;
+.mp4-select-wrapper:hover {
+  background: #FCFCFC;
+  border: 1px solid #333333;
 }
 
-.input-base:focus {
-  outline: none;
-  border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+.mp4-select-wrapper:active {
+  background: #FFFFFF;
+  border: 2px solid #333333;
+  padding: 0 14px;
 }
 
-.input-base:disabled {
-  background: #f5f5f5;
-  color: #cccccc;
-  cursor: not-allowed;
+.mp4-select-text {
+  font-weight: 600;
+  font-size: 16px;
+  color: #333333;
 }
 
 /* 暗黑模式 */
-body.dark-mode .input-base {
-  background: #2a2a2a;
-  border-color: #404040;
-  color: #e0e0e0;
+body.dark-mode .mp4-select-wrapper {
+  background: #3a3a3a;
+  border: none;
 }
 
-body.dark-mode .input-base::placeholder {
-  color: #666666;
+body.dark-mode .mp4-select-text {
+  color: #cccccc;
 }
 
-body.dark-mode .input-base:focus {
-  border-color: #409eff;
+/* 禁用状态 */
+.mp4-select-wrapper.disabled {
+  background: #F3F3F3;
+  border: 1px solid #E6E6E6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.mp4-select-wrapper.disabled .mp4-select-text {
+  color: #D3D3D3;
 }
 ```
 
 #### 数字输入框
 ```html
-<input type="number" class="input-number" min="1" max="100" step="1">
+<div class="mp4-size-input-wrapper">
+  <input type="number" class="mp4-input" :value="width" :disabled="isDisabled">
+</div>
 ```
 
 ```css
-.input-number {
-  width: 80px;
-  height: 28px;
-  padding: 0 8px;
-  background: #ffffff;
-  border: 1px solid #e3e3e3;
-  border-radius: 8px;
-  color: #333333;
-  font-size: 13px;
-  text-align: center;
+.mp4-size-input-wrapper {
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 16px;
+  width: 73px;
+  min-width: 50px;
+  height: 44px;
+  background: #F3F3F3;
+  border: none;
+  border-radius: 12px;
   transition: all 0.2s ease;
 }
 
-.input-number:focus {
-  outline: none;
-  border-color: #409eff;
+.mp4-size-input-wrapper:hover {
+  background: #FCFCFC;
+  border: 1px solid #333333;
+  padding: 0 15px;
 }
 
-/* 移除默认的数字输入框箭头 */
-.input-number::-webkit-outer-spin-button,
-.input-number::-webkit-inner-spin-button {
+.mp4-size-input-wrapper:focus-within {
+  background: #FFFFFF;
+  border: 2px solid #5B5B5B;
+  padding: 0 14px;
+}
+
+.mp4-input {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  font-weight: 600;
+  font-size: 16px;
+  color: #333333;
+  text-align: center;
+  outline: none;
+}
+
+/* 隐藏数字输入框的上下箭头 */
+.mp4-input::-webkit-outer-spin-button,
+.mp4-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
+/* 禁用状态 */
+.mp4-input:disabled {
+  color: #D3D3D3;
+  cursor: not-allowed;
+}
+
 /* 暗黑模式 */
-body.dark-mode .input-number {
-  background: #2a2a2a;
-  border-color: #404040;
-  color: #e0e0e0;
+body.dark-mode .mp4-size-input-wrapper {
+  background: #3a3a3a;
+}
+
+body.dark-mode .mp4-input {
+  color: #cccccc;
+}
+
+body.dark-mode .mp4-input:disabled {
+  color: #666666;
 }
 ```
 
 #### 搜索输入框
 ```html
-<div class="search-wrapper">
-  <input type="text" class="search-input" placeholder="搜索素材...">
-  <svg class="search-icon">...</svg>
+<div class="material-search">
+  <input type="text" class="material-search-input" placeholder="搜索素材...">
 </div>
 ```
 
 ```css
-.search-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.search-input {
+.material-search-input {
   width: 100%;
   height: 32px;
-  padding: 0 12px 0 36px;
-  background: #ffffff;
+  padding: 0 12px;
   border: 1px solid #e3e3e3;
   border-radius: 8px;
+  font-size: 14px;
   color: #333333;
-  font-size: 13px;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  opacity: 0.5;
-}
-
-.search-input:focus {
+  background: #ffffff;
   outline: none;
-  border-color: #409eff;
+  transition: all 0.3s;
 }
 
-.search-input:focus + .search-icon {
-  opacity: 0.8;
+.material-search-input::placeholder {
+  color: #999999;
+}
+
+.material-search-input:focus {
+  border-color: #00b4ff;
 }
 
 /* 暗黑模式 */
-body.dark-mode .search-input {
+body.dark-mode .material-search-input {
   background: #2a2a2a;
-  border-color: #404040;
+  border-color: #444444;
   color: #e0e0e0;
+}
+
+body.dark-mode .material-search-input::placeholder {
+  color: #666666;
 }
 ```
 
 ### 2.3 开关组件（Toggle Switch）
 
 ```html
-<label class="toggle-switch">
-  <input type="checkbox" class="toggle-input">
-  <span class="toggle-slider"></span>
-</label>
+<div class="mp4-mute-toggle" :class="{active: isActive, disabled: isDisabled}" @click="toggle">
+  <div class="mp4-mute-toggle-handle"></div>
+</div>
 ```
 
 ```css
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 40px;
-  height: 20px;
+.mp4-mute-toggle {
+  width: 46px;
+  height: 26px;
+  background: #5B5B5B;       /* 关闭状态 */
+  border-radius: 100px;
   cursor: pointer;
+  position: relative;
+  transition: background 0.3s;
 }
 
-.toggle-input {
-  opacity: 0;
-  width: 0;
-  height: 0;
+.mp4-mute-toggle.active {
+  background: #409EFF;       /* 开启状态 */
 }
 
-.toggle-slider {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: #e3e3e3;
-  border-radius: 20px;
-  transition: all 0.2s ease;
+.mp4-mute-toggle.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
-.toggle-slider::before {
-  content: '';
-  position: absolute;
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background: #ffffff;
+.mp4-mute-toggle-handle {
+  width: 24px;
+  height: 24px;
+  background: #FFFFFF;
   border-radius: 50%;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  transition: transform 0.3s;
 }
 
-.toggle-input:checked + .toggle-slider {
-  background: #409eff;
-}
-
-.toggle-input:checked + .toggle-slider::before {
+.mp4-mute-toggle.active .mp4-mute-toggle-handle {
   transform: translateX(20px);
 }
 
-.toggle-input:disabled + .toggle-slider {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 /* 暗黑模式 */
-body.dark-mode .toggle-slider {
-  background: #404040;
+body.dark-mode .mp4-mute-toggle {
+  background: #5B5B5B;
 }
 
-body.dark-mode .toggle-slider::before {
-  background: #666666;
-}
-
-body.dark-mode .toggle-input:checked + .toggle-slider {
-  background: #409eff;
-}
-
-body.dark-mode .toggle-input:checked + .toggle-slider::before {
-  background: #ffffff;
+body.dark-mode .mp4-mute-toggle.active {
+  background: #409EFF;
 }
 ```
 
@@ -626,215 +865,345 @@ body.dark-mode .file-name-label {
 }
 ```
 
-### 2.5 进度条组件（Progress Bar）
+### 2.5 播放进度条组件
 
 ```html
-<div class="progress-wrapper">
-  <div class="progress-bar" style="width: 60%;"></div>
+<div class="progress-bar" @click="onProgressBarClick">
+  <div class="progress-fill" :style="{width: progress + '%'}"></div>
 </div>
+<span class="progress-text">12 / 60</span>
 ```
 
 ```css
-.progress-wrapper {
-  width: 100%;
-  height: 4px;
-  background: #e3e3e3;
-  border-radius: 2px;
-  overflow: hidden;
-}
-
 .progress-bar {
+  width: 260px;
+  height: 16px;
+  background-color: #f3f3f3;
+  border-radius: 0;           /* 无圆角 */
+  border: 1px solid #e3e3e3;
+  position: relative;
+  cursor: pointer;
+}
+
+.progress-bar:hover {
+  border-color: #5b5b5b;
+}
+
+.progress-fill {
   height: 100%;
-  background: #409eff;
-  border-radius: 2px;
-  transition: width 0.3s ease;
+  background-color: #409eff;  /* 主色调 */
+  border-radius: 0;
+  transition: width 0.1s;
 }
 
-/* 暗黑模式 */
-body.dark-mode .progress-wrapper {
-  background: #404040;
-}
-
-body.dark-mode .progress-bar {
-  background: #409eff;
+.progress-text {
+  margin-left: 8px;
+  width: 60px;
+  font-size: 14px;
+  color: #818181;
+  white-space: nowrap;
+  text-align: left;
 }
 ```
 
 ### 2.6 Tooltip 提示框
 
 ```html
-<div class="tooltip-wrapper">
-  <button class="icon-btn">?</button>
-  <div class="tooltip-content">这是提示内容</div>
+<div class="tooltip">
+  <button class="theme-toggle">
+    <svg>...</svg>
+    <span class="tooltip-text">切换主题</span>
+  </button>
 </div>
 ```
 
 ```css
-.tooltip-wrapper {
+.tooltip {
   position: relative;
   display: inline-block;
 }
 
-.tooltip-content {
+.tooltip .tooltip-text {
+  visibility: hidden;
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: 125%;
   left: 50%;
   transform: translateX(-50%);
-  padding: 8px 12px;
-  background: #333333;
-  color: #ffffff;
-  font-size: 12px;
+  background-color: #ffffff;
+  border: 1px solid #e3e3e3;
   border-radius: 8px;
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.33;
+  color: #818181;
   white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0px 6px 10px rgba(51, 51, 51, 0.2);
   z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.2s, visibility 0.2s;
 }
 
-.tooltip-content::after {
+/* 箭头 */
+.tooltip .tooltip-text::after {
   content: '';
   position: absolute;
   top: 100%;
   left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: #333333;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #ffffff transparent transparent transparent;
 }
 
-.tooltip-wrapper:hover .tooltip-content {
-  opacity: 1;
+/* 显示状态 */
+.tooltip:hover .tooltip-text {
   visibility: visible;
+  opacity: 1;
+}
+
+/* 主题切换按钮的tooltip在下方 */
+.theme-toggle .tooltip-text {
+  bottom: auto;
+  top: 125%;
+}
+
+.theme-toggle .tooltip-text::after {
+  top: auto;
+  bottom: 100%;
+  border-color: transparent transparent #ffffff transparent;
 }
 
 /* 暗黑模式 */
-body.dark-mode .tooltip-content {
-  background: #f5f5f5;
-  color: #333333;
+body.dark-mode .tooltip .tooltip-text {
+  background-color: #2a2a2a;
+  border-color: #404040;
+  color: #999999;
+  box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.5);
 }
 
-body.dark-mode .tooltip-content::after {
-  border-top-color: #f5f5f5;
+body.dark-mode .tooltip .tooltip-text::after {
+  border-color: #2a2a2a transparent transparent transparent;
+}
+
+body.dark-mode .theme-toggle .tooltip-text::after {
+  border-color: transparent transparent #2a2a2a transparent;
 }
 ```
 
-### 2.7 弹窗组件（Modal/Panel）
+### 2.7 侧边弹窗组件（Side Panel）
+
+本项目使用右侧滑出式弹窗，包括：素材替换弹窗、SVGA转MP4弹窗、MP4转SVGA弹窗
 
 ```html
-<div class="modal-overlay">
-  <div class="modal-panel">
-    <div class="modal-header">
-      <h3 class="modal-title">弹窗标题</h3>
-      <button class="modal-close">&times;</button>
-    </div>
-    <div class="modal-body">
-      弹窗内容
-    </div>
-    <div class="modal-footer">
-      <button class="btn-primary">取消</button>
-      <button class="btn-secondary">确定</button>
-    </div>
+<div class="material-panel" :class="{show: showMaterialPanel}">
+  <div class="material-panel-container">
+    <!-- 弹窗内容 -->
   </div>
 </div>
 ```
 
 ```css
-.modal-overlay {
+/* 侧边弹窗基础样式 */
+.material-panel {
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  right: -400px;              /* 隐藏在右侧 */
+  width: 400px;
+  height: 100%;
   display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
+  padding: 10px;
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1000;
 }
 
-.modal-panel {
-  width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+.material-panel.show {
+  right: 0;                   /* 滑入显示 */
+}
+
+.material-panel-container {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid #e3e3e3;
-}
-
-.modal-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333333;
-  margin: 0;
-}
-
-.modal-close {
-  width: 28px;
-  height: 28px;
-  background: transparent;
-  border: none;
-  font-size: 24px;
-  color: #999999;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.modal-close:hover {
-  color: #333333;
-}
-
-.modal-body {
-  flex: 1;
-  padding: 24px;
+  width: 380px;
+  height: 100%;
+  padding: 20px;
+  gap: 16px;
+  background: #FFFFFF;
+  border: 1px solid #E3E3E3;
+  box-shadow: 0px 10px 32px rgba(51, 51, 51, 0.2);
+  border-radius: 16px;
   overflow-y: auto;
 }
 
-.modal-footer {
+body.dark-mode .material-panel-container {
+  background: #1a1a1a;
+  border-color: #404040;
+  box-shadow: 0px 10px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* 弹窗内部结构 */
+.material-panel-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stats-header {
+  font-size: 12px;
+  line-height: 16px;
+  color: #818181;
+}
+
+.stats-divider {
+  width: 100%;
+  height: 1px;
+  background: #F3F3F3;
+}
+
+body.dark-mode .stats-divider {
+  background: #404040;
+}
+
+.stats-title {
+  font-size: 14px;
+  line-height: 19px;
+  color: #333333;
+}
+
+body.dark-mode .stats-title {
+  color: #e0e0e0;
+}
+
+.stats-help {
+  font-size: 12px;
+  line-height: 16px;
+  color: #AAAAAA;
+}
+
+body.dark-mode .stats-help {
+  color: #666666;
+}
+```
+
+### 2.8 Toast提示组件
+
+```html
+<div class="toast-container">
+  <div class="toast-message">已复制到剪贴板</div>
+</div>
+```
+
+```css
+.toast-container {
+  position: fixed;
+  top: 48px;               /* 在header-navbar下方24px */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast-message {
+  background: #ffffff;
+  border: 1px solid #e3e3e3;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  color: #333333;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+  max-width: 500px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.dark-mode .toast-message {
+  background: #2a2a2a;
+  border-color: #404040;
+  color: #cccccc;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+```
+
+### 2.9 库加载进度指示器
+
+```html
+<div class="library-loading-indicator">
+  <div class="loading-content">
+    <span class="loading-text">正在加载ffmpeg.wasm...</span>
+    <span class="loading-percentage">45%</span>
+  </div>
+  <div class="loading-bar">
+    <div class="loading-progress" style="width: 45%;"></div>
+  </div>
+</div>
+```
+
+```css
+.library-loading-indicator {
+  position: fixed;
+  top: 60px;                  /* 在header-navbar下方 */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  max-width: 90%;
+  background: #ffffff;
+  border: 1px solid #e3e3e3;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 999;
+  animation: slideDown 0.3s ease;
+}
+
+.library-loading-indicator .loading-content {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 20px 24px;
-  border-top: 1px solid #e3e3e3;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.library-loading-indicator .loading-text {
+  font-size: 13px;
+  color: #818181;
+  font-weight: 400;
+}
+
+.library-loading-indicator .loading-percentage {
+  font-size: 12px;
+  color: #999999;
+  font-weight: 500;
+}
+
+.library-loading-indicator .loading-bar {
+  width: 100%;
+  height: 4px;
+  background: #f3f3f3;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.library-loading-indicator .loading-progress {
+  height: 100%;
+  background: #409eff;        /* 主色调 */
+  border-radius: 2px;
+  transition: width 0.3s ease;
 }
 
 /* 暗黑模式 */
-body.dark-mode .modal-overlay {
-  background: rgba(0, 0, 0, 0.7);
-}
-
-body.dark-mode .modal-panel {
+body.dark-mode .library-loading-indicator {
   background: #2a2a2a;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-}
-
-body.dark-mode .modal-header,
-body.dark-mode .modal-footer {
   border-color: #404040;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
-body.dark-mode .modal-title {
-  color: #e0e0e0;
+body.dark-mode .library-loading-indicator .loading-text {
+  color: #a0a0a0;
 }
 
-body.dark-mode .modal-close {
-  color: #808080;
-}
-
-body.dark-mode .modal-close:hover {
-  color: #e0e0e0;
+body.dark-mode .library-loading-indicator .loading-bar {
+  background: #404040;
 }
 ```
 
@@ -1351,6 +1720,7 @@ body.dark-mode .card-footer {
 | 版本 | 日期 | 描述 |
 |-----|------|------|
 | 1.0 | 2025-12-16 | 初始版本，基于现有代码梳理 |
+| 1.1 | 2025-12-22 | 根据styles.css实际内容更新：<br>• 补充播放/暂停按钮、静音按钮组件<br>• 补充Help按钮（四种主题状态图片）<br>• 更新Tab按钮为is-active样式<br>• 更新清空画布按钮危险警告样式<br>• 更新开关组件为实际使用的样式<br>• 更新进度条为播放进度条样式<br>• 添加侧边弹窗组件说明<br>• 添加Toast提示组件<br>• 添加库加载进度指示器<br>• 添加动画关键帧定义<br>• 更新颜色、圆角、阴影系统为实际值 |
 
 ---
 
