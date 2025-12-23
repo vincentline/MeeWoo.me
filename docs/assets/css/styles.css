@@ -260,23 +260,24 @@ body.dark-mode .library-loading-indicator .loading-text {
   top: 44px;
   z-index: 1000;
   background: none;
-  background-image: url('../img/help.png');
-  background-size: 40px 40px;
-  background-position: center;
+  /* 使用雪碧图 - 缩放50%(40/80) */
+  background-image: url('../img/controls-sprite.png');
+  background-size: 400px 200px;
+  background-position: 0px 0px;
   background-repeat: no-repeat;
   transition: opacity 0.2s;
 }
 
 .help-button:hover {
-  background-image: url('../img/help_hover.png');
+  background-position: -40px 0px; /* -80*0.5 */
 }
 
 body.dark-mode .help-button {
-  background-image: url('../img/help_dark.png');
+  background-position: -80px 0px; /* -160*0.5 */
 }
 
 body.dark-mode .help-button:hover {
-  background-image: url('../img/help_hover_dark.png');
+  background-position: -120px 0px; /* -240*0.5 */
 }
 
 .help-button:hover .help-popup {
@@ -327,6 +328,44 @@ body.dark-mode .help-popup {
   border-color: #404040;
   color: #999999;
   box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* 模式名称指示器 */
+.mode-indicator {
+  position: fixed;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  
+  /* 布局 */
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px 8px;
+  gap: 4px;
+  height: 28px;
+  
+  /* 样式 */
+  background: #FFFFFF;
+  border: 1px solid #F3F3F3;
+  border-radius: 8px;
+  
+  /* 文字 */
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 21px;
+  color: #333333;
+  
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+body.dark-mode .mode-indicator {
+  background: #2a2a2a;
+  border-color: #404040;
+  color: #e0e0e0;
 }
 
 /* ==================== 主页面容器 ==================== */
@@ -877,59 +916,59 @@ body.dark-mode .info-item-value {
   border-radius: 4px;
   border: none;
   background-color: transparent;
-  background-image: url('assets/img/play_Default.png');
-  background-size: 20px 20px;
-  background-position: center;
+  /* 使用雪碧图 - 缩放50% */
+  background-image: url('../img/controls-sprite.png');
+  background-size: 400px 200px;
+  background-position: -160px 0px; /* -320*0.5 */
   background-repeat: no-repeat;
   cursor: pointer;
   outline: none;
-  transition: all 0.2s;
 }
 
 .play-btn:hover {
-  background-image: url('assets/img/play_hover.png');
+  background-position: -200px 0px; /* -400*0.5 */
 }
 
 .play-btn:active {
-  background-image: url('assets/img/play_press.png');
+  background-position: -240px 0px; /* -480*0.5 */
 }
 
 /* 播放中状态（暂停按钮） */
 .play-btn.is-playing {
-  background-image: url('assets/img/stop_Default.png');
+  background-position: 0px -40px; /* 0, -80*0.5 */
 }
 
 .play-btn.is-playing:hover {
-  background-image: url('assets/img/stop_hover.png');
+  background-position: -40px -40px; /* -80*0.5, -80*0.5 */
 }
 
 .play-btn.is-playing:active {
-  background-image: url('assets/img/stop_press.png');
+  background-position: -80px -40px; /* -160*0.5, -80*0.5 */
 }
 
 /* 暗黑模式 */
 body.dark-mode .play-btn {
-  background-image: url('assets/img/play_Default_dark.png');
+  background-position: -280px 0px; /* -560*0.5 */
 }
 
 body.dark-mode .play-btn:hover {
-  background-image: url('assets/img/play_hover_dark.png');
+  background-position: -320px 0px; /* -640*0.5 */
 }
 
 body.dark-mode .play-btn:active {
-  background-image: url('assets/img/play_press_dark.png');
+  background-position: -360px 0px; /* -720*0.5 */
 }
 
 body.dark-mode .play-btn.is-playing {
-  background-image: url('assets/img/stop_Default_dark.png');
+  background-position: -120px -40px; /* -240*0.5, -80*0.5 */
 }
 
 body.dark-mode .play-btn.is-playing:hover {
-  background-image: url('assets/img/stop_hover_dark.png');
+  background-position: -160px -40px; /* -320*0.5, -80*0.5 */
 }
 
 body.dark-mode .play-btn.is-playing:active {
-  background-image: url('assets/img/stop_press_dark.png');
+  background-position: -200px -40px; /* -400*0.5, -80*0.5 */
 }
 
 /* 静音按钮 */
@@ -939,81 +978,81 @@ body.dark-mode .play-btn.is-playing:active {
   border-radius: 4px;
   border: none;
   background-color: transparent;
-  background-image: url('assets/img/mute_Default.png');
-  background-size: 20px 20px;
-  background-position: center;
+  /* 使用雪碧图 - 缩放50% */
+  background-image: url('../img/controls-sprite.png');
+  background-size: 400px 200px;
+  background-position: -240px -40px; /* -480*0.5, -80*0.5 */
   background-repeat: no-repeat;
   cursor: pointer;
   outline: none;
-  transition: all 0.2s;
   margin-left: 4px;
 }
 
 .mute-btn:hover {
-  background-image: url('assets/img/mute_hover.png');
+  background-position: -280px -40px; /* -560*0.5, -80*0.5 */
 }
 
 .mute-btn:active {
-  background-image: url('assets/img/mute_press.png');
+  background-position: -320px -40px; /* -640*0.5, -80*0.5 */
 }
 
 /* 静音状态（已开启静音） */
 .mute-btn.is-muted {
-  background-image: url('assets/img/mute_on_Default.png');
+  background-position: -360px -40px; /* -720*0.5, -80*0.5 */
 }
 
 .mute-btn.is-muted:hover {
-  background-image: url('assets/img/mute_on_hover.png');
+  background-position: 0px -80px; /* 0, -160*0.5 */
 }
 
 .mute-btn.is-muted:active {
-  background-image: url('assets/img/mute_on_press.png');
+  background-position: -40px -80px; /* -80*0.5, -160*0.5 */
 }
 
 /* 禁用状态（无音频） */
 .mute-btn.is-disabled {
-  background-image: url('assets/img/mute_disabled.png');
+  background-position: -80px -80px; /* -160*0.5, -160*0.5 */
   cursor: not-allowed;
   opacity: 0.6;
 }
 
 .mute-btn.is-disabled:hover,
 .mute-btn.is-disabled:active {
-  background-image: url('assets/img/mute_disabled.png');
+  background-position: -80px -80px;
 }
 
 /* 暗黑模式 */
 body.dark-mode .mute-btn {
-  background-image: url('assets/img/mute_Default_dark.png');
+  background-position: -120px -80px; /* -240*0.5, -160*0.5 */
 }
 
 body.dark-mode .mute-btn:hover {
-  background-image: url('assets/img/mute_hover_dark.png');
+  background-position: -160px -80px; /* -320*0.5, -160*0.5 */
 }
 
 body.dark-mode .mute-btn:active {
-  background-image: url('assets/img/mute_press_dark.png');
+  background-position: -200px -80px; /* -400*0.5, -160*0.5 */
 }
 
 body.dark-mode .mute-btn.is-muted {
-  background-image: url('assets/img/mute_on_Default_dark.png');
+  background-position: -240px -80px; /* -480*0.5, -160*0.5 */
 }
 
 body.dark-mode .mute-btn.is-muted:hover {
-  background-image: url('assets/img/mute_on_hover_dark.png');
+  background-position: -280px -80px; /* -560*0.5, -160*0.5 */
 }
 
 body.dark-mode .mute-btn.is-muted:active {
-  background-image: url('assets/img/mute_on_press_dark.png');
+  background-position: -320px -80px; /* -640*0.5, -160*0.5 */
 }
 
 body.dark-mode .mute-btn.is-disabled {
-  background-image: url('assets/img/mute_disabled_dark.png');
+  background-position: -360px -80px; /* -720*0.5, -160*0.5 */
 }
 
 body.dark-mode .mute-btn.is-disabled:hover,
 body.dark-mode .mute-btn.is-disabled:active {
-  background-image: url('assets/img/mute_disabled_dark.png');
+  background-position: -360px -80px;
 }
 
 /* 进度条 */
@@ -1121,14 +1160,48 @@ body.dark-mode .btn-primary:active {
   height: 28px;
   border: none;
   background-color: transparent;
+  /* 使用雪碧图 - 缩放50% */
+  background-image: url('../img/controls-sprite.png');
+  background-size: 400px 200px;
+  background-repeat: no-repeat;
   cursor: pointer;
   outline: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 0;
   margin: 0;
-  position: relative;
+}
+
+/* 缩小按钮 - 通过data属性区分 */
+.zoom-btn[data-type="out"] {
+  background-position: -80px -120px; /* -160*0.5, -240*0.5 */
+}
+
+.zoom-btn[data-type="out"]:hover {
+  background-position: -120px -120px; /* -240*0.5, -240*0.5 */
+}
+
+body.dark-mode .zoom-btn[data-type="out"] {
+  background-position: -240px -120px; /* -480*0.5, -240*0.5 */
+}
+
+body.dark-mode .zoom-btn[data-type="out"]:hover {
+  background-position: -280px -120px; /* -560*0.5, -240*0.5 */
+}
+
+/* 放大按钮 */
+.zoom-btn[data-type="in"] {
+  background-position: 0px -120px; /* 0*0.5, -240*0.5 */
+}
+
+.zoom-btn[data-type="in"]:hover {
+  background-position: -40px -120px; /* -80*0.5, -240*0.5 */
+}
+
+body.dark-mode .zoom-btn[data-type="in"] {
+  background-position: -160px -120px; /* -320*0.5, -240*0.5 */
+}
+
+body.dark-mode .zoom-btn[data-type="in"]:hover {
+  background-position: -200px -120px; /* -400*0.5, -240*0.5 */
 }
 
 /* 百分比显示 */
@@ -1147,96 +1220,33 @@ body.dark-mode .scale-percentage {
   color: #999999;
 }
 
-.zoom-icon {
-  width: 28px;
-  height: 28px;
-  display: block;
-  transition: opacity 0.2s;
-}
-
-/* 放大按钮 hover 状态 */
-.zoom-btn:hover .zoom-icon {
-  opacity: 0;
-}
-
-.zoom-btn::after {
-  content: '';
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  opacity: 0;
-  transition: opacity 0.2s;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-.zoom-btn:hover::after {
-  opacity: 1;
-}
-
-/* 浅色模式下的 hover 图标 */
-.zoom-btn:hover::after {
-  background-image: var(--zoom-hover-icon);
-}
-
-/* 暗黑模式下的 hover 图标 */
-body.dark-mode .zoom-btn:hover::after {
-  background-image: var(--zoom-hover-icon-dark);
-}
-
 /* 1:1按钮 */
 .reset-scale-btn {
   width: 28px;
   height: 28px;
   border: none;
   background-color: transparent;
+  /* 使用雪碧图 - 缩放50% */
+  background-image: url('../img/controls-sprite.png');
+  background-size: 400px 200px;
+  background-position: -320px -120px; /* -640*0.5, -240*0.5 */
+  background-repeat: no-repeat;
   cursor: pointer;
   outline: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 0;
   margin-left: 4px;
-  position: relative;
 }
 
-.one-to-one-icon {
-  width: 28px;
-  height: 28px;
-  display: block;
-  transition: opacity 0.2s;
+.reset-scale-btn:hover {
+  background-position: -360px -120px; /* -720*0.5, -240*0.5 */
 }
 
-/* 1:1 按钮 hover 状态 */
-.reset-scale-btn:hover .one-to-one-icon {
-  opacity: 0;
+body.dark-mode .reset-scale-btn {
+  background-position: 0px -160px; /* 0*0.5, -320*0.5 */
 }
 
-.reset-scale-btn::after {
-  content: '';
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  opacity: 0;
-  transition: opacity 0.2s;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-.reset-scale-btn:hover::after {
-  opacity: 1;
-}
-
-/* 浅色模式下的 hover 图标 */
-.reset-scale-btn:hover::after {
-  background-image: url('assets/img/one2one_hover.png');
-}
-
-/* 暗黑模式下的 hover 图标 */
-body.dark-mode .reset-scale-btn:hover::after {
-  background-image: url('assets/img/one2one_hover_dark.png');
+body.dark-mode .reset-scale-btn:hover {
+  background-position: -40px -160px; /* -80*0.5, -320*0.5 */
 }
 
 /* 清空/关闭按钮 (btn03样式) */

@@ -1,0 +1,254 @@
+{
+  "help.png": {
+    "x": 0,
+    "y": 0,
+    "width": 80,
+    "height": 80
+  },
+  "help_hover.png": {
+    "x": -80,
+    "y": 0,
+    "width": 80,
+    "height": 80
+  },
+  "help_dark.png": {
+    "x": -160,
+    "y": 0,
+    "width": 80,
+    "height": 80
+  },
+  "help_hover_dark.png": {
+    "x": -240,
+    "y": 0,
+    "width": 80,
+    "height": 80
+  },
+  "play_Default.png": {
+    "x": -320,
+    "y": 0,
+    "width": 80,
+    "height": 80
+  },
+  "play_hover.png": {
+    "x": -400,
+    "y": 0,
+    "width": 80,
+    "height": 80
+  },
+  "play_press.png": {
+    "x": -480,
+    "y": 0,
+    "width": 80,
+    "height": 80
+  },
+  "play_Default_dark.png": {
+    "x": -560,
+    "y": 0,
+    "width": 80,
+    "height": 80
+  },
+  "play_hover_dark.png": {
+    "x": -640,
+    "y": 0,
+    "width": 80,
+    "height": 80
+  },
+  "play_press_dark.png": {
+    "x": -720,
+    "y": 0,
+    "width": 80,
+    "height": 80
+  },
+  "stop_Default.png": {
+    "x": 0,
+    "y": -80,
+    "width": 80,
+    "height": 80
+  },
+  "stop_hover.png": {
+    "x": -80,
+    "y": -80,
+    "width": 80,
+    "height": 80
+  },
+  "stop_press.png": {
+    "x": -160,
+    "y": -80,
+    "width": 80,
+    "height": 80
+  },
+  "stop_Default_dark.png": {
+    "x": -240,
+    "y": -80,
+    "width": 80,
+    "height": 80
+  },
+  "stop_hover_dark.png": {
+    "x": -320,
+    "y": -80,
+    "width": 80,
+    "height": 80
+  },
+  "stop_press_dark.png": {
+    "x": -400,
+    "y": -80,
+    "width": 80,
+    "height": 80
+  },
+  "mute_Default.png": {
+    "x": -480,
+    "y": -80,
+    "width": 80,
+    "height": 80
+  },
+  "mute_hover.png": {
+    "x": -560,
+    "y": -80,
+    "width": 80,
+    "height": 80
+  },
+  "mute_press.png": {
+    "x": -640,
+    "y": -80,
+    "width": 80,
+    "height": 80
+  },
+  "mute_on_Default.png": {
+    "x": -720,
+    "y": -80,
+    "width": 80,
+    "height": 80
+  },
+  "mute_on_hover.png": {
+    "x": 0,
+    "y": -160,
+    "width": 80,
+    "height": 80
+  },
+  "mute_on_press.png": {
+    "x": -80,
+    "y": -160,
+    "width": 80,
+    "height": 80
+  },
+  "mute_disabled.png": {
+    "x": -160,
+    "y": -160,
+    "width": 80,
+    "height": 80
+  },
+  "mute_Default_dark.png": {
+    "x": -240,
+    "y": -160,
+    "width": 80,
+    "height": 80
+  },
+  "mute_hover_dark.png": {
+    "x": -320,
+    "y": -160,
+    "width": 80,
+    "height": 80
+  },
+  "mute_press_dark.png": {
+    "x": -400,
+    "y": -160,
+    "width": 80,
+    "height": 80
+  },
+  "mute_on_Default_dark.png": {
+    "x": -480,
+    "y": -160,
+    "width": 80,
+    "height": 80
+  },
+  "mute_on_hover_dark.png": {
+    "x": -560,
+    "y": -160,
+    "width": 80,
+    "height": 80
+  },
+  "mute_on_press_dark.png": {
+    "x": -640,
+    "y": -160,
+    "width": 80,
+    "height": 80
+  },
+  "mute_disabled_dark.png": {
+    "x": -720,
+    "y": -160,
+    "width": 80,
+    "height": 80
+  },
+  "zoom_in.png": {
+    "x": 0,
+    "y": -240,
+    "width": 80,
+    "height": 80
+  },
+  "zoom_in_hover.png": {
+    "x": -80,
+    "y": -240,
+    "width": 80,
+    "height": 80
+  },
+  "zoom_out.png": {
+    "x": -160,
+    "y": -240,
+    "width": 80,
+    "height": 80
+  },
+  "zoom_out_hover.png": {
+    "x": -240,
+    "y": -240,
+    "width": 80,
+    "height": 80
+  },
+  "zoom_in_dark.png": {
+    "x": -320,
+    "y": -240,
+    "width": 80,
+    "height": 80
+  },
+  "zoom_in_hover_dark.png": {
+    "x": -400,
+    "y": -240,
+    "width": 80,
+    "height": 80
+  },
+  "zoom_out_dark.png": {
+    "x": -480,
+    "y": -240,
+    "width": 80,
+    "height": 80
+  },
+  "zoom_out_hover_dark.png": {
+    "x": -560,
+    "y": -240,
+    "width": 80,
+    "height": 80
+  },
+  "one2one.png": {
+    "x": -640,
+    "y": -240,
+    "width": 80,
+    "height": 80
+  },
+  "one2one_hover.png": {
+    "x": -720,
+    "y": -240,
+    "width": 80,
+    "height": 80
+  },
+  "one2one_dark.png": {
+    "x": 0,
+    "y": -320,
+    "width": 80,
+    "height": 80
+  },
+  "one2one_hover_dark.png": {
+    "x": -80,
+    "y": -320,
+    "width": 80,
+    "height": 80
+  }
+}
