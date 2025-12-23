@@ -98,6 +98,14 @@
         <div class="help-popup" v-html="helpContent"></div>
       </div>
 
+      <!-- 模式名称显示 -->
+      <div class="mode-indicator" v-if="!isEmpty">
+        <template v-if="currentModule === 'svga'">SVGA</template>
+        <template v-else-if="currentModule === 'yyeva'">双通道MP4</template>
+        <template v-else-if="currentModule === 'mp4'">MP4</template>
+        <template v-else>Lottie</template>
+      </div>
+
       <!-- 主页面 -->
       <div class="main-page">
         <!-- 播放区域 -->
@@ -258,29 +266,17 @@
                   <div class="scale-percentage">{{ Math.round(viewerScale * 100) }}%</div>
                   <button 
                     class="zoom-btn" 
+                    data-type="out"
                     @click="zoomOut" 
                     title="缩小"
-                    :style="{
-                      '--zoom-hover-icon': 'url(assets/img/zoom_out_hover.png)',
-                      '--zoom-hover-icon-dark': 'url(assets/img/zoom_out_hover_dark.png)'
-                    }"
-                  >
-                    <img :src="zoomOutIcon" class="zoom-icon" />
-                  </button>
+                  ></button>
                   <button 
                     class="zoom-btn" 
+                    data-type="in"
                     @click="zoomIn" 
                     title="放大"
-                    :style="{
-                      '--zoom-hover-icon': 'url(assets/img/zoom_in_hover.png)',
-                      '--zoom-hover-icon-dark': 'url(assets/img/zoom_in_hover_dark.png)'
-                    }"
-                  >
-                    <img :src="zoomInIcon" class="zoom-icon" />
-                  </button>
-                  <button class="reset-scale-btn" @click="resetScale" title="恢复1:1尺寸">
-                    <img :src="oneToOneIcon" class="one-to-one-icon" />
-                  </button>
+                  ></button>
+                  <button class="reset-scale-btn" @click="resetScale" title="恢复1:1尺寸"></button>
                 </div>
               </div>
 
@@ -345,7 +341,7 @@
                       @click="openMP4Panel"
                     >
                       <span v-if="!svga.hasFile" class="tooltip-text">请先拖入 SVGA 文件</span>
-                      转MP4
+                      转双通道MP4
                     </button>
                   </div>
                 </template>
@@ -378,6 +374,34 @@
                       @click="openSVGAPanel"
                     >
                       <span v-if="!yyeva.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
+                      转SVGA
+                    </button>
+                  </div>
+                </template>
+                
+                <!-- 普通MP4 模式 -->
+                <template v-else-if="currentModule === 'mp4'">
+                  <div class="footer-actions-left">
+                    <button class="btn-primary" @click="triggerChangePreviewFile">
+                      更换预览文件
+                    </button>
+                  </div>
+                  <div class="footer-actions">
+                    <button 
+                      class="btn-primary"
+                      :class="{'tooltip': !mp4.hasFile}"
+                      :disabled="!mp4.hasFile || isExportingGIF"
+                      @click="exportMp4GIF"
+                    >
+                      <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
+                      {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '导出GIF' }}
+                    </button>
+                    <button class="btn-secondary tooltip">
+                      <span class="tooltip-text">正在开发中...</span>
+                      转双通道MP4
+                    </button>
+                    <button class="btn-secondary tooltip">
+                      <span class="tooltip-text">正在开发中...</span>
                       转SVGA
                     </button>
                   </div>

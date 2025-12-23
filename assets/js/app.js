@@ -85,7 +85,7 @@ function initApp() {
         el: '#app',
         data: function () {
           return {
-            currentModule: 'svga', // 'svga' | 'yyeva' | 'lottie'
+            currentModule: 'svga', // 'svga' | 'yyeva' | 'mp4' | 'lottie'
             dropHover: false,
 
             // 底部浮层过渡状态
@@ -168,6 +168,27 @@ function initApp() {
                 sizeText: ''
               }
             },
+            
+            // 普通MP4 状态
+            mp4: {
+              hasFile: false,
+              file: null,
+              fileInfo: {
+                name: '',
+                size: 0,
+                sizeText: '',
+                fps: null,
+                sizeWH: '',
+                duration: ''
+              },
+              originalWidth: 0,
+              originalHeight: 0
+            },
+            
+            // 普通MP4 播放器实例
+            mp4Video: null,
+            mp4ObjectUrl: null,
+            mp4HasAudio: false,
 
             // 播放器实例
             svgaPlayer: null,
@@ -410,6 +431,8 @@ function initApp() {
                   this.cleanupSvga();
                 } else if (targetMode === 'yyeva') {
                   this.cleanupYyeva();
+                } else if (targetMode === 'mp4') {
+                  this.cleanupMp4();
                 }
               } else {
                 // 跨模式切换：清理旧模式资源
@@ -417,6 +440,8 @@ function initApp() {
                   this.cleanupSvga();
                 } else if (fromMode === 'yyeva') {
                   this.cleanupYyeva();
+                } else if (fromMode === 'mp4') {
+                  this.cleanupMp4();
                 }
               }
             }
@@ -741,6 +766,7 @@ function initApp() {
           },
 
           handleFile: function (file) {
+            var _this = this;
             var name = (file.name || '').toLowerCase();
 
             if (name.endsWith('.svga')) {
@@ -748,10 +774,153 @@ function initApp() {
             } else if (name.endsWith('.json')) {
               this.loadLottiePlaceholder(file);
             } else if (name.endsWith('.mp4')) {
-              this.loadYyevaPlaceholder(file);
+              // 判断MP4类型：双通道 or 普通
+              this.detectMp4Type(file, function(isDualChannel) {
+                if (isDualChannel) {
+                  _this.loadYyevaPlaceholder(file);
+                } else {
+                  _this.loadMp4(file);
+                }
+              });
             } else {
               alert('不支持的文件类型，只支持 .svga / .json / .mp4');
             }
+          },
+          
+          /**
+           * 检测MP4是双通道还是普通视频
+           * 通过分析30%和70%位置的帧，检测左右两半的饱和度和亮度差异
+           * @param {File} file - MP4文件
+           * @param {Function} callback - 回调函数，参数为isDualChannel(boolean)
+           */
+          detectMp4Type: function(file, callback) {
+            var objectUrl = URL.createObjectURL(file);
+            var video = document.createElement('video');
+            video.src = objectUrl;
+            video.muted = true;
+            
+            // 配置参数
+            var CONFIG = {
+              pureBlackThreshold: 0.05,      // 饱和度<0.05判定为纯黑（alpha通道）
+              saturationDiffThreshold: 0.08, // 左右饱和度差异>0.08判定为双通道
+              brightnessDiffThreshold: 0.15, // 左右亮度差异>0.15判定为双通道
+              checkFramePositions: [0.3, 0.7] // 检测30%和70%位置的帧
+            };
+            
+            video.onloadedmetadata = function() {
+              var videoWidth = video.videoWidth;
+              var videoHeight = video.videoHeight;
+              var duration = video.duration;
+              
+              // 创建临时canvas用于分析
+              var canvas = document.createElement('canvas');
+              canvas.width = videoWidth;
+              canvas.height = videoHeight;
+              var ctx = canvas.getContext('2d', { willReadFrequently: true });
+              
+              var frameIndex = 0;
+              var isDualChannel = false;
+              
+              // 计算区域平均饱和度和亮度
+              function calculateMetrics(imageData) {
+                var data = imageData.data;
+                var totalSaturation = 0;
+                var totalBrightness = 0;
+                var count = 0;
+                
+                // 抖样计算（每16个像素抽1个，提升性能）
+                for (var i = 0; i < data.length; i += 64) {
+                  var r = data[i] / 255;
+                  var g = data[i + 1] / 255;
+                  var b = data[i + 2] / 255;
+                  var max = Math.max(r, g, b);
+                  var min = Math.min(r, g, b);
+                  
+                  // 饱和度
+                  var saturation = max === 0 ? 0 : (max - min) / max;
+                  totalSaturation += saturation;
+                  
+                  // 亮度（使用相对亮度公式）
+                  var brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+                  totalBrightness += brightness;
+                  
+                  count++;
+                }
+                return {
+                  saturation: count === 0 ? 0 : totalSaturation / count,
+                  brightness: count === 0 ? 0 : totalBrightness / count
+                };
+              }
+              
+              // 分析单帧是否为双通道
+              function analyzeFrame() {
+                ctx.drawImage(video, 0, 0);
+                
+                var halfWidth = Math.floor(videoWidth / 2);
+                var leftData = ctx.getImageData(0, 0, halfWidth, videoHeight);
+                var rightData = ctx.getImageData(halfWidth, 0, halfWidth, videoHeight);
+                
+                var leftMetrics = calculateMetrics(leftData);
+                var rightMetrics = calculateMetrics(rightData);
+                
+                var satDiff = Math.abs(leftMetrics.saturation - rightMetrics.saturation);
+                var brightDiff = Math.abs(leftMetrics.brightness - rightMetrics.brightness);
+                
+                // 判断逻辑：
+                // 1. 一边是纯黑（alpha通道，饱和度极低）
+                // 2. 另一边饱和度明显更高（有彩色内容）
+                // 3. 或者亮度差异明显（一边全黑，一边有内容）
+                var hasBlackSide = leftMetrics.saturation < CONFIG.pureBlackThreshold || 
+                                    rightMetrics.saturation < CONFIG.pureBlackThreshold;
+                var hasSaturationDiff = satDiff > CONFIG.saturationDiffThreshold;
+                var hasBrightnessDiff = brightDiff > CONFIG.brightnessDiffThreshold;
+                
+                return hasBlackSide && (hasSaturationDiff || hasBrightnessDiff);
+              }
+              
+              // 检测下一帧
+              function checkNextFrame() {
+                if (frameIndex >= CONFIG.checkFramePositions.length) {
+                  // 所有帧检测完成，返回结果
+                  URL.revokeObjectURL(objectUrl);
+                  callback(isDualChannel);
+                  return;
+                }
+                
+                var targetTime = duration * CONFIG.checkFramePositions[frameIndex];
+                video.currentTime = targetTime;
+              }
+              
+              // 监听seeked事件
+              video.onseeked = function() {
+                if (analyzeFrame()) {
+                  isDualChannel = true;
+                }
+                
+                frameIndex++;
+                
+                // 如果已经检测到双通道，无需继续
+                if (isDualChannel) {
+                  URL.revokeObjectURL(objectUrl);
+                  callback(true);
+                  return;
+                }
+                
+                // 继续检测下一帧
+                checkNextFrame();
+              };
+              
+              // 开始检测第一帧
+              checkNextFrame();
+            };
+            
+            video.onerror = function() {
+              URL.revokeObjectURL(objectUrl);
+              // 加载失败默认当作普通MP4
+              callback(false);
+            };
+            
+            video.load();
           },
 
           /* 模块切换 */
@@ -1263,6 +1432,21 @@ function initApp() {
               return;
             }
             
+            // 普通MP4 模式
+            if (this.currentModule === 'mp4' && this.mp4.hasFile && this.mp4Video) {
+              if (this.isPlaying) {
+                this.mp4Video.pause();
+                this.isPlaying = false;
+              } else {
+                var _this = this;
+                this.mp4Video.play().then(function() {
+                  _this.isPlaying = true;
+                  _this.startMp4ProgressLoop();
+                });
+              }
+              return;
+            }
+            
             // SVGA 模式
             if (!this.svgaPlayer || !this.svga.hasFile) return;
             if (this.isPlaying) {
@@ -1291,6 +1475,11 @@ function initApp() {
             // 双通道MP4 模式
             if (this.currentModule === 'yyeva' && this.yyevaVideo) {
               this.yyevaVideo.muted = this.isMuted;
+            }
+            
+            // 普通MP4 模式
+            if (this.currentModule === 'mp4' && this.mp4Video) {
+              this.mp4Video.muted = this.isMuted;
             }
             
             // SVGA 模式 - 使用Howler全局静音控制
@@ -1341,6 +1530,14 @@ function initApp() {
                 _this.renderYyevaFrame();
               }, 50);
               
+              return;
+            }
+            
+            // 普通MP4 模式
+            if (this.currentModule === 'mp4' && this.mp4.hasFile && this.mp4Video) {
+              var duration = this.mp4Video.duration || 1;
+              this.mp4Video.currentTime = p * duration;
+              this.currentFrame = Math.round(p * this.totalFrames);
               return;
             }
             
@@ -1775,6 +1972,161 @@ function initApp() {
             
             // 重置双通道MP4音频状态
             this.yyevaHasAudio = false;
+          },
+
+          /* ==================== 普通MP4加载与播放 ==================== */
+          
+          /**
+           * 加载普通MP4文件
+           */
+          loadMp4: function (file) {
+            var _this = this;
+            
+            // 检查任务并确认
+            if (!_this.confirmIfHasOngoingTasks('播放新文件', 'load')) {
+              return;
+            }
+            
+            // 使用统一的模式切换函数
+            _this.switchMode('mp4');
+            
+            // 设置文件信息
+            _this.mp4.hasFile = true;
+            _this.mp4.file = file;
+            _this.mp4.fileInfo.name = file.name;
+            _this.mp4.fileInfo.size = file.size;
+            _this.mp4.fileInfo.sizeText = _this.formatBytes(file.size);
+            
+            // 创建objectUrl
+            _this.mp4ObjectUrl = URL.createObjectURL(file);
+            
+            // 创建视频元素
+            var video = document.createElement('video');
+            video.src = _this.mp4ObjectUrl;
+            video.crossOrigin = 'anonymous';
+            video.muted = _this.isMuted;
+            video.loop = true;
+            video.playsInline = true;
+            video.style.cssText = 'max-width: 100%; max-height: 100%; object-fit: contain;';
+            _this.mp4Video = video;
+            
+            // 加载视频元数据
+            video.onloadedmetadata = function() {
+              var videoWidth = video.videoWidth;
+              var videoHeight = video.videoHeight;
+              
+              _this.mp4.originalWidth = videoWidth;
+              _this.mp4.originalHeight = videoHeight;
+              _this.mp4.fileInfo.sizeWH = videoWidth + 'x' + videoHeight;
+              
+              // 计算帧率和时长
+              var duration = video.duration;
+              _this.mp4.fileInfo.duration = duration.toFixed(2) + 's';
+              _this.mp4.fileInfo.fps = '30 FPS'; // MP4没有直接获取帧率的方法
+              _this.totalFrames = Math.round(duration * 30);
+              
+              // 检测视频是否包含音频轨道
+              _this.mp4HasAudio = _this.detectVideoHasAudio(video);
+              
+              // 将视频元素添加到容器
+              var container = _this.$refs.svgaContainer;
+              if (container) {
+                container.innerHTML = '';
+                container.appendChild(video);
+              }
+              
+              // 启动过渡
+              _this.footerTransitioning = true;
+              _this.footerContentVisible = false;
+              
+              setTimeout(function() {
+                _this.footerTransitioning = false;
+                _this.footerContentVisible = true;
+                
+                setTimeout(function() {
+                  video.play().then(function() {
+                    _this.isPlaying = true;
+                    _this.startMp4ProgressLoop();
+                  }).catch(function(err) {
+                    console.error('普通MP4播放失败:', err);
+                  });
+                }, 50);
+              }, 400);
+            };
+            
+            video.onerror = function() {
+              alert('视频加载失败，请检查文件格式');
+              _this.cleanupMp4();
+              _this.clearAll();
+            };
+            
+            video.load();
+          },
+          
+          /**
+           * 普通MP4进度更新循环
+           */
+          startMp4ProgressLoop: function() {
+            var _this = this;
+            var video = this.mp4Video;
+            if (!video) return;
+            
+            function updateProgress() {
+              if (!_this.mp4Video || _this.currentModule !== 'mp4') return;
+              
+              if (video.duration > 0) {
+                _this.progress = (video.currentTime / video.duration) * 100;
+                _this.currentFrame = Math.floor(video.currentTime * 30);
+              }
+              
+              if (_this.isPlaying) {
+                requestAnimationFrame(updateProgress);
+              }
+            }
+            
+            requestAnimationFrame(updateProgress);
+          },
+          
+          /**
+           * 清理普通MP4资源
+           */
+          cleanupMp4: function() {
+            if (this.mp4Video) {
+              this.mp4Video.onerror = null;
+              this.mp4Video.onloadedmetadata = null;
+              this.mp4Video.pause();
+              this.mp4Video.src = '';
+              this.mp4Video = null;
+            }
+            
+            if (this.mp4ObjectUrl) {
+              URL.revokeObjectURL(this.mp4ObjectUrl);
+              this.mp4ObjectUrl = null;
+            }
+            
+            // 清空容器内容
+            var container = this.$refs.svgaContainer;
+            if (container) {
+              container.innerHTML = '';
+            }
+            
+            this.mp4 = {
+              hasFile: false,
+              file: null,
+              fileInfo: {
+                name: '',
+                size: 0,
+                sizeText: '',
+                fps: null,
+                sizeWH: '',
+                duration: ''
+              },
+              originalWidth: 0,
+              originalHeight: 0
+            };
+            
+            // 重置普通MP4音频状态
+            this.mp4HasAudio = false;
           },
 
           /* ==================== UI交互 ==================== */
@@ -2817,6 +3169,193 @@ function initApp() {
             
             // 开始捕获
             console.log('开始捕获 双通道MP4 帧，总帧数:', totalFrames);
+            captureFrame();
+          },
+          
+          /**
+           * 导出普通MP4为GIF
+           */
+          exportMp4GIF: async function() {
+            var _this = this;
+            
+            if (!this.mp4Video || !this.mp4.hasFile) {
+              alert('请先加载 MP4 文件');
+              return;
+            }
+            
+            // 检查是否有其他正在进行的任务
+            if (!this.confirmIfHasOngoingTasks('导出GIF', 'task')) {
+              return;
+            }
+            
+            // 添加确认弹窗
+            if (!confirm('确认要导出GIF吗？')) {
+              return;
+            }
+
+            // 动态加载 GIF.js
+            try {
+              await this.loadLibrary('gif', true);
+            } catch (err) {
+              alert('GIF导出库加载失败，请检查网络');
+              return;
+            }
+
+            this.isExportingGIF = true;
+            this.gifExportProgress = 0;
+
+            var video = this.mp4Video;
+            var videoWidth = video.videoWidth;
+            var videoHeight = video.videoHeight;
+            
+            // 创建临时canvas用于捕获视频帧
+            var captureCanvas = document.createElement('canvas');
+            captureCanvas.width = videoWidth;
+            captureCanvas.height = videoHeight;
+            var captureCtx = captureCanvas.getContext('2d');
+            
+            // 获取视频信息
+            var duration = video.duration;
+            var fps = 30;
+            var totalFrames = Math.round(duration * fps);
+            var frameDelay = Math.round(1000 / fps);
+
+            // 创建 GIF 编码器
+            var gif = new GIF({
+              workers: 2,
+              quality: 10,
+              width: videoWidth,
+              height: videoHeight,
+              workerScript: 'assets/js/gif.worker.js'
+            });
+
+            // 监听进度
+            gif.on('progress', function(p) {
+              _this.gifExportProgress = 50 + Math.floor(p * 50);
+            });
+
+            // 完成时触发
+            gif.on('finished', function(blob) {
+              _this.isExportingGIF = false;
+              _this.gifExportProgress = 0;
+
+              // 下载 GIF
+              var url = URL.createObjectURL(blob);
+              var a = document.createElement('a');
+              a.href = url;
+              a.download = (_this.mp4.fileInfo.name.replace(/\.mp4$/i, '') || 'video') + '.gif';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              
+              setTimeout(function() {
+                URL.revokeObjectURL(url);
+              }, 100);
+
+              alert('GIF 导出成功！大小: ' + (_this.formatBytes(blob.size)));
+            });
+
+            // 错误处理
+            gif.on('abort', function() {
+              _this.isExportingGIF = false;
+              _this.gifExportProgress = 0;
+              alert('GIF 导出已取消');
+            });
+
+            // 暂停当前播放
+            var wasPlaying = this.isPlaying;
+            video.pause();
+            this.isPlaying = false;
+
+            // 逐帧捕获
+            var currentFrameIndex = 0;
+            var frameTime = 1 / fps;
+            
+            var captureFrame = function() {
+              if (currentFrameIndex >= totalFrames) {
+                _this.gifExportProgress = 50;
+                
+                setTimeout(function() {
+                  try {
+                    gif.render();
+                  } catch (err) {
+                    console.error('GIF 编码失败:', err);
+                    _this.isExportingGIF = false;
+                    _this.gifExportProgress = 0;
+                    alert('GIF 编码失败: ' + err.message);
+                    
+                    if (wasPlaying) {
+                      video.play();
+                      _this.isPlaying = true;
+                      _this.startMp4ProgressLoop();
+                    }
+                  }
+                }, 100);
+                
+                return;
+              }
+
+              video.currentTime = currentFrameIndex * frameTime;
+            };
+            
+            var onSeeked = function() {
+              try {
+                // 绘制视频帧到canvas
+                captureCtx.drawImage(video, 0, 0);
+                
+                // 创建临时canvas用于合成背景色
+                var tempCanvas = document.createElement('canvas');
+                tempCanvas.width = videoWidth;
+                tempCanvas.height = videoHeight;
+                var tempCtx = tempCanvas.getContext('2d');
+                
+                // 填充背景色
+                var bgColor = '#ffffff';
+                if (_this.bgColorKey && _this.bgColorKey !== 'pattern') {
+                  var computedBgColor = _this.currentBgColor;
+                  if (computedBgColor !== 'transparent' && computedBgColor !== '#000000') {
+                    bgColor = computedBgColor;
+                  }
+                }
+                tempCtx.fillStyle = bgColor;
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                
+                // 绘制视频帧
+                tempCtx.drawImage(captureCanvas, 0, 0);
+                
+                // 添加到 GIF
+                gif.addFrame(tempCanvas, {copy: true, delay: frameDelay});
+                currentFrameIndex++;
+                
+                _this.gifExportProgress = Math.floor((currentFrameIndex / totalFrames) * 50);
+                
+                captureFrame();
+              } catch (err) {
+                console.error('捕获帧失败:', err);
+                _this.isExportingGIF = false;
+                _this.gifExportProgress = 0;
+                video.removeEventListener('seeked', onSeeked);
+                alert('捕获帧失败: ' + err.message);
+                
+                if (wasPlaying) {
+                  video.play();
+                  _this.isPlaying = true;
+                  _this.startMp4ProgressLoop();
+                }
+              }
+            };
+            
+            video.addEventListener('seeked', onSeeked);
+            
+            gif.on('finished', function() {
+              video.removeEventListener('seeked', onSeeked);
+              if (wasPlaying) {
+                video.play();
+                _this.isPlaying = true;
+                _this.startMp4ProgressLoop();
+              }
+            });
+            
             captureFrame();
           },
 
@@ -4157,7 +4696,7 @@ function initApp() {
           },
           
           isEmpty: function () {
-            return !this.svga.hasFile && !this.yyeva.hasFile && !this.lottie.hasFile;
+            return !this.svga.hasFile && !this.yyeva.hasFile && !this.mp4.hasFile && !this.lottie.hasFile;
           },
           
           currentFileInfo: function () {
@@ -4165,6 +4704,8 @@ function initApp() {
               return this.svga.fileInfo;
             } else if (this.currentModule === 'yyeva' && this.yyeva.hasFile) {
               return this.yyeva.fileInfo;
+            } else if (this.currentModule === 'mp4' && this.mp4.hasFile) {
+              return this.mp4.fileInfo;
             } else if (this.currentModule === 'lottie' && this.lottie.hasFile) {
               return this.lottie.fileInfo;
             }
@@ -4192,6 +4733,9 @@ function initApp() {
             } else if (this.currentModule === 'yyeva') {
               // 双通道MP4: 检查视频是否有音频轨道
               return this.yyevaHasAudio;
+            } else if (this.currentModule === 'mp4') {
+              // 普通MP4: 检查视频是否有音频轨道
+              return this.mp4HasAudio;
             } else if (this.currentModule === 'lottie') {
               // Lottie: 通常不包含音频
               return false;
@@ -4217,27 +4761,6 @@ function initApp() {
             return this.materialList.filter(function(item) {
               return item.imageKey.toLowerCase().indexOf(query) !== -1;
             });
-          },
-          
-          zoomInIcon: function () {
-            if (this.isDarkMode) {
-              return 'assets/img/zoom_in_dark.png';
-            }
-            return 'assets/img/zoom_in.png';
-          },
-          
-          zoomOutIcon: function () {
-            if (this.isDarkMode) {
-              return 'assets/img/zoom_out_dark.png';
-            }
-            return 'assets/img/zoom_out.png';
-          },
-          
-          oneToOneIcon: function () {
-            if (this.isDarkMode) {
-              return 'assets/img/one2one_dark.png';
-            }
-            return 'assets/img/one2one.png';
           },
           
           // SVGA转换预估计算
