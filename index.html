@@ -396,6 +396,15 @@
                     <button class="btn-primary" @click="triggerChangePreviewFile">
                       更换预览文件
                     </button>
+                    <button 
+                      class="btn-primary"
+                      :class="{'tooltip': !mp4.hasFile}"
+                      :disabled="!mp4.hasFile"
+                      @click="openChromaKeyPanel"
+                    >
+                      <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
+                      绿幕抠图
+                    </button>
                   </div>
                   <div class="footer-actions">
                     <button 
@@ -867,6 +876,79 @@
               <template v-else>
                 开始转换SVGA
               </template>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 绿幕抠图弹窗（普通MP4模式左侧弹窗） -->
+      <div class="chromakey-panel" :class="{'show': showChromaKeyPanel && currentModule === 'mp4'}">
+        <div class="chromakey-panel-container">
+          <!-- 标题区 -->
+          <div class="chromakey-panel-header">
+            <h3 class="chromakey-panel-title">扮掉画面绿幕成透明</h3>
+            <div class="chromakey-panel-divider"></div>
+          </div>
+          
+          <!-- MP4信息 -->
+          <div class="chromakey-info-section">
+            <div class="chromakey-info-row">MP4尺寸：{{ mp4.fileInfo.sizeWH }}    时长：{{ mp4.fileInfo.duration }}</div>
+            <div class="chromakey-performance-hint">打开绿幕抠图，播放会比较卡，因为是实时渲染抠图效果</div>
+          </div>
+
+          <!-- 设置区域 -->
+          <div class="chromakey-config-section">
+            <!-- 打开扮绿幕开关 -->
+            <div class="chromakey-config-item">
+              <div class="chromakey-config-label">打开扮绿幕：</div>
+              <div class="chromakey-switch-wrapper" @click="toggleChromaKey">
+                <div class="chromakey-switch" :class="{active: chromaKeyEnabled}">
+                  <div class="chromakey-switch-handle"></div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 相似度滑块 -->
+            <div class="chromakey-config-item" v-if="chromaKeyEnabled">
+              <div class="chromakey-config-label">相似度：{{ chromaKeySimilarity }}</div>
+              <div class="chromakey-slider-wrapper">
+                <input 
+                  type="range" 
+                  class="chromakey-slider" 
+                  v-model.number="chromaKeySimilarity"
+                  min="0"
+                  max="100"
+                  step="1"
+                  @input="updateChromaKeyEffect"
+                />
+              </div>
+            </div>
+            
+            <!-- 平滑度滑块 -->
+            <div class="chromakey-config-item" v-if="chromaKeyEnabled">
+              <div class="chromakey-config-label">平滑度：{{ chromaKeySmoothness }}</div>
+              <div class="chromakey-slider-wrapper">
+                <input 
+                  type="range" 
+                  class="chromakey-slider" 
+                  v-model.number="chromaKeySmoothness"
+                  min="0"
+                  max="100"
+                  step="1"
+                  @input="updateChromaKeyEffect"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 底部按钮 -->
+          <div class="chromakey-panel-footer">
+            <!-- 确定按钮 -->
+            <button 
+              class="material-btn-export" 
+              @click="applyChromaKey"
+            >
+              确定
             </button>
           </div>
         </div>

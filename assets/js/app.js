@@ -265,6 +265,14 @@ function initApp() {
             svgaConvertMessage: '',
             svgaConvertCancelled: false,
             
+            // 绿幕抠图配置（普通MP4）
+            showChromaKeyPanel: false,
+            chromaKeyEnabled: false,
+            chromaKeySimilarity: 40,
+            chromaKeySmoothness: 20,
+            chromaKeyApplied: false,
+            chromaKeyRenderLoop: null,
+            
             // Toast提示
             toastVisible: false,
             toastMessage: '',
@@ -401,7 +409,8 @@ function initApp() {
             this.showMP4Panel = false;
             this.showSVGAPanel = false;
             
-            // 未来的左侧弹窗...
+            // 左侧弹窗
+            this.showChromaKeyPanel = false;
           },
           
           /**
@@ -2509,6 +2518,12 @@ function initApp() {
            * 清理普通MP4资源
            */
           cleanupMp4: function() {
+            // 停止绿幕抠图渲染循环
+            if (this.chromaKeyRenderLoop) {
+              cancelAnimationFrame(this.chromaKeyRenderLoop);
+              this.chromaKeyRenderLoop = null;
+            }
+            
             if (this.mp4Video) {
               this.mp4Video.onerror = null;
               this.mp4Video.onloadedmetadata = null;
@@ -2545,6 +2560,10 @@ function initApp() {
             
             // 重置普通MP4音频状态
             this.mp4HasAudio = false;
+            
+            // 重置绿幕抠图状态
+            this.chromaKeyEnabled = false;
+            this.chromaKeyApplied = false;
           },
 
           /* ==================== UI交互 ==================== */
@@ -3993,6 +4012,168 @@ function initApp() {
             if (kb < 1024) return kb.toFixed(0) + 'kb';
             var mb = kb / 1024;
             return mb.toFixed(2) + 'M';
+          },
+          
+          /* ==================== 绿幕抠图功能 ==================== */
+          
+          /**
+           * 打开绿幕抠图弹窗
+           */
+          openChromaKeyPanel: function() {
+            if (!this.mp4Video || !this.mp4.hasFile) {
+              alert('请先加载 MP4 文件');
+              return;
+            }
+            
+            // 使用统一的弹窗管理（左侧弹窗）
+            this.showChromaKeyPanel = true;
+          },
+          
+          /**
+           * 关闭绿幕抠图弹窗
+           */
+          closeChromaKeyPanel: function() {
+            this.showChromaKeyPanel = false;
+          },
+          
+          /**
+           * 切换绿幕抠图开关
+           */
+          toggleChromaKey: function() {
+            this.chromaKeyEnabled = !this.chromaKeyEnabled;
+            if (this.chromaKeyEnabled) {
+              this.updateChromaKeyEffect();
+            } else {
+              // 关闭抠图，恢复原始画面
+              this.removeChromaKeyEffect();
+            }
+          },
+          
+          /**
+           * 更新绿幕抠图效果
+           */
+          updateChromaKeyEffect: function() {
+            if (!this.chromaKeyEnabled || !this.mp4Video) return;
+            
+            var _this = this;
+            var video = this.mp4Video;
+            
+            // 创建临时canvas用于抠图渲染
+            var container = this.$refs.svgaContainer;
+            if (!container) return;
+            
+            // 移除旧的canvas和渲染循环
+            if (this.chromaKeyRenderLoop) {
+              cancelAnimationFrame(this.chromaKeyRenderLoop);
+              this.chromaKeyRenderLoop = null;
+            }
+            
+            var existingCanvas = container.querySelector('canvas.chromakey-canvas');
+            if (existingCanvas) {
+              container.removeChild(existingCanvas);
+            }
+            
+            // 创建新canvas
+            var canvas = document.createElement('canvas');
+            canvas.className = 'chromakey-canvas';
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.style.cssText = 'max-width: 100%; max-height: 100%; object-fit: contain;';
+            
+            var ctx = canvas.getContext('2d', { willReadFrequently: true });
+            
+            // 隐藏video，显示canvas
+            video.style.display = 'none';
+            container.appendChild(canvas);
+            
+            // 绿幕抠图参数
+            var similarity = this.chromaKeySimilarity / 100;
+            var smoothness = this.chromaKeySmoothness / 100;
+            
+            // 渲染循环（优化：降低帧率，减少CPU占用）
+            var lastRenderTime = 0;
+            var renderInterval = 1000 / 30; // 限制为30fps
+            
+            var renderChromaKey = function(currentTime) {
+              if (!_this.chromaKeyEnabled || !_this.mp4Video || _this.currentModule !== 'mp4') {
+                return;
+              }
+              
+              // 帧率限制
+              var elapsed = currentTime - lastRenderTime;
+              if (elapsed < renderInterval) {
+                _this.chromaKeyRenderLoop = requestAnimationFrame(renderChromaKey);
+                return;
+              }
+              lastRenderTime = currentTime;
+              
+              // 绘制视频帧
+              ctx.drawImage(video, 0, 0);
+              
+              // 获取像素数据
+              var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              var data = imageData.data;
+              
+              // 更新参数（实时获取）
+              similarity = _this.chromaKeySimilarity / 100;
+              smoothness = _this.chromaKeySmoothness / 100;
+              
+              // 遍历每个像素（绿幕抠图）
+              for (var i = 0; i < data.length; i += 4) {
+                var r = data[i];
+                var g = data[i + 1];
+                var b = data[i + 2];
+                
+                // 检测绿色：绿色通道明显高于红色和蓝色
+                var isGreen = (g > r * (1 + similarity) && g > b * (1 + similarity));
+                
+                if (isGreen) {
+                  // 计算透明度（根据平滑度）
+                  var greenStrength = (g - Math.max(r, b)) / 255;
+                  var alpha = Math.max(0, 1 - greenStrength / (1 - smoothness + 0.01));
+                  data[i + 3] = Math.floor(alpha * 255);
+                }
+              }
+              
+              ctx.putImageData(imageData, 0, 0);
+              
+              // 继续下一帧
+              _this.chromaKeyRenderLoop = requestAnimationFrame(renderChromaKey);
+            };
+            
+            // 开始渲染
+            renderChromaKey();
+          },
+          
+          /**
+           * 移除绿幕抠图效果
+           */
+          removeChromaKeyEffect: function() {
+            // 停止渲染循环
+            if (this.chromaKeyRenderLoop) {
+              cancelAnimationFrame(this.chromaKeyRenderLoop);
+              this.chromaKeyRenderLoop = null;
+            }
+            
+            var container = this.$refs.svgaContainer;
+            if (!container || !this.mp4Video) return;
+            
+            // 移除chromakey canvas
+            var chromakeyCanvas = container.querySelector('canvas.chromakey-canvas');
+            if (chromakeyCanvas) {
+              container.removeChild(chromakeyCanvas);
+            }
+            
+            // 显示video
+            this.mp4Video.style.display = '';
+          },
+          
+          /**
+           * 应用绿幕抠图效果
+           */
+          applyChromaKey: function() {
+            this.chromaKeyApplied = this.chromaKeyEnabled;
+            this.closeChromaKeyPanel();
           },
 
           /* MP4 转换功能 */
