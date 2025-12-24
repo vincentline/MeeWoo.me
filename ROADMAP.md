@@ -216,7 +216,7 @@ convertToYYEVAMP4: async function() {
 **按钮位置**：底部浮层，"导出GIF"按钮右侧
 
 **进度弹窗**：
-```html
+```
 <div class="conversion-modal" v-if="isConvertingToMP4">
   <div class="modal-content">
     <h3>转换为YYEVA-MP4</h3>
@@ -769,3 +769,258 @@ await ffmpeg.load();
 - TypeScript迁移
 
 ---
+
+## 阶段5：普通MP4模式与导出功能增强 🔄
+**目标：完善普通MP4处理能力，衔接AIGC工作流**
+**状态：进行中**
+**开始时间：2025-12-24**
+
+### 核心定位
+本阶段聚焦于**普通MP4模式**的完善，使项目成为AIGC到客户端动画格式的转换枢纽：
+```
+AI生成视频（普通MP4）
+    │
+    ├─→ 绿幕视频 ──→ 扣绿幕 ──→ 透明序列帧 ──→ 双通道MP4 / SVGA / GIF
+    │
+    └─→ 已有透明通道 ──→ 直接转换 ──→ 双通道MP4 / SVGA / GIF
+```
+
+### 5.1 导出GIF模块化改造
+**优先级：高**
+**状态：待开始**
+
+#### 功能描述
+- 将GIF导出功能抽取为独立模块
+- 所有模式（SVGA/双通道MP4/普通MP4/Lottie）统一调用
+- 增加导出弹窗，支持参数配置
+
+#### 导出参数
+| 参数 | 说明 | 默认值 | 范围 |
+|-----|------|-------|------|
+| width | 输出宽度 | 原始宽度 | 50-1920 |
+| height | 输出高度 | 原始高度 | 50-1920 |
+| fps | 帧率 | 15 | 5-30 |
+| quality | 质量 | 80 | 1-100 |
+| frameRange | 帧范围 | 全部 | 起始帧-结束帧 |
+
+#### 技术方案
+```javascript
+// 模块化调用方式
+GIFExporter.open({
+  source: canvas,
+  totalFrames: 100,
+  defaultConfig: { width: 750, fps: 15 },
+  onExport: (blob) => { /* 下载 */ }
+});
+```
+
+---
+
+### 5.2 普通MP4模式完善
+**优先级：极高**
+**状态：待开始**
+
+#### 5.2.1 普通MP4 → 双通道MP4
+**优先级：极高**
+
+**功能描述**：
+- 将扣除绿幕后的透明视频合成为双通道MP4
+- 左侧彩色通道 + 右侧Alpha灰度通道
+
+**技术方案**：
+```
+普通MP4 → 扣绿幕 → 提取每帧RGB+Alpha → 合成双通道画布 → ffmpeg编码 → 下载
+```
+
+**复用代码**：
+- ffmpeg.wasm加载逻辑（已有）
+- 双通道合成逻辑（已有，composeDualChannel）
+- MP4编码逻辑（已有，encodeToMP4）
+
+---
+
+#### 5.2.2 普通MP4 → SVGA
+**优先级：极高**
+
+**功能描述**：
+- 将扣除绿幕后的透明视频转换为SVGA格式
+- 使用序列帧方式生成SVGA
+
+**技术方案**：
+```
+普通MP4 → 扣绿幕 → 提取序列帧PNG → protobuf编码 → pako压缩 → 下载.svga
+```
+
+**复用代码**：
+- 双通道MP4→SVGA的全部逻辑（extractYyevaFrames、buildSVGAFile）
+- protobuf编码和pako压缩（已有）
+
+---
+
+#### 5.2.3 普通MP4 → GIF
+**优先级：高**
+
+**功能描述**：
+- 将普通MP4导出为GIF动画
+- 支持原视频导出或扣绿幕后导出
+
+**技术方案**：
+- 复用导出GIF模块（5.1）
+- 逐帧提取 → gif.js编码 → 下载
+
+---
+
+### 5.3 普通MP4扣绿幕功能
+**优先级：高**
+**状态：待开始**
+
+#### 功能描述
+- 在普通MP4模式底部浮层添加"扣绿幕"按钮
+- 实时预览扣除效果
+- 支持参数调整优化效果
+
+#### 扣绿幕参数
+| 参数 | 说明 | 默认值 | 范围 |
+|-----|------|-------|------|
+| threshold | 绿色阈值 | 0.4 | 0-1 |
+| smoothness | 边缘平滑 | 0.1 | 0-0.3 |
+
+#### 技术方案
+```javascript
+// 色度键控（Chroma Key）算法
+function removeGreenScreen(imageData, threshold, smoothness) {
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const greenness = (g - Math.max(r, b)) / 255;
+    if (greenness > threshold) {
+      const alpha = Math.max(0, 1 - (greenness - threshold) / smoothness);
+      data[i + 3] = alpha * 255;
+    }
+  }
+}
+```
+
+---
+
+### 5.4 Lottie预览功能
+**优先级：高**
+**状态：待开始**
+
+#### 功能描述
+- 实现Lottie JSON文件的加载和预览
+- 支持播放控制（播放/暂停/进度条/帧数显示）
+
+#### 技术方案
+```javascript
+const animation = lottie.loadAnimation({
+  container: this.$refs.lottieContainer,
+  renderer: 'canvas',
+  loop: false,
+  autoplay: false,
+  animationData: jsonData
+});
+
+// 统一播放控制接口
+animation.play();
+animation.pause();
+animation.goToAndStop(frame, true);
+```
+
+#### 暂不实现
+- Lottie → SVGA（技术复杂度高）
+- Lottie → MP4（需求不明确）
+
+---
+
+### 5.5 移动端基础适配
+**优先级：低**
+**状态：待开始**
+
+#### 功能描述
+- 基础响应式布局适配
+- 触摸设备可用（不做深度优化）
+
+#### 技术方案
+- 媒体查询调整布局
+- 隐藏部分高级功能（如素材替换侧边栏）
+- 禁止横向滚动
+
+```
+@media (max-width: 768px) {
+  .material-panel { display: none; }
+  .footer-bar { flex-wrap: wrap; }
+}
+```
+
+### 5.6 交互与UI优化
+**优先级：中**
+**状态：待开始**
+
+#### 功能描述
+- 首页标题栏移除，改为顶部左右图标入口
+- 左上角图标：点击展开全局侧边栏（功能/模式入口）
+- 右上角图标：hover 展开菜单（设置、帮助等，内容后续补充）
+- 所有模式顶部区域交互保持一致
+- 播放进度条增加可拖动滑块，支持精确到单帧的跳转
+
+#### 技术要点
+- 保持第一行“左：播放控制+进度条，中：背景色切换”的布局规范
+- 顶部左右图标与现有布局协同，不挤压进度条和背景按钮
+- 播放进度滑块仅增强UI，底层时间/帧同步逻辑保持不变
+- 拖动结束时统一调用“跳转到指定帧”的渲染函数，确保帧与画面同步
+
+---
+
+### 开发计划
+
+#### 第一阶段（1周）- 核心能力
+| 任务 | 工作量 | 优先级 |
+|-----|-------|-------|
+| 导出GIF模块化改造 | 1-2天 | 高 |
+| 普通MP4→双通道MP4 | 2天 | 极高 |
+| 普通MP4→SVGA | 1-2天 | 极高 |
+| 普通MP4→GIF | 0.5天 | 高 |
+
+#### 第二阶段（3-4天）- 功能完善
+| 任务 | 工作量 | 优先级 |
+|-----|-------|-------|
+| 普通MP4扣绿幕 | 1-2天 | 高 |
+| Lottie预览播放 | 1天 | 高 |
+| 移动端基础适配 | 1天 | 低 |
+
+---
+
+### 已搁置功能
+
+| 功能 | 原因 |
+|-----|------|
+| AI扣视频（非绿幕） | 技术复杂度极高，前端性能无法支撑 |
+| Lottie转换功能 | 需求不明确，技术复杂 |
+| 深度移动端优化 | ROI低，非核心场景 |
+
+---
+
+## 未来规划
+
+### 短期目标
+- ✅ 代码模块化整理
+- ✅ 文件结构优化
+- ✅ 清理无用资源
+- 🔄 阶段5功能开发
+
+### 中期目标（如需要）
+- 抽取库加载管理器为`library-loader.js`
+- 抽取格式转换功能为`converters.js`
+- 抽取导出功能为`exporters.js`
+- PNG序列上传功能（支持zip包，衔接AI抠图工作流）
+
+### 长期目标
+- 性能优化（大文件处理、内存优化）
+- 批量处理功能
+- 使用Vue CLI构建工具
+- TypeScript迁移
+
+---
+
+*最后更新：2025-12-24*
