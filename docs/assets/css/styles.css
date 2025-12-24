@@ -3334,3 +3334,242 @@ body.dark-mode .svga-btn-converting {
   font-size: 12px;
   opacity: 0.8;
 }
+
+/* ========================================
+   绿幕抠图弹窗（普通MP4模式左侧弹窗）
+   ======================================== */
+.chromakey-panel {
+  position: fixed;
+  top: 0;
+  left: -400px;
+  width: 400px;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  padding: 10px;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+}
+
+.chromakey-panel.show {
+  left: 0;
+}
+
+.chromakey-panel-container {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  padding: 20px;
+  gap: 16px;
+  width: 380px;
+  background: #FFFFFF;
+  border: 1px solid #E3E3E3;
+  box-shadow: 0px 10px 32px 0px rgba(51, 51, 51, 0.2);
+  border-radius: 16px;
+  overflow-y: auto;
+}
+
+body.dark-mode .chromakey-panel-container {
+  background: #1a1a1a;
+  border-color: #404040;
+  box-shadow: 0px 10px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* 标题区 */
+.chromakey-panel-header {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  gap: 12px;
+}
+
+.chromakey-panel-title {
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  color: #818181;
+  margin: 0;
+}
+
+body.dark-mode .chromakey-panel-title {
+  color: #999999;
+}
+
+.chromakey-panel-divider {
+  width: 100%;
+  height: 1px;
+  background: #F3F3F3;
+}
+
+body.dark-mode .chromakey-panel-divider {
+  background: #404040;
+}
+
+/* MP4信息区 */
+.chromakey-info-section {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  gap: 4px;
+}
+
+.chromakey-info-row {
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 19px;
+  color: #333333;
+  margin: 0;
+}
+
+body.dark-mode .chromakey-info-row {
+  color: #cccccc;
+}
+
+/* 性能提示 */
+.chromakey-performance-hint {
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  color: #999999;
+  margin-top: 8px;
+}
+
+body.dark-mode .chromakey-performance-hint {
+  color: #666666;
+}
+
+/* 配置区域 */
+.chromakey-config-section {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  gap: 24px;
+  flex: 1;
+}
+
+.chromakey-config-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+  gap: 8px;
+}
+
+.chromakey-config-label {
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 21px;
+  color: #333333;
+  margin: 0;
+  flex-shrink: 0;
+  text-align: left;
+}
+
+body.dark-mode .chromakey-config-label {
+  color: #cccccc;
+}
+
+/* 开关按钮 */
+.chromakey-switch-wrapper {
+  cursor: pointer;
+}
+
+.chromakey-switch {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  background: #E3E3E3;
+  border-radius: 14px;
+  transition: background 0.3s;
+}
+
+.chromakey-switch.active {
+  background: #007AFF;
+}
+
+body.dark-mode .chromakey-switch {
+  background: #404040;
+}
+
+body.dark-mode .chromakey-switch.active {
+  background: #0A84FF;
+}
+
+.chromakey-switch-handle {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  transition: left 0.3s;
+}
+
+.chromakey-switch.active .chromakey-switch-handle {
+  left: 22px;
+}
+
+/* 滑块 */
+.chromakey-slider-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.chromakey-slider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #E3E3E3;
+  border-radius: 2px;
+  outline: none;
+}
+
+body.dark-mode .chromakey-slider {
+  background: #404040;
+}
+
+.chromakey-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #007AFF;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.chromakey-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #007AFF;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+}
+
+body.dark-mode .chromakey-slider::-webkit-slider-thumb {
+  background: #0A84FF;
+}
+
+body.dark-mode .chromakey-slider::-moz-range-thumb {
+  background: #0A84FF;
+}
+
+/* 底部按钮 */
+.chromakey-panel-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-self: stretch;
+  gap: 12px;
+  margin-top: auto;
+}
