@@ -1340,6 +1340,110 @@ body.dark-mode .library-loading-indicator .loading-bar {
 }
 ```
 
+### 3.4 播放器布局系统
+
+#### 整体结构
+
+```
+.main-page
+├─ .viewer-area              ← 主播放区域（Flexbox 布局）
+│   ├─ .viewer-container      ← 播放器容器（由 JS 控制 transform）
+│   │   ├─ .viewer-filename   ← 文件名（绝对定位于播放器上方）
+│   │   └─ .viewer-canvas     ← 播放器画布（包含 canvas 元素）
+│   └─ .empty-state-overlay   ← 空状态覆盖层
+└─ .footer-bar               ← 底部浮层（绝对定位）
+```
+
+#### .viewer-area（主播放区域）
+
+```css
+/* 结构：占据除顶栏外的所有空间
+ * 布局控制：
+ *   - align-items: flex-start → 子元素从顶部开始，不自动垂直居中
+ *   - justify-content: center → 子元素水平居中
+ *   - padding-bottom: 154px → 为 .footer-bar 留空间，确保拖拽虚线边界不超出屏幕
+ * 位置控制：子元素的垂直位置由 JS 的 offsetY 控制（transform: translateY）
+ */
+.viewer-area {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0px 200px 154px;
+  position: relative;
+}
+```
+
+#### .viewer-container（播放器容器）
+
+```css
+/* 结构：包裹文件名 + 播放器画布，大小由 JS 设置为原始尺寸
+ * 缩放机制：
+ *   - transform-origin: top center → 缩放原点在顶部中心，缩放时视觉顶部保持在 y=0 处
+ *   - transform: translate + scale → 由 JS 设置，translate 控制位置，scale 控制缩放
+ * 关键设计：
+ *   - 使用 top center 而非 center center，避免缩放后视觉顶部位置偏移
+ *   - width/height 为原始尺寸，缩放通过 transform: scale() 实现
+ */
+.viewer-container {
+  position: relative;
+  transform-origin: top center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+```
+
+#### JS 控制逻辑
+
+| 函数 | 功能 | 说明 |
+|------|------|------|
+| `getContentOriginalSize()` | 获取内容原始尺寸 | 返回 `{width, height}`，统一处理 SVGA/Lottie/YYEVA/MP4 |
+| `centerViewer()` | 垂直居中 | 计算 offsetY = (可用高度 - 内容高度) / 2 |
+| `applyZoomWithCenterPoint()` | 中心点缩放 | offsetY -= heightDiff / 2，补偿 transform-origin: top center |
+| `viewerContainerStyle()` | 容器样式 | 返回 width/height/transform/cursor |
+| `viewerFilenameStyle()` | 文件名样式 | 反向 scale 保持字体大小不变 |
+
+#### 居中计算逻辑
+
+```javascript
+// centerViewer() 的计算逻辑
+var footerHeight = 154;  // 底部浮层高度
+var availableHeight = window.innerHeight - footerHeight;  // 可用高度
+var contentHeight = originalHeight * viewerScale;  // 内容显示高度
+
+if (contentHeight < availableHeight) {
+  offsetY = (availableHeight - contentHeight) / 2;  // 居中
+} else {
+  offsetY = 0;  // 顶部对齐
+}
+```
+
+#### 缩放中心点补偿逻辑
+
+```javascript
+// applyZoomWithCenterPoint() 的计算逻辑
+// 问题：transform-origin: top center 让顶部固定，底部移动
+// 解决：调整 offsetY 让中心点相对屏幕位置不变
+
+var heightDiff = newHeight - oldHeight;  // 高度变化量
+offsetY -= heightDiff / 2;  // 向上移动补偿
+```
+
+#### 文件名反向缩放逻辑
+
+```javascript
+// viewerFilenameStyle() 的计算逻辑
+// 问题：父容器 scale 会导致文件名跟着缩放
+// 解决：反向 scale 抵消父容器的缩放
+
+var inverseScale = 1 / viewerScale;
+style.transform = 'scale(' + inverseScale + ')';
+style.transformOrigin = 'left bottom';
+style.marginBottom = (8 * viewerScale) + 'px';  // 补偿边距
+```
+
 ---
 
 ## 4. 交互规范
