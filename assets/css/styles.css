@@ -881,7 +881,7 @@ body.dark-mode .info-item-value {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .controls-center {
@@ -3946,4 +3946,520 @@ body.dark-mode .ad-position-bottom {
   .ad-position-right {
     display: none !important;
   }
+}
+
+/* ==================== 变速时间轴编辑器 ==================== */
+
+.speed-remap-editor {
+  position: absolute;
+  bottom: 132px;
+  width: auto;
+  margin-bottom: 10px;
+  z-index: 100;
+  display: flex;
+  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  left: 0;
+}
+
+.speed-remap-editor-content {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* 时间轴容器（垂直布局） */
+.speed-remap-timeline-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* 时长预估 */
+.speed-remap-duration {
+  font-size: 12px;
+  color: #666666;
+  
+  
+  
+}
+
+body.dark-mode .speed-remap-duration {
+  color: #999999;
+  
+}
+
+/* 时间轴主体 */
+.speed-remap-timeline {
+  position: relative;
+  width: 400px;
+  height: 16px;
+  background: #F3F3F3;
+  border-radius: 2px;
+  cursor: crosshair;
+}
+
+body.dark-mode .speed-remap-timeline {
+  background: #3a3a3a;
+}
+
+/* 压缩区域可视化（灰色） */
+.speed-remap-timeline-range {
+  position: absolute;
+  top: 0;
+  height: 16px;
+  background: #D3D3D3;
+  pointer-events: none;
+}
+
+body.dark-mode .speed-remap-timeline-range {
+  background: #555555;
+}
+
+/* hover预览线 - 蓝色 */
+.speed-remap-timeline-hover-line {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 16px;
+  background: #00B4FF;
+  pointer-events: none;
+  display: none;
+}
+
+.speed-remap-timeline:hover .speed-remap-timeline-hover-line {
+  display: block;
+}
+
+/* K帧节点容器 - 包含线和手柄 */
+.keyframe-node {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transform: translateX(-50%);
+}
+
+/* K帧竖线 */
+.keyframe-line {
+  width: 1px;
+  height: 16px;
+  background: #00B4FF;
+}
+
+/* K帧手柄 */
+.keyframe-handle {
+  width: 14px;
+  height: 16px;
+  margin-top: -16px;
+  background-image: url('../img/btn_keyframe.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: ew-resize;
+  position: relative;
+  top: -16px;
+}
+
+.keyframe-handle:hover {
+  opacity: 0.8;
+}
+
+/* 端点节点（起点/终点） */
+.keyframe-endpoint .keyframe-line {
+  background: #333333;
+}
+
+body.dark-mode .keyframe-endpoint .keyframe-line {
+  background: #cccccc;
+}
+
+/* 端点手柄 - 左右不同 */
+.keyframe-endpoint .keyframe-handle {
+  width: 13px;
+}
+
+.keyframe-endpoint-left .keyframe-handle {
+  width: 16px;
+  background-image: url('../img/btn_keyframe_left.png');
+}
+
+.keyframe-endpoint-right .keyframe-handle {
+  width: 16px;
+  background-image: url('../img/btn_keyframe_right.png');
+}
+
+/* 选中状态 */
+.keyframe-selected .keyframe-handle {
+  box-shadow: 0 0 0 2px rgba(0, 180, 255, 0.4);
+}
+
+/* 蓝色线点击区域（5px宽） */
+.keyframe-line-clickarea {
+  width: 5px;
+  height: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+/* 时间刺度容器 */
+.speed-remap-timescale {
+  position: relative;
+  width: 400px;
+  height: 20px;
+  margin-top: 2px;
+}
+
+/* 刺度点 */
+.timescale-tick {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+/* 刺度标记 */
+.tick-mark {
+  width: 1px;
+  height: 3px;
+  background: #666666;
+}
+
+body.dark-mode .tick-mark {
+  background: #999999;
+}
+
+/* 刺度标签 */
+.tick-label {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 12px;
+  color: #666666;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+body.dark-mode .tick-label {
+  color: #999999;
+}
+
+/* 按钮区域 */
+.speed-remap-buttons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* 恢复按钮 */
+.btn-speed-reset {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px;
+  height: 28px;
+  background: #FFFFFF;
+  border: 1px solid #E3E3E3;
+  border-radius: 8px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  color: #333333;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-speed-reset svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-speed-reset:hover {
+  background: #F5F5F7;
+  border-color: #CCCCCC;
+}
+
+.btn-speed-reset:active {
+  background: #E8E8ED;
+  transform: scale(0.95);
+}
+
+body.dark-mode .btn-speed-reset {
+  background: #2d2d2d;
+  border-color: #505050;
+  color: #e0e0e0;
+}
+
+body.dark-mode .btn-speed-reset:hover {
+  background: #3a3a3a;
+  border-color: #606060;
+}
+
+/* 取消按钮 */
+.btn-speed-cancel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 16px;
+  height: 28px;
+  background: #FFFFFF;
+  border: 1px solid #E6E6E6;
+  border-radius: 8px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  color: #333333;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.btn-speed-cancel:hover {
+  background: #f5f5f5;
+  border-color: #d0d0d0;
+}
+
+body.dark-mode .btn-speed-cancel {
+  background: #3a3a3a;
+  border-color: #555555;
+  color: #e0e0e0;
+}
+
+body.dark-mode .btn-speed-cancel:hover {
+  background: #444444;
+}
+
+/* 确定按钮 */
+.btn-speed-confirm {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 16px;
+  height: 28px;
+  background: #409EFF;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-speed-confirm:hover {
+  background: #66b1ff;
+}
+
+/* 变速按钮激活状态 */
+.btn-active {
+  background: #409EFF !important;
+  color: #ffffff !important;
+  border-color: #409EFF !important;
+}
+
+/* ==================== K帧速度调整弹窗 ==================== */
+
+.keyframe-speed-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+
+.keyframe-speed-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 280px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+}
+
+body.dark-mode .keyframe-speed-popup {
+  background: #2a2a2a;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.keyframe-speed-popup-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 16px;
+}
+
+body.dark-mode .keyframe-speed-popup-title {
+  color: #e0e0e0;
+}
+
+.keyframe-speed-popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.keyframe-speed-info {
+  font-size: 13px;
+  color: #666666;
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border-radius: 6px;
+}
+
+body.dark-mode .keyframe-speed-info {
+  color: #999999;
+  background: #3a3a3a;
+}
+
+.keyframe-speed-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.keyframe-speed-label-text {
+  font-size: 13px;
+  color: #333333;
+  white-space: nowrap;
+}
+
+body.dark-mode .keyframe-speed-label-text {
+  color: #e0e0e0;
+}
+
+.keyframe-speed-slider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #e0e0e0;
+  border-radius: 2px;
+  outline: none;
+}
+
+body.dark-mode .keyframe-speed-slider {
+  background: #555555;
+}
+
+.keyframe-speed-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #409EFF;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.keyframe-speed-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #409EFF;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.keyframe-speed-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #409EFF;
+  min-width: 40px;
+  text-align: right;
+}
+
+.keyframe-speed-presets {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.keyframe-speed-preset-label {
+  font-size: 13px;
+  color: #666666;
+}
+
+body.dark-mode .keyframe-speed-preset-label {
+  color: #999999;
+}
+
+.keyframe-speed-preset {
+  padding: 4px 12px;
+  background: #f0f0f0;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #333333;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.keyframe-speed-preset:hover {
+  background: #e0e0e0;
+  border-color: #d0d0d0;
+}
+
+body.dark-mode .keyframe-speed-preset {
+  background: #3a3a3a;
+  border-color: #555555;
+  color: #e0e0e0;
+}
+
+body.dark-mode .keyframe-speed-preset:hover {
+  background: #444444;
+}
+
+.keyframe-speed-popup-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.keyframe-speed-delete {
+  padding: 0 16px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid #ff4d4f;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #ff4d4f;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.keyframe-speed-delete:hover {
+  background: rgba(255, 77, 79, 0.1);
+}
+
+.keyframe-speed-confirm {
+  padding: 0 20px;
+  height: 32px;
+  background: #409EFF;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.keyframe-speed-confirm:hover {
+  background: #66b1ff;
 }
