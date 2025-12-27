@@ -9,7 +9,7 @@
     "广告位位置": "position 可选值: right-float（右侧浮层）、bottom-float（底部浮层）、inline-top（顶部内嵌）"
   },
   
-  "version": "1.0.0",
+  "version": "1.0.3",
   
   "features": {
     "advertisement": {

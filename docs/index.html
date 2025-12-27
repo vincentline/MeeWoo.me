@@ -176,6 +176,8 @@
           </div>
         </div>
 
+        
+
         <!-- 底部浮层 -->
         <div class="footer-bar">
           <!-- 左侧广告位 -->
@@ -201,6 +203,73 @@
                 </svg>
               </button>
             </div>
+            <!-- 变速时间轴编辑器（浮层外左对齐） -->
+        <div class="speed-remap-editor" v-if="showSpeedRemapEditor && currentModule === 'mp4'">
+          <!-- 时长预估 -->
+            <div class="speed-remap-duration">
+              原始: {{ speedRemapConfig.originalDuration.toFixed(1) }}s → 应用后: {{ speedRemapEstimate.outputDuration }}s ({{ speedRemapEstimate.durationChangePercent }})
+            </div>
+          <div class="speed-remap-editor-content">
+            
+            <!-- 时间轴容器（垂直布局） -->
+            <div class="speed-remap-timeline-wrapper">
+              <!-- 时间轴 -->
+              <div class="speed-remap-timeline" 
+                   ref="speedRemapTimeline"
+                   @click="onTimelineClick"
+                   @mousemove="onTimelineMouseMove"
+                   @mouseleave="onTimelineMouseLeave">
+                <!-- 压缩区域可视化（灰色） -->
+                <div class="speed-remap-timeline-range" 
+                     :style="{ left: (speedRemapConfig.keyframes[0] ? speedRemapConfig.keyframes[0].position * 400 : 0) + 'px', 
+                               width: ((speedRemapConfig.keyframes.length >= 2 ? speedRemapConfig.keyframes[speedRemapConfig.keyframes.length-1].position - speedRemapConfig.keyframes[0].position : 1) * 400) + 'px' }"></div>
+                <!-- hover预览线 -->
+                <div class="speed-remap-timeline-hover-line" 
+                     :style="{ left: timelineHoverX + 'px', display: timelineHoverX >= 0 ? 'block' : 'none' }"></div>
+                <!-- K帧节点 -->
+                <div 
+                  v-for="(kf, index) in speedRemapConfig.keyframes" 
+                  :key="index"
+                  class="keyframe-node"
+                  :class="{
+                    'keyframe-endpoint': kf.isEndpoint,
+                    'keyframe-endpoint-left': kf.isEndpoint && index === 0,
+                    'keyframe-endpoint-right': kf.isEndpoint && index === speedRemapConfig.keyframes.length - 1,
+                    'keyframe-selected': selectedKeyframeIndex === index
+                  }"
+                  :style="{ left: (kf.position * 400) + 'px' }"
+                >
+                  <!-- 蓝色线：点击删除K帧（仅中间K帧） -->
+                  <div class="keyframe-line-clickarea" @click.stop="onKeyframeLineClick(index)">
+                    <div class="keyframe-line"></div>
+                  </div>
+                  <!-- 手柄：拖动 -->
+                  <div class="keyframe-handle" @mousedown.stop="onKeyframeMouseDown($event, index)"></div>
+                </div>
+              </div>
+              <!-- 时间刻度 -->
+              <div class="speed-remap-timescale">
+                <div v-for="tick in timeScaleTicks" :key="tick.time" 
+                     class="timescale-tick"
+                     :style="{ left: tick.position + 'px' }">
+                  <div class="tick-mark"></div>
+                  <div class="tick-label">{{ tick.label }}</div>
+                </div>
+              </div>
+            </div>
+            <!-- 按钮 -->
+            <div class="speed-remap-buttons">
+              <button v-if="speedRemapConfig.enabled" class="btn-speed-reset" @click="resetSpeedRemap">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 2V4.5L5 2.5L8 0.5V3C11.31 3 14 5.69 14 9C14 12.31 11.31 15 8 15C4.69 15 2 12.31 2 9H4C4 11.21 5.79 13 8 13C10.21 13 12 11.21 12 9C12 6.79 10.21 5 8 5V2Z" fill="currentColor"/>
+                </svg>
+                恢复
+              </button>
+              <button class="btn-speed-cancel" @click="cancelSpeedRemap">取消</button>
+              <button class="btn-speed-confirm" @click="confirmSpeedRemap">确定</button>
+            </div>
+          </div>
+        </div>
 
             <!-- 中间主控制区 -->
             <div class="footer-main" :class="{'footer-main-empty': isEmpty}">
@@ -434,6 +503,15 @@
                     >
                       <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
                       绿幕抠图
+                    </button>
+                    <button 
+                      class="btn-primary"
+                      :class="{'tooltip': !mp4.hasFile, 'btn-active': speedRemapConfig.enabled}"
+                      :disabled="!mp4.hasFile"
+                      @click="openSpeedRemapEditor"
+                    >
+                      <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
+                      {{ speedRemapConfig.enabled ? '变速✓' : '变速' }}
                     </button>
                   </div>
                   <div class="footer-actions">

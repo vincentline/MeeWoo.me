@@ -329,6 +329,18 @@ function initApp() {
             mp4ToSvgaMessage: '',
             mp4ToSvgaCancelled: false,
             
+            // 普通MP4变速配置
+            showSpeedRemapEditor: false,    // 显示时间轴编辑器
+            selectedKeyframeIndex: -1,      // 当前选中的K帧索引
+            timelineHoverX: -1,             // hover预览线位置
+            speedRemapConfig: {
+              enabled: false,               // 是否启用变速
+              keyframes: [],                // 关键帧数组: [{originalFrame, position, isEndpoint}]
+              originalTotalFrames: 0,       // 原始总帧数
+              originalDuration: 0,          // 原始时长(秒)
+              fps: 30                        // 帧率
+            },
+            
             // Lottie转SVGA配置
             showLottieToSvgaPanel: false,
             lottieToSvgaConfig: {
@@ -2631,7 +2643,7 @@ function initApp() {
           },
           
           /**
-           * 普通MP4进度更新循环
+           * 普通MP4进度更新循环（支持变速）
            */
           startMp4ProgressLoop: function() {
             var _this = this;
@@ -2642,8 +2654,26 @@ function initApp() {
               if (!_this.mp4Video || _this.currentModule !== 'mp4') return;
               
               if (video.duration > 0) {
+                var fps = parseFloat(_this.mp4.fileInfo.fps) || 30;
+                var currentFrame = Math.floor(video.currentTime * fps);
+                
                 _this.progress = (video.currentTime / video.duration) * 100;
-                _this.currentFrame = Math.floor(video.currentTime * 30);
+                _this.currentFrame = currentFrame;
+                
+                // 变速支持：根据当前帧号动态调整播放速度
+                if (_this.speedRemapConfig.enabled && _this.speedRemapConfig.keyframes.length >= 2) {
+                  var speed = _this.getSpeedAtFrame(currentFrame);
+                  // 限制playbackRate范围（浏览器通常支持0.25-4）
+                  speed = Math.max(0.25, Math.min(4, speed));
+                  if (video.playbackRate !== speed) {
+                    video.playbackRate = speed;
+                  }
+                } else {
+                  // 未启用变速时恢复正常速度
+                  if (video.playbackRate !== 1) {
+                    video.playbackRate = 1;
+                  }
+                }
               }
               
               if (_this.isPlaying) {
@@ -3673,6 +3703,15 @@ function initApp() {
             var fps = config.fps;
             var totalFrames = Math.ceil(sourceInfo.duration * fps);
             
+            // 变速支持：如果MP4模式且启用变速，使用帧映射表
+            var frameMap = null;
+            if (this.currentModule === 'mp4' && this.speedRemapConfig.enabled && this.speedRemapConfig.keyframes && this.speedRemapConfig.keyframes.length >= 2) {
+              frameMap = this.buildFrameMap();
+              if (frameMap && frameMap.length > 0) {
+                totalFrames = frameMap.length;
+              }
+            }
+            
             // 暂停播放
             var wasPlaying = this.isPlaying;
             await this.pauseForExport();
@@ -3691,7 +3730,12 @@ function initApp() {
                 
                 // 获取指定帧的canvas
                 getFrame: async function(frameIndex) {
-                  await _this.seekToFrame(frameIndex, fps, sourceInfo);
+                  // 变速支持：使用帧映射表获取原始帧号
+                  var actualFrameIndex = frameIndex;
+                  if (frameMap && frameMap[frameIndex] !== undefined) {
+                    actualFrameIndex = frameMap[frameIndex];
+                  }
+                  await _this.seekToFrame(actualFrameIndex, fps, sourceInfo);
                   await new Promise(function(r) { setTimeout(r, 50); });
                   return _this.getCurrentFrameCanvas();
                 },
@@ -4241,6 +4285,354 @@ function initApp() {
             this.closeChromaKeyPanel();
           },
 
+          /* ==================== 变速功能 ==================== */
+          
+          /**
+           * 打开变速编辑器
+           */
+          openSpeedRemapEditor: function() {
+            if (!this.mp4Video || !this.mp4.hasFile) {
+              alert('请先加载 MP4 文件');
+              return;
+            }
+                      
+            // 初始化变速配置
+            var video = this.mp4Video;
+            var fps = parseFloat(this.mp4.fileInfo.fps) || 30;
+            var duration = video.duration || 0;
+            var totalFrames = Math.ceil(duration * fps);
+                      
+            this.speedRemapConfig.fps = fps;
+            this.speedRemapConfig.originalDuration = duration;
+            this.speedRemapConfig.originalTotalFrames = totalFrames;
+                      
+            // 初始化起点和终点K帧（位置和原始帧成比例）
+            if (!this.speedRemapConfig.keyframes || this.speedRemapConfig.keyframes.length < 2) {
+              this.speedRemapConfig.keyframes = [
+                { originalFrame: 0, position: 0, isEndpoint: true },
+                { originalFrame: totalFrames, position: 1, isEndpoint: true }
+              ];
+            } else {
+              // 更新终点帧号
+              var lastKf = this.speedRemapConfig.keyframes[this.speedRemapConfig.keyframes.length - 1];
+              lastKf.originalFrame = totalFrames;
+            }
+                      
+            this.showSpeedRemapEditor = true;
+            this.selectedKeyframeIndex = -1;
+            this.timelineHoverX = -1;
+          },
+                    
+          /**
+           * 取消变速编辑
+           */
+          cancelSpeedRemap: function() {
+            this.showSpeedRemapEditor = false;
+            this.selectedKeyframeIndex = -1;
+            this.timelineHoverX = -1;
+          },
+          
+          /**
+           * 恢复（清除变速信息）
+           */
+          resetSpeedRemap: function() {
+            var totalFrames = this.speedRemapConfig.originalTotalFrames;
+            // 重置K帧为初始状态（只有两个端点）
+            this.speedRemapConfig.keyframes = [
+              { originalFrame: 0, position: 0, isEndpoint: true },
+              { originalFrame: totalFrames, position: 1, isEndpoint: true }
+            ];
+            this.speedRemapConfig.enabled = false;
+            this.selectedKeyframeIndex = -1;
+          },
+                    
+          /**
+           * 确认变速配置
+           */
+          confirmSpeedRemap: function() {
+            // 检查是否有位置变化（非线性映射）
+            var keyframes = this.speedRemapConfig.keyframes;
+            var hasSpeedChange = keyframes.length > 2; // 有中间K帧
+                      
+            // 检查端点是否移动
+            if (!hasSpeedChange && keyframes.length >= 2) {
+              var start = keyframes[0];
+              var end = keyframes[keyframes.length - 1];
+              hasSpeedChange = (start.position !== 0 || end.position !== 1);
+            }
+                      
+            this.speedRemapConfig.enabled = hasSpeedChange;
+            this.showSpeedRemapEditor = false;
+            this.selectedKeyframeIndex = -1;
+                      
+            if (hasSpeedChange) {
+              this.showToast('变速配置已应用');
+            }
+          },
+                    
+          /**
+           * 时间轴鼠标移动（hover预览线）
+           */
+          onTimelineMouseMove: function(event) {
+            var timeline = this.$refs.speedRemapTimeline;
+            if (!timeline) return;
+            
+            var rect = timeline.getBoundingClientRect();
+            var x = event.clientX - rect.left;
+            x = Math.max(0, Math.min(400, x));
+            var position = x / 400;
+            
+            var keyframes = this.speedRemapConfig.keyframes;
+            
+            // 检查是否在端点范围内（只能在黑色线之间K帧）
+            var startPos = keyframes[0] ? keyframes[0].position : 0;
+            var endPos = keyframes[keyframes.length - 1] ? keyframes[keyframes.length - 1].position : 1;
+            if (position <= startPos || position >= endPos) {
+              this.timelineHoverX = -1;
+              return;
+            }
+            
+            // 检查是否接近已有K帧（不显示预览线）
+            for (var i = 0; i < keyframes.length; i++) {
+              var kfX = keyframes[i].position * 400;
+              if (Math.abs(x - kfX) < 8) {
+                this.timelineHoverX = -1;
+                return;
+              }
+            }
+            
+            this.timelineHoverX = x;
+          },
+                    
+          /**
+           * 时间轴鼠标离开
+           */
+          onTimelineMouseLeave: function() {
+            this.timelineHoverX = -1;
+          },
+                    
+          /**
+           * 点击时间轴添加K帧
+           */
+          onTimelineClick: function(event) {
+            var timeline = this.$refs.speedRemapTimeline;
+            if (!timeline) return;
+            
+            var rect = timeline.getBoundingClientRect();
+            var x = event.clientX - rect.left;
+            var position = Math.max(0, Math.min(1, x / 400));
+            
+            var keyframes = this.speedRemapConfig.keyframes;
+            
+            // 检查是否在端点范围内（只能在黑色线之间K帧）
+            var startPos = keyframes[0] ? keyframes[0].position : 0;
+            var endPos = keyframes[keyframes.length - 1] ? keyframes[keyframes.length - 1].position : 1;
+            if (position <= startPos || position >= endPos) {
+              return; // 在端点范围外，不能添加K帧
+            }
+            
+            // 检查是否点击在已有节点上
+            for (var i = 0; i < keyframes.length; i++) {
+              var kfX = keyframes[i].position * 400;
+              if (Math.abs(x - kfX) < 8) {
+                return; // 点击在已有节点上
+              }
+            }
+            
+            // 添加新K帧（不弹窗）
+            this.addKeyframe(position);
+          },
+                    
+          /**
+           * 添加关键帧
+           * @param position 在时间轴上的位置 (0-1)
+           */
+          addKeyframe: function(position) {
+            var keyframes = this.speedRemapConfig.keyframes;
+                      
+            // 限制最多10个K帧
+            if (keyframes.length >= 10) {
+              this.showToast('最多支持10个关键帧');
+              return;
+            }
+                      
+            // 计算该位置对应的原始帧号（线性插值）
+            var originalFrame = this.getOriginalFrameAtPosition(position);
+                      
+            // 插入新K帧（按位置排序）
+            var newKf = { originalFrame: originalFrame, position: position, isEndpoint: false };
+            keyframes.push(newKf);
+            keyframes.sort(function(a, b) { return a.position - b.position; });
+                      
+            this.timelineHoverX = -1;
+          },
+                    
+          /**
+           * 根据位置获取原始帧号（线性插值）
+           */
+          getOriginalFrameAtPosition: function(position) {
+            var keyframes = this.speedRemapConfig.keyframes;
+            if (!keyframes || keyframes.length < 2) {
+              return Math.round(position * this.speedRemapConfig.originalTotalFrames);
+            }
+                      
+            // 找到position所在的两个关键帧区间
+            for (var i = 0; i < keyframes.length - 1; i++) {
+              var k1 = keyframes[i];
+              var k2 = keyframes[i + 1];
+                        
+              if (position >= k1.position && position <= k2.position) {
+                if (k2.position === k1.position) return k1.originalFrame;
+                var ratio = (position - k1.position) / (k2.position - k1.position);
+                return Math.round(k1.originalFrame + (k2.originalFrame - k1.originalFrame) * ratio);
+              }
+            }
+                      
+            return Math.round(position * this.speedRemapConfig.originalTotalFrames);
+          },
+          
+          /**
+           * K帧线点击（删除中间K帧）
+           */
+          onKeyframeLineClick: function(index) {
+            var kf = this.speedRemapConfig.keyframes[index];
+            if (!kf) return;
+            
+            // 端点不可删除
+            if (kf.isEndpoint) {
+              return;
+            }
+            
+            // 删除中间K帧
+            this.speedRemapConfig.keyframes.splice(index, 1);
+          },
+                    
+          /**
+           * K帧节点鼠标按下（拖拽）
+           */
+          onKeyframeMouseDown: function(event, index) {
+            var _this = this;
+            var kf = this.speedRemapConfig.keyframes[index];
+            if (!kf) return;
+                      
+            var timeline = this.$refs.speedRemapTimeline;
+            if (!timeline) return;
+                      
+            this.selectedKeyframeIndex = index;
+            this.timelineHoverX = -1;
+                      
+            var rect = timeline.getBoundingClientRect();
+            var startX = event.clientX;
+            var startPosition = kf.position;
+                      
+            var onMouseMove = function(e) {
+              var dx = e.clientX - startX;
+              var dPosition = dx / 400;
+              var newPosition = startPosition + dPosition;
+                        
+              // 边界约束
+              var keyframes = _this.speedRemapConfig.keyframes;
+              var minPos = keyframes[index - 1] ? keyframes[index - 1].position + 0.01 : 0;
+              var maxPos = keyframes[index + 1] ? keyframes[index + 1].position - 0.01 : 1;
+                        
+              newPosition = Math.max(minPos, Math.min(maxPos, newPosition));
+              kf.position = newPosition;
+            };
+                      
+            var onMouseUp = function() {
+              document.removeEventListener('mousemove', onMouseMove);
+              document.removeEventListener('mouseup', onMouseUp);
+              _this.selectedKeyframeIndex = -1;
+            };
+                      
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+                      
+            event.preventDefault();
+          },
+                    
+          /**
+           * 获取指定帧的播放速度
+           * 根据相邻K帧的位置比例计算速度
+           */
+          getSpeedAtFrame: function(frame) {
+            var keyframes = this.speedRemapConfig.keyframes;
+            if (!keyframes || keyframes.length < 2) return 1.0;
+                      
+            var totalFrames = this.speedRemapConfig.originalTotalFrames || 1;
+                      
+            // 找到frame所在的两个关键帧区间
+            for (var i = 0; i < keyframes.length - 1; i++) {
+              var k1 = keyframes[i];
+              var k2 = keyframes[i + 1];
+                        
+              if (frame >= k1.originalFrame && frame <= k2.originalFrame) {
+                // 计算该区间的速度
+                // 速度 = 原始帧范围 / 输出位置范围
+                var frameDelta = k2.originalFrame - k1.originalFrame;
+                var positionDelta = k2.position - k1.position;
+                          
+                if (positionDelta <= 0) return 1.0;
+                if (frameDelta <= 0) return 1.0;
+                          
+                // frameDelta帧 在 positionDelta*totalFrames帧 时间内播放
+                var speed = frameDelta / (positionDelta * totalFrames);
+                return speed;
+              }
+            }
+                      
+            return 1.0;
+          },
+                    
+          /**
+           * 计算输出时长（根据位置映射）
+           */
+          calculateOutputDuration: function() {
+            var config = this.speedRemapConfig;
+            var keyframes = config.keyframes;
+            if (!keyframes || keyframes.length < 2) return config.originalDuration;
+                      
+            // 输出时长不变，只是帧分布变了
+            return config.originalDuration;
+          },
+                    
+          /**
+           * 构建帧映射表
+           * 输出帧号 -> 原始帧号
+           */
+          buildFrameMap: function() {
+            var config = this.speedRemapConfig;
+            if (!config.enabled || !config.keyframes || config.keyframes.length < 2) {
+              return null;
+            }
+                      
+            var fps = config.fps;
+            var totalFrames = config.originalTotalFrames;
+            var keyframes = config.keyframes;
+            
+            // 获取端点位置
+            var startPos = keyframes[0].position;
+            var endPos = keyframes[keyframes.length - 1].position;
+            var outputRatio = endPos - startPos;
+            
+            // 输出总帧数 = outputRatio * 原始总帧数
+            var outputTotalFrames = Math.ceil(outputRatio * totalFrames);
+            var frameMap = [];
+            
+            for (var outFrame = 0; outFrame < outputTotalFrames; outFrame++) {
+              // 输出位置 (0-1) 映射到 startPos-endPos
+              var outPosition = startPos + (outFrame / outputTotalFrames) * outputRatio;
+              
+              // 根据输出位置查找原始帧
+              var originalFrame = this.getOriginalFrameAtPosition(outPosition);
+              originalFrame = Math.max(0, Math.min(totalFrames - 1, originalFrame));
+              
+              frameMap.push(originalFrame);
+            }
+            
+            return frameMap;
+          },
+
           /* MP4 转换功能 */
           
           /**
@@ -4483,6 +4875,15 @@ function initApp() {
             var totalFrames = Math.ceil(duration * fps);
             var frames = [];
             
+            // 变速支持：如果启用变速，使用帧映射表
+            var frameMap = null;
+            if (this.speedRemapConfig.enabled && this.speedRemapConfig.keyframes && this.speedRemapConfig.keyframes.length >= 2) {
+              frameMap = this.buildFrameMap();
+              if (frameMap && frameMap.length > 0) {
+                totalFrames = frameMap.length;
+              }
+            }
+            
             // 创建canvas
             var canvas = document.createElement('canvas');
             canvas.width = config.width;
@@ -4506,7 +4907,13 @@ function initApp() {
             for (var i = 0; i < totalFrames; i++) {
               if (this.mp4ConvertCancelled) break;
               
-              var time = i / fps;
+              // 变速支持：使用帧映射表获取原始帧号
+              var originalFrame = i;
+              if (frameMap && frameMap[i] !== undefined) {
+                originalFrame = frameMap[i];
+              }
+              
+              var time = originalFrame / fps;
               video.currentTime = time;
               
               // 等待seek完成
@@ -5154,6 +5561,15 @@ function initApp() {
             var totalFrames = Math.ceil(duration * fps);
             var frames = [];
             
+            // 变速支持：如果启用变速，使用帧映射表
+            var frameMap = null;
+            if (this.speedRemapConfig.enabled && this.speedRemapConfig.keyframes && this.speedRemapConfig.keyframes.length >= 2) {
+              frameMap = this.buildFrameMap();
+              if (frameMap && frameMap.length > 0) {
+                totalFrames = frameMap.length;
+              }
+            }
+            
             // 创建canvas用于提取帧
             var canvas = document.createElement('canvas');
             canvas.width = this.mp4.originalWidth;
@@ -5166,7 +5582,13 @@ function initApp() {
             for (var i = 0; i < totalFrames; i++) {
               if (this.mp4ToSvgaCancelled) break;
               
-              var time = i / fps;
+              // 变速支持：使用帧映射表获取原始帧号
+              var originalFrame = i;
+              if (frameMap && frameMap[i] !== undefined) {
+                originalFrame = frameMap[i];
+              }
+              
+              var time = originalFrame / fps;
               if (time > duration) time = duration;
               
               // seek到指定时间
@@ -7160,6 +7582,71 @@ function initApp() {
               duration: duration,
               fileSize: fileSizeText,
               fileSizeBytes: totalBytes
+            };
+          },
+          
+          // 时间刻度计算（0.5s间隔）
+          timeScaleTicks: function() {
+            var config = this.speedRemapConfig;
+            var duration = config.originalDuration || 0;
+            var ticks = [];
+            
+            if (duration <= 0) return ticks;
+            
+            // 每0.5s一个刻度
+            var interval = 0.5;
+            var timelineWidth = 400; // 时间轴宽度
+            
+            for (var time = 0; time <= duration; time += interval) {
+              var position = (time / duration) * timelineWidth;
+              var label = time.toFixed(1) + 's';
+              // 整数秒显示为"0s", "1s"，小数显示为"0.5s"
+              if (time % 1 === 0) {
+                label = Math.round(time) + 's';
+              }
+              
+              ticks.push({
+                time: time,
+                position: position,
+                label: label
+              });
+            }
+            
+            return ticks;
+          },
+          
+          // 变速预估计算
+          speedRemapEstimate: function() {
+            var config = this.speedRemapConfig;
+            var originalDuration = config.originalDuration || 0;
+            var keyframes = config.keyframes;
+            
+            if (!keyframes || keyframes.length < 2) {
+              return {
+                outputDuration: originalDuration.toFixed(2),
+                outputTotalFrames: config.originalTotalFrames || 0,
+                durationChange: 0,
+                durationChangePercent: '0%'
+              };
+            }
+            
+            // 输出时长 = (右端点position - 左端点position) * 原始时长
+            var startPos = keyframes[0].position;
+            var endPos = keyframes[keyframes.length - 1].position;
+            var outputRatio = endPos - startPos;
+            var outputDuration = outputRatio * originalDuration;
+            var outputTotalFrames = Math.ceil(outputRatio * (config.originalTotalFrames || 0));
+            
+            var durationChange = outputDuration - originalDuration;
+            var durationChangePercent = originalDuration > 0 
+              ? Math.round((durationChange / originalDuration) * 100) 
+              : 0;
+            
+            return {
+              outputDuration: outputDuration.toFixed(2),
+              outputTotalFrames: outputTotalFrames,
+              durationChange: durationChange.toFixed(2),
+              durationChangePercent: (durationChangePercent >= 0 ? '+' : '') + durationChangePercent + '%'
             };
           },
           
