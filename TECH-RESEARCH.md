@@ -1,7 +1,10 @@
 # 技术调研报告
 
+> **最后更新**: 2025-12-29  
+> **文档状态**: ✅ 持续更新
+
 ## 📋 调研目标
-为 A-viewer 项目的阶段2、3功能开发提供技术方案支持。
+为 SVGA Preview 项目的功能开发提供技术方案支持和实现记录。
 
 ## 📊 阶段2开发总结
 
@@ -134,6 +137,282 @@ body.dark-mode .zoom-btn:hover::after {
 .material-search-input { border-radius: 8px; }
 header-navbar { padding: 0 16px; }
 ```
+
+---
+
+## 📚 阶段6：代码模块化与广告系统（2025-12-26 ~ 2025-12-29）
+
+### 已完成功能概览
+
+#### 1. 代码模块化重构 ✅
+**实现时间**：2025-12-26
+
+**目标**：将326KB的app.js拆分为多个独立模块，提升代码可维护性和IDE性能
+
+**已抽取模块**：
+
+##### 1.1 PlayerController (播放控制器)
+- **文件**: `docs/assets/js/player-controller.js` (11KB)
+- **功能**: 封装多模式统一的播放控制逻辑
+- **核心能力**:
+  - 播放/暂停切换
+  - 进度跳转（0-1）
+  - 进度条拖拽
+  - 支持SVGA/Lottie/双通MP4/普通MP4四种模式
+
+**使用方式**:
+```javascript
+var controller = new PlayerController({
+  onProgressChange: function(progress, currentFrame) {},
+  onPlayStateChange: function(isPlaying) {},
+  getPlayerState: function() { return { mode, hasFile, player, ... } }
+});
+
+controller.togglePlay();
+controller.seekTo(0.5); // 0-1
+```
+
+##### 1.2 SVGABuilder (SVGA构建器)
+- **文件**: `docs/assets/js/svga-builder.js` (13.2KB)
+- **功能**: 将序列帧构建为SVGA文件
+- **核心能力**:
+  - 从BLOB帧数组构建
+  - 从已编码PNG构建
+  - 支持质量压缩（图片缩放 + transform放大）
+  - 支持音频数据
+  - 支持进度回调
+
+**API**:
+```javascript
+// 从BLOB构建
+SVGABuilder.build({
+  frames: [{blob}],
+  width, height, fps, quality,
+  audios, muted,
+  onProgress: (p) => {}
+});
+
+// 从PNG构建
+SVGABuilder.buildFromPNG({
+  frames: [Uint8Array],
+  scaledWidth, displayWidth,
+  audios, muted,
+  onProgress: (p) => {}
+});
+```
+
+##### 1.3 DualChannelComposer (双通道合成器)
+- **文件**: `docs/assets/js/dual-channel-composer.js` (6.8KB)
+- **功能**: 将带透明通道的图像合成为双通道格式
+- **核心能力**:
+  - 批量合成：ImageData[] → JPEG Uint8Array[]
+  - 支持左彩右灰/左灰右彩两种模式
+  - 正确处理预乘Alpha，避免颜色失真和锯齿
+
+**技术亮点**:
+```javascript
+// 去预乘算法，恢复真实颜色
+if (alpha > 0) {
+  var r = Math.round(data[idx] * 255 / alpha);
+  var g = Math.round(data[idx + 1] * 255 / alpha);
+  var b = Math.round(data[idx + 2] * 255 / alpha);
+  // ...
+}
+```
+
+##### 1.4 LibraryLoader (库加载管理器)
+- **文件**: `docs/assets/js/library-loader.js` (8.5KB)
+- **功能**: 统一管理所有外部库的动态加载
+- **核心能力**:
+  - 优先级队列加载
+  - 进度显示
+  - 懒加载（按需加载）
+  - 缓存管理
+
+**管理的库**:
+- Vue.js
+- SVGA Player
+- Lottie
+- Howler.js
+- Marked
+- GIF.js
+- Protobuf.js
+- Pako
+- FFmpeg.wasm
+
+**使用方式**:
+```javascript
+// 预加载常用库
+await LibraryLoader.preload(['vue', 'svgaplayer']);
+
+// 懒加载
+await LibraryLoader.load('ffmpeg', (progress) => {
+  console.log('加载进度:', progress);
+});
+```
+
+##### 1.5 GIFExporter (GIF导出器)
+- **文件**: `docs/assets/js/gif-exporter.js` (8.0KB)
+- **功能**: 封装GIF导出弹窗和导出逻辑
+- **核心能力**:
+  - 通用GIF导出弹窗（所有模式复用）
+  - 参数配置（尺寸、帧率、质量、帧范围）
+  - 透明底支持
+  - 杂色边处理
+  - 进度显示
+
+**API**:
+```javascript
+GIFExporter.open({
+  source: canvas,
+  totalFrames: 100,
+  defaultConfig: { width: 750, fps: 15 },
+  onExport: (config) => { /* 自定义导出逻辑 */ }
+});
+```
+
+#### 2. 广告系统集成 ✅
+**实现时间**：2025-12-29
+
+##### 2.1 Google AdSense集成
+**核心文件**:
+- `docs/assets/js/ad-controller.js` - 广告位控制器
+- `docs/assets/js/site-config-loader.js` - 站点配置加载器
+- `site-config.json` - 远程配置文件
+- `AD-CONFIG-README.md` - 配置说明文档
+
+**功能特点**:
+- ✅ 远程配置控制（通过腾讯云COS）
+- ✅ 多广告位支持（right-float/bottom-float/inline-top）
+- ✅ 自动初始化AdSense广告单元
+- ✅ 响应式布局（<1200px自动隐藏）
+- ✅ 防止重复初始化
+
+**技术实现**:
+
+```javascript
+// ad-controller.js - 自动初始化AdSense
+initAdSense(container) {
+  const adElements = container.querySelectorAll('.adsbygoogle');
+  if (adElements.length > 0 && window.adsbygoogle) {
+    try {
+      adElements.forEach(adElement => {
+        // 检查是否已初始化
+        if (!adElement.getAttribute('data-adsbygoogle-status')) {
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+        }
+      });
+    } catch (e) {
+      console.error('[AdController] AdSense 初始化失败:', e);
+    }
+  }
+}
+```
+
+**配置结构**:
+```json
+{
+  "version": "1.0.0",
+  "timestamp": 1735315567000,
+  "features": {
+    "advertisement": {
+      "enabled": true,
+      "position": "right-float"
+    }
+  }
+}
+```
+
+##### 2.2 配置加载流程
+```
+页面加载
+    ↓
+SiteConfigLoader.init()
+    ↓
+拉取远程配置 JSON
+    ↓
+AdController.init()
+    ↓
+查找所有 [data-ad-position]
+    ↓
+根据配置显示/隐藏
+    ↓
+自动初始化AdSense
+```
+
+**技术亮点**:
+1. **分离关注**：SiteConfigLoader负责加载数据，AdController负责操作DOM
+2. **降级处理**：配置加载失败不影响主功能
+3. **灵活扩展**：可添加更多功能开关（analytics、feature flags等）
+
+#### 3. 技术文档完善 ✅
+
+##### 3.1 新增文档
+- `GIF-EXPORT-TECHNICAL-DOCUMENTATION.md` - GIF导出技术文档
+- `AD-CONFIG-README.md` - 广告配置说明
+
+##### 3.2 更新文档
+- `ROADMAP.md` - 增加阶段6总结
+- `TECH-RESEARCH.md` - 此文档
+
+### 技术总结
+
+#### 模块化成果
+
+| 模块 | 大小 | 行数 | 职责 |
+|------|------|------|------|
+| app.js | 326.9KB | ~4400行 | Vue实例、主逻辑 |
+| player-controller.js | 11.0KB | 338行 | 播放控制 |
+| svga-builder.js | 13.2KB | 384行 | SVGA构建 |
+| dual-channel-composer.js | 6.8KB | 197行 | 双通道合成 |
+| library-loader.js | 8.5KB | 297行 | 库加载管理 |
+| gif-exporter.js | 8.0KB | ~250行 | GIF导出 |
+| ad-controller.js | 6.8KB | 205行 | 广告控制 |
+| site-config-loader.js | 7.8KB | ~250行 | 配置加载 |
+
+**总计**: 8个模块，约68KB代码从Bloated app.js抽离
+
+#### 核心技术点
+
+1. **模块化设计原则**:
+   - 单一职责：每个模块只做一件事
+   - 接口清晰：通过配置对象传递参数
+   - 易于测试：独立模块可单元测试
+   - 避免耦合：通过回调通信
+
+2. **透明GIF导出关键**:
+   - Canvas必须启用alpha通道：`{ alpha: true }`
+   - GIF编码器配置：`transparent: 0x00000000`
+   - 每帧配置：`{ transparent: true }`
+   - 杂色边处理：Alpha混合算法
+
+3. **双通道合成技术**:
+   - 去预乘Alpha算法：`color = premultiplied * 255 / alpha`
+   - 避免颜色失真和锯齿
+   - JPEG质量自适应：根据帧数动态调整
+
+4. **广告系统架构**:
+   - 配置与逻辑分离
+   - 远程配置热更新
+   - 降级处理机制
+   - 防止重复初始化
+
+#### 开发经验总结
+
+1. **模块化抽取顺序**:
+   - 先抽离工具类模块（Builder、Composer）
+   - 再抽离控制类模块（Controller、Loader）
+   - 最后抽离UI类模块（Exporter、Panel）
+
+2. **兼容性处理**:
+   - 所有模块使用IIFE包裹
+   - 挂载到window对象
+   - ES5语法兼容旧浏览器
+
+3. **错误处理**:
+   - 所有异步操作使用try-catch
+   - 提供详细错误信息
+   - 支持取消操作
 
 ---
 
