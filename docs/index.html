@@ -205,10 +205,6 @@
             </div>
             <!-- 变速时间轴编辑器（浮层外左对齐） -->
         <div class="speed-remap-editor" v-if="showSpeedRemapEditor && currentModule === 'mp4'">
-          <!-- 时长预估 -->
-            <div class="speed-remap-duration">
-              原始: {{ speedRemapConfig.originalDuration.toFixed(1) }}s → 应用后: {{ speedRemapEstimate.outputDuration }}s ({{ speedRemapEstimate.durationChangePercent }})
-            </div>
           <div class="speed-remap-editor-content">
             
             <!-- 时间轴容器（垂直布局） -->
@@ -221,8 +217,8 @@
                    @mouseleave="onTimelineMouseLeave">
                 <!-- 压缩区域可视化（灰色） -->
                 <div class="speed-remap-timeline-range" 
-                     :style="{ left: (speedRemapConfig.keyframes[0] ? speedRemapConfig.keyframes[0].position * 400 : 0) + 'px', 
-                               width: ((speedRemapConfig.keyframes.length >= 2 ? speedRemapConfig.keyframes[speedRemapConfig.keyframes.length-1].position - speedRemapConfig.keyframes[0].position : 1) * 400) + 'px' }"></div>
+                     :style="{ left: (speedRemapConfig.keyframes[0] ? speedRemapConfig.keyframes[0].position * 500 : 0) + 'px', 
+                               width: ((speedRemapConfig.keyframes.length >= 2 ? speedRemapConfig.keyframes[speedRemapConfig.keyframes.length-1].position - speedRemapConfig.keyframes[0].position : 1) * 500) + 'px' }"></div>
                 <!-- hover预览线 -->
                 <div class="speed-remap-timeline-hover-line" 
                      :style="{ left: timelineHoverX + 'px', display: timelineHoverX >= 0 ? 'block' : 'none' }"></div>
@@ -237,8 +233,14 @@
                     'keyframe-endpoint-right': kf.isEndpoint && index === speedRemapConfig.keyframes.length - 1,
                     'keyframe-selected': selectedKeyframeIndex === index
                   }"
-                  :style="{ left: (kf.position * 400) + 'px' }"
+                  :style="{ left: (kf.position * 500) + 'px' }"
                 >
+                  <!-- 帧数标签：显示在手柄上方2px，双击编辑 -->
+                  <div class="keyframe-frame-label" 
+                       :class="{ 'frame-label-endpoint': kf.isEndpoint }"
+                       @dblclick.stop="onFrameLabelDblClick(index)">
+                    {{ kf.originalFrame }}
+                  </div>
                   <!-- 蓝色线：点击删除K帧（仅中间K帧） -->
                   <div class="keyframe-line-clickarea" @click.stop="onKeyframeLineClick(index)">
                     <div class="keyframe-line"></div>
@@ -256,6 +258,10 @@
                   <div class="tick-label">{{ tick.label }}</div>
                 </div>
               </div>
+            </div>
+            <!-- 时长显示：应用后/原始 -->
+            <div class="speed-remap-duration-label">
+              {{ speedRemapEstimate.outputDuration }}s/{{ speedRemapConfig.originalDuration.toFixed(1) }}s
             </div>
             <!-- 按钮 -->
             <div class="speed-remap-buttons">
@@ -1383,6 +1389,34 @@
                 开始转换SVGA
               </template>
             </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 编辑K帧帧数弹窗 -->
+      <div class="modal-overlay" v-if="showEditFrameDialog" @click.self="cancelEditFrame">
+        <div class="svga-panel-container" style="width: 400px;">
+          <div class="modal-header">
+            <h3>编辑K帧帧数</h3>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>帧数 (0-{{ speedRemapConfig.originalTotalFrames }})</label>
+              <div class="svga-size-input-wrapper">
+                <input 
+                  type="number" 
+                  class="svga-input"
+                  v-model="editFrameInput" 
+                  :min="0" 
+                  :max="speedRemapConfig.originalTotalFrames"
+                  @keyup.enter="confirmEditFrame"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-primary" @click="cancelEditFrame">取消</button>
+            <button class="btn-secondary" @click="confirmEditFrame">确定</button>
           </div>
         </div>
       </div>

@@ -1081,6 +1081,14 @@ body.dark-mode .mute-btn.is-disabled:active {
   border-color: #E6E6E6;
 }
 
+body.dark-mode .progress-bar {
+  background-color: #5B5B5B;
+}
+
+body.dark-mode .progress-bar:hover {
+  border-color: #6D6D6D;
+}
+
 .progress-fill {
   height: 100%;
   background-color: #409eff;
@@ -3954,10 +3962,10 @@ body.dark-mode .ad-position-bottom {
   position: absolute;
   bottom: 132px;
   width: auto;
-  margin-bottom: 10px;
+  margin: 0 0 10px 16px;
   z-index: 100;
   display: flex;
-  gap: 10px;
+  gap: 16px;
   flex-direction: column;
   align-items: flex-start;
   left: 0;
@@ -3966,7 +3974,7 @@ body.dark-mode .ad-position-bottom {
 .speed-remap-editor-content {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
 }
 
@@ -3994,15 +4002,17 @@ body.dark-mode .speed-remap-duration {
 /* 时间轴主体 */
 .speed-remap-timeline {
   position: relative;
-  width: 400px;
+  width: 500px;
   height: 16px;
   background: #F3F3F3;
   border-radius: 2px;
   cursor: crosshair;
+  border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
 body.dark-mode .speed-remap-timeline {
   background: #3a3a3a;
+  border: 1px solid rgba(0, 0, 0, 0.6);
 }
 
 /* 压缩区域可视化（灰色） */
@@ -4010,12 +4020,12 @@ body.dark-mode .speed-remap-timeline {
   position: absolute;
   top: 0;
   height: 16px;
-  background: #D3D3D3;
+  background: #bbefff;
   pointer-events: none;
 }
 
 body.dark-mode .speed-remap-timeline-range {
-  background: #555555;
+  background: #124164;
 }
 
 /* hover预览线 - 蓝色 */
@@ -4069,6 +4079,38 @@ body.dark-mode .speed-remap-timeline-range {
   opacity: 0.8;
 }
 
+/* K帧帧数标签（手柄上方2px） */
+.keyframe-frame-label {
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 12px;
+  color: #00B4FF;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+}
+
+.keyframe-frame-label:hover {
+  opacity: 0.7;
+}
+
+/* 端点帧数标签（黑色） */
+.frame-label-endpoint {
+  color: #333333;
+}
+
+body.dark-mode .frame-label-endpoint {
+  color: #cccccc;
+}
+
+body.dark-mode .keyframe-frame-label {
+  color: #00B4FF;
+}
+
 /* 端点节点（起点/终点） */
 .keyframe-endpoint .keyframe-line {
   background: #333333;
@@ -4111,9 +4153,9 @@ body.dark-mode .keyframe-endpoint .keyframe-line {
 /* 时间刺度容器 */
 .speed-remap-timescale {
   position: relative;
-  width: 400px;
+  width: 500px;
   height: 20px;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 /* 刺度点 */
@@ -4137,16 +4179,30 @@ body.dark-mode .tick-mark {
   background: #999999;
 }
 
-/* 刺度标签 */
+/* 刻度标签 */
 .tick-label {
   font-family: 'Segoe UI', system-ui, sans-serif;
   font-size: 12px;
-  color: #666666;
+  color: rgba(0, 0, 0, 0.4);
   margin-top: 2px;
   white-space: nowrap;
 }
 
 body.dark-mode .tick-label {
+  color: #999999;
+}
+
+/* 时长显示（时间轴右侧4px） */
+.speed-remap-duration-label {
+  margin: 0 0 18px 0;
+  min-width: 88px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+}
+
+body.dark-mode .speed-remap-duration-label {
   color: #999999;
 }
 
@@ -4156,7 +4212,7 @@ body.dark-mode .tick-label {
   flex-direction: row;
   align-items: center;
   gap: 10px;
-  margin-top: 4px;
+  margin: 0 0 9px 0;
 }
 
 /* 恢复按钮 */
@@ -4263,6 +4319,175 @@ body.dark-mode .btn-speed-cancel:hover {
   background: #409EFF !important;
   color: #ffffff !important;
   border-color: #409EFF !important;
+}
+
+/* ==================== 编辑K帧帧数弹窗 ==================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+/* 弹窗中的svga-panel-container使用auto */
+.modal-overlay .svga-panel-container {
+  align-self: auto;
+}
+
+.modal-header {
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid #E3E3E3;
+}
+
+body.dark-mode .modal-header {
+  border-bottom-color: #505050;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333333;
+}
+
+body.dark-mode .modal-header h3 {
+  color: #e0e0e0;
+}
+
+.modal-body {
+  padding: 24px 0px;
+}
+
+.form-group {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #666666;
+}
+
+body.dark-mode .form-group label {
+  color: #b0b0b0;
+}
+
+.modal-footer {
+  padding: 16px 0 0 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+body.dark-mode .modal-footer {
+  border-top-color: #505050;
+}
+
+/* 弹窗按钮样式（基于Figma设计） */
+/* 取消按钮 - btn01_Large */
+.modal-footer .btn-primary {
+  min-width: 110px;
+  height: 44px;
+  padding: 0 20px;
+  background: #FFFFFF;
+  border: 1px solid #E6E6E6;
+  border-radius: 16px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5714285714285714em;
+  text-align: center;
+  color: #333333;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modal-footer .btn-primary:hover {
+  background: #E6E6E6;
+  border-color: #5B5B5B;
+}
+
+.modal-footer .btn-primary:active {
+  background: #D3D3D3;
+  border-color: #333333;
+}
+
+.modal-footer .btn-primary:disabled {
+  background: #FFFFFF;
+  border-color: #F3F3F3;
+  color: #AAAAAA;
+  cursor: not-allowed;
+}
+
+body.dark-mode .modal-footer .btn-primary {
+  background: #2d2d2d;
+  border-color: #505050;
+  color: #e0e0e0;
+}
+
+body.dark-mode .modal-footer .btn-primary:hover {
+  background: #3a3a3a;
+  border-color: #707070;
+}
+
+body.dark-mode .modal-footer .btn-primary:active {
+  background: #454545;
+  border-color: #808080;
+}
+
+/* 确定按钮 - btn02_Large */
+.modal-footer .btn-secondary {
+  min-width: 110px;
+  height: 44px;
+  padding: 0 20px;
+  background: #5B5B5B;
+  border: none;
+  border-radius: 16px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5714285714285714em;
+  text-align: center;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modal-footer .btn-secondary:hover {
+  border: 1px solid #333333;
+}
+
+.modal-footer .btn-secondary:active {
+  background: #333333;
+  border: 1px solid #333333;
+}
+
+.modal-footer .btn-secondary:disabled {
+  background: rgba(91, 91, 91, 0.3);
+  border: none;
+  cursor: not-allowed;
+}
+
+body.dark-mode .modal-footer .btn-secondary {
+  background: #707070;
+}
+
+body.dark-mode .modal-footer .btn-secondary:hover {
+  background: #707070;
+  border-color: #909090;
+}
+
+body.dark-mode .modal-footer .btn-secondary:active {
+  background: #808080;
+  border-color: #a0a0a0;
 }
 
 /* ==================== K帧速度调整弹窗 ==================== */
