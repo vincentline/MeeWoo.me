@@ -4386,11 +4386,19 @@ function initApp() {
           /* ==================== 变速功能 ==================== */
           
           /**
-           * 打开变速编辑器
+           * 打开/关闭变速编辑器（切换）
            */
           openSpeedRemapEditor: function() {
             if (!this.mp4Video || !this.mp4.hasFile) {
               alert('请先加载 MP4 文件');
+              return;
+            }
+            
+            // 切换显示/隐藏
+            if (this.showSpeedRemapEditor) {
+              this.showSpeedRemapEditor = false;
+              this.selectedKeyframeIndex = -1;
+              this.timelineHoverX = -1;
               return;
             }
                       
