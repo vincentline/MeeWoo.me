@@ -333,6 +333,9 @@ function initApp() {
             showSpeedRemapEditor: false,    // 显示时间轴编辑器
             selectedKeyframeIndex: -1,      // 当前选中的K帧索引
             timelineHoverX: -1,             // hover预览线位置
+            showEditFrameDialog: false,     // 显示编辑帧数弹窗
+            editingKeyframeIndex: -1,       // 正在编辑的K帧索引
+            editFrameInput: '',             // 编辑帧数输入值
             speedRemapConfig: {
               enabled: false,               // 是否启用变速
               keyframes: [],                // 关键帧数组: [{originalFrame, position, isEndpoint}]
@@ -2561,6 +2564,18 @@ function initApp() {
             // 使用统一的模式切换函数
             _this.switchMode('mp4');
             
+            // 关闭变速编辑器并清空变速信息
+            _this.showSpeedRemapEditor = false;
+            _this.speedRemapConfig = {
+              enabled: false,
+              keyframes: [],
+              originalTotalFrames: 0,
+              originalDuration: 0,
+              fps: 30
+            };
+            _this.selectedKeyframeIndex = -1;
+            _this.timelineHoverX = -1;
+            
             // 设置文件信息
             _this.mp4.hasFile = true;
             _this.mp4.file = file;
@@ -2650,6 +2665,10 @@ function initApp() {
             var video = this.mp4Video;
             if (!video) return;
             
+            // 缓存当前区间的速度，避免每帧重复计算
+            var currentSpeed = 1.0;
+            var currentSegmentIndex = -1;
+            
             function updateProgress() {
               if (!_this.mp4Video || _this.currentModule !== 'mp4') return;
               
@@ -2662,11 +2681,35 @@ function initApp() {
                 
                 // 变速支持：根据当前帧号动态调整播放速度
                 if (_this.speedRemapConfig.enabled && _this.speedRemapConfig.keyframes.length >= 2) {
-                  var speed = _this.getSpeedAtFrame(currentFrame);
-                  // 限制playbackRate范围（浏览器通常支持0.25-4）
-                  speed = Math.max(0.25, Math.min(4, speed));
-                  if (video.playbackRate !== speed) {
-                    video.playbackRate = speed;
+                  var keyframes = _this.speedRemapConfig.keyframes;
+                  var totalFrames = _this.speedRemapConfig.originalTotalFrames || 1;
+                  
+                  // 查找当前帧所在区间（缓存优化）
+                  var segmentIndex = -1;
+                  for (var i = 0; i < keyframes.length - 1; i++) {
+                    if (currentFrame >= keyframes[i].originalFrame && currentFrame <= keyframes[i + 1].originalFrame) {
+                      segmentIndex = i;
+                      break;
+                    }
+                  }
+                  
+                  // 只在区间变化时重新计算速度
+                  if (segmentIndex !== currentSegmentIndex && segmentIndex !== -1) {
+                    currentSegmentIndex = segmentIndex;
+                    var k1 = keyframes[segmentIndex];
+                    var k2 = keyframes[segmentIndex + 1];
+                    var frameDelta = k2.originalFrame - k1.originalFrame;
+                    var positionDelta = k2.position - k1.position;
+                    
+                    if (positionDelta > 0 && frameDelta > 0) {
+                      currentSpeed = frameDelta / (positionDelta * totalFrames);
+                      currentSpeed = Math.max(0.25, Math.min(4, currentSpeed));
+                    }
+                  }
+                  
+                  // 只在速度变化时更新playbackRate
+                  if (Math.abs(video.playbackRate - currentSpeed) > 0.01) {
+                    video.playbackRate = currentSpeed;
                   }
                 } else {
                   // 未启用变速时恢复正常速度
@@ -4345,6 +4388,69 @@ function initApp() {
             this.speedRemapConfig.enabled = false;
             this.selectedKeyframeIndex = -1;
           },
+          
+          /**
+           * 双击K帧帧数标签，打开编辑弹窗
+           */
+          onFrameLabelDblClick: function(index) {
+            var kf = this.speedRemapConfig.keyframes[index];
+            if (!kf) return;
+            
+            this.editingKeyframeIndex = index;
+            this.editFrameInput = kf.originalFrame.toString();
+            this.showEditFrameDialog = true;
+          },
+          
+          /**
+           * 确认编辑K帧帧数
+           */
+          confirmEditFrame: function() {
+            var frameNum = parseInt(this.editFrameInput, 10);
+            var totalFrames = this.speedRemapConfig.originalTotalFrames;
+            
+            // 验证输入
+            if (isNaN(frameNum)) {
+              this.showToast('请输入有效的帧数');
+              return;
+            }
+            if (frameNum < 0 || frameNum > totalFrames) {
+              this.showToast('帧数范围: 0-' + totalFrames);
+              return;
+            }
+            
+            var keyframes = this.speedRemapConfig.keyframes;
+            var index = this.editingKeyframeIndex;
+            
+            // 检查是否与其他K帧重复
+            for (var i = 0; i < keyframes.length; i++) {
+              if (i !== index && keyframes[i].originalFrame === frameNum) {
+                this.showToast('该帧数已存在K帧');
+                return;
+              }
+            }
+            
+            // 更新originalFrame
+            keyframes[index].originalFrame = frameNum;
+            
+            // 重新排序关键帧（按originalFrame排序）
+            keyframes.sort(function(a, b) {
+              return a.originalFrame - b.originalFrame;
+            });
+            
+            // 关闭弹窗
+            this.showEditFrameDialog = false;
+            this.editingKeyframeIndex = -1;
+            this.editFrameInput = '';
+          },
+          
+          /**
+           * 取消编辑K帧帧数
+           */
+          cancelEditFrame: function() {
+            this.showEditFrameDialog = false;
+            this.editingKeyframeIndex = -1;
+            this.editFrameInput = '';
+          },
                     
           /**
            * 确认变速配置
@@ -4379,8 +4485,8 @@ function initApp() {
             
             var rect = timeline.getBoundingClientRect();
             var x = event.clientX - rect.left;
-            x = Math.max(0, Math.min(400, x));
-            var position = x / 400;
+            x = Math.max(0, Math.min(500, x));
+            var position = x / 500;
             
             var keyframes = this.speedRemapConfig.keyframes;
             
@@ -4394,7 +4500,7 @@ function initApp() {
             
             // 检查是否接近已有K帧（不显示预览线）
             for (var i = 0; i < keyframes.length; i++) {
-              var kfX = keyframes[i].position * 400;
+              var kfX = keyframes[i].position * 500;
               if (Math.abs(x - kfX) < 8) {
                 this.timelineHoverX = -1;
                 return;
@@ -4420,7 +4526,7 @@ function initApp() {
             
             var rect = timeline.getBoundingClientRect();
             var x = event.clientX - rect.left;
-            var position = Math.max(0, Math.min(1, x / 400));
+            var position = Math.max(0, Math.min(1, x / 500));
             
             var keyframes = this.speedRemapConfig.keyframes;
             
@@ -4433,7 +4539,7 @@ function initApp() {
             
             // 检查是否点击在已有节点上
             for (var i = 0; i < keyframes.length; i++) {
-              var kfX = keyframes[i].position * 400;
+              var kfX = keyframes[i].position * 500;
               if (Math.abs(x - kfX) < 8) {
                 return; // 点击在已有节点上
               }
@@ -4456,7 +4562,7 @@ function initApp() {
               return;
             }
                       
-            // 计算该位置对应的原始帧号（线性插值）
+            // 重要：originalFrame通过当前时间轴状态插值计算（创建时固定）
             var originalFrame = this.getOriginalFrameAtPosition(position);
                       
             // 插入新K帧（按位置排序）
@@ -4527,7 +4633,7 @@ function initApp() {
                       
             var onMouseMove = function(e) {
               var dx = e.clientX - startX;
-              var dPosition = dx / 400;
+              var dPosition = dx / 500;
               var newPosition = startPosition + dPosition;
                         
               // 边界约束
@@ -4582,18 +4688,6 @@ function initApp() {
             }
                       
             return 1.0;
-          },
-                    
-          /**
-           * 计算输出时长（根据位置映射）
-           */
-          calculateOutputDuration: function() {
-            var config = this.speedRemapConfig;
-            var keyframes = config.keyframes;
-            if (!keyframes || keyframes.length < 2) return config.originalDuration;
-                      
-            // 输出时长不变，只是帧分布变了
-            return config.originalDuration;
           },
                     
           /**
@@ -7585,7 +7679,7 @@ function initApp() {
             };
           },
           
-          // 时间刻度计算（0.5s间隔）
+          // 时间刻度计算（智能间隔）
           timeScaleTicks: function() {
             var config = this.speedRemapConfig;
             var duration = config.originalDuration || 0;
@@ -7593,16 +7687,51 @@ function initApp() {
             
             if (duration <= 0) return ticks;
             
-            // 每0.5s一个刻度
+            // 智能计算间隔：保持刻度数量在8-15个之间
+            var targetTickCount = 10; // 期望刻度数
+            var roughInterval = duration / targetTickCount;
+            
+            // 可选间隔值（秒）
+            var intervals = [0.5, 1, 2, 5, 10, 20, 30, 60, 120, 300, 600];
+            
+            // 向上取整到最近的“好看”间隔
             var interval = 0.5;
-            var timelineWidth = 400; // 时间轴宽度
+            for (var i = 0; i < intervals.length; i++) {
+              if (intervals[i] >= roughInterval) {
+                interval = intervals[i];
+                break;
+              }
+            }
+            // 如果所有间隔都太小，使用最大的
+            if (roughInterval > intervals[intervals.length - 1]) {
+              interval = intervals[intervals.length - 1];
+            }
+            
+            var timelineWidth = 500; // 时间轴宽度
             
             for (var time = 0; time <= duration; time += interval) {
               var position = (time / duration) * timelineWidth;
-              var label = time.toFixed(1) + 's';
-              // 整数秒显示为"0s", "1s"，小数显示为"0.5s"
-              if (time % 1 === 0) {
+              var label = '';
+              
+              // 根据间隔大小决定显示格式
+              if (interval < 1) {
+                // 0.5s间隔：显示小数
+                label = time.toFixed(1) + 's';
+                if (time % 1 === 0) {
+                  label = Math.round(time) + 's';
+                }
+              } else if (interval < 60) {
+                // 秒级间隔：显示整数秒
                 label = Math.round(time) + 's';
+              } else {
+                // 分钟级间隔：显示分钟
+                var minutes = Math.floor(time / 60);
+                var seconds = Math.round(time % 60);
+                if (seconds === 0) {
+                  label = minutes + 'm';
+                } else {
+                  label = minutes + 'm' + seconds + 's';
+                }
               }
               
               ticks.push({
