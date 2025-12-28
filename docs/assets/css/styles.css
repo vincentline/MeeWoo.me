@@ -1126,7 +1126,9 @@ body.dark-mode .progress-fill:hover {
 body.dark-mode .progress-thumb {
   background-color: #EBEBEB;
 }
-
+body.dark-mode .progress-thumb:hover {
+  background-color: #409eff;
+}
 .progress-thumb:hover {
   transform: translate(-50%, -50%) scale(1.2);
   box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.2);
@@ -3961,16 +3963,22 @@ body.dark-mode .ad-position-bottom {
 /* ==================== 变速时间轴编辑器 ==================== */
 
 .speed-remap-editor {
-  position: absolute;
-  bottom: 132px;
-  width: auto;
-  margin: 0 0 10px 16px;
-  z-index: 100;
-  display: flex;
-  gap: 16px;
-  flex-direction: column;
-  align-items: flex-start;
-  left: 0;
+ position: absolute;
+ bottom: 132px;
+ width: auto;
+ margin: 0 0 8px 0;
+ z-index: 100;
+ align-items: flex-start;
+ left: 0;
+ background-color: #ffffff;
+ border: 1px solid #e6e6e6;
+ border-radius: 16px;
+ padding: 16px 28px;
+}
+
+body.dark-mode .speed-remap-editor {
+  background-color: #1a1a1a;
+  border-color: #404040;
 }
 
 .speed-remap-editor-content {
@@ -3985,6 +3993,7 @@ body.dark-mode .ad-position-bottom {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  padding: 24px 0 0 0;
 }
 
 /* 时长预估 */
@@ -4071,10 +4080,31 @@ body.dark-mode .speed-remap-segment-overlay.segment-slowdown {
   display: block;
 }
 
-/* hover预览线上方的速率提示 */
-.speed-remap-timeline-hover-frame {
+/* hover预览线上方的帧数提示（蓝线上方2px） */
+.speed-remap-timeline-hover-frame-number {
   position: absolute;
-  top: -30px;
+  top: -16px;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: #333333;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  display: none;
+}
+
+.speed-remap-timeline:hover .speed-remap-timeline-hover-frame-number {
+  display: block;
+}
+
+body.dark-mode .speed-remap-timeline-hover-frame-number {
+  color: #e0e0e0;
+}
+
+/* hover预览线下方的速率提示（蓝线下方2px） */
+.speed-remap-timeline-hover-speed {
+  position: absolute;
+  top: 18px;
   transform: translateX(-50%);
   font-size: 11px;
   color: #00B4FF;
@@ -4086,11 +4116,11 @@ body.dark-mode .speed-remap-segment-overlay.segment-slowdown {
   display: none;
 }
 
-.speed-remap-timeline:hover .speed-remap-timeline-hover-frame {
+.speed-remap-timeline:hover .speed-remap-timeline-hover-speed {
   display: block;
 }
 
-body.dark-mode .speed-remap-timeline-hover-frame {
+body.dark-mode .speed-remap-timeline-hover-speed {
   color: #33CCFF;
 }
 
@@ -4255,7 +4285,7 @@ body.dark-mode .tick-label {
 
 /* 时长显示（时间轴右侧4px） */
 .speed-remap-duration-label {
-  margin: 0 0 18px 0;
+  
   min-width: 88px;
   font-family: 'Segoe UI', system-ui, sans-serif;
   font-size: 12px;
@@ -4273,7 +4303,7 @@ body.dark-mode .speed-remap-duration-label {
   flex-direction: row;
   align-items: center;
   gap: 10px;
-  margin: 0 0 9px 0;
+  
 }
 
 /* 恢复按钮 */
@@ -4352,27 +4382,6 @@ body.dark-mode .btn-speed-cancel {
 
 body.dark-mode .btn-speed-cancel:hover {
   background: #444444;
-}
-
-/* 确定按钮 */
-.btn-speed-confirm {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0 16px;
-  height: 28px;
-  background: #409EFF;
-  border: none;
-  border-radius: 8px;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  font-size: 13px;
-  color: #FFFFFF;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-speed-confirm:hover {
-  background: #66b1ff;
 }
 
 /* 变速按钮激活状态 */

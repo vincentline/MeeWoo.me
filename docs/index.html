@@ -234,8 +234,13 @@
                 <!-- hover预览线 -->
                 <div class="speed-remap-timeline-hover-line"
                      :style="{ left: timelineHoverX + 'px', display: timelineHoverX >= 0 ? 'block' : 'none' }"></div>
-                <!-- hover预览线上方的速率提示 -->
-                <div class="speed-remap-timeline-hover-frame"
+                <!-- hover预览线上方的帧数提示 -->
+                <div class="speed-remap-timeline-hover-frame-number"
+                     :style="{ left: timelineHoverX + 'px', display: timelineHoverX >= 0 ? 'block' : 'none' }">
+                  {{ timelineHoverX >= 0 ? getOriginalFrameAtPosition(timelineHoverX / 500) : '' }}
+                </div>
+                <!-- hover预览线下方的速率提示 -->
+                <div class="speed-remap-timeline-hover-speed"
                      :style="{ left: timelineHoverX + 'px', display: timelineHoverX >= 0 ? 'block' : 'none' }">
                   <template v-if="timelineHoverX >= 0">
                     当前段<br>{{ getSpeedAtPosition(timelineHoverX / 500).toFixed(2) }}倍速
@@ -291,7 +296,7 @@
                 恢复
               </button>
               <button class="btn-speed-cancel" @click="cancelSpeedRemap">取消</button>
-              <button class="btn-speed-confirm" @click="confirmSpeedRemap">确定</button>
+              <button class="btn-secondary" @click="confirmSpeedRemap">确定</button>
             </div>
           </div>
         </div>
