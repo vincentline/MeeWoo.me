@@ -66,10 +66,28 @@ if ($LASTEXITCODE -ne 0) {
 
 # 4. 先拉取远程更改（关键步骤！避免分叉）
 Write-Host "`n3. 拉取远程更改（避免分叉）..." -ForegroundColor Yellow
-git pull --no-rebase origin main
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "拉取失败，可能存在冲突" -ForegroundColor Red
-    Write-Host "请手动解决冲突后重新运行脚本" -ForegroundColor Yellow
+
+# 重试机制：应对Qoder后台Git进程占用文件锁
+$maxRetries = 3
+$retryCount = 0
+$pullSuccess = $false
+
+while (-not $pullSuccess -and $retryCount -lt $maxRetries) {
+    git pull --no-rebase origin main 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        $pullSuccess = $true
+    } else {
+        $retryCount++
+        if ($retryCount -lt $maxRetries) {
+            Write-Host "文件被占用，等待3秒后重试... ($retryCount/$maxRetries)" -ForegroundColor Yellow
+            Start-Sleep -Seconds 3
+        }
+    }
+}
+
+if (-not $pullSuccess) {
+    Write-Host "拉取失败，可能是文件被占用或存在冲突" -ForegroundColor Red
+    Write-Host "请稍后重试或手动解决" -ForegroundColor Yellow
     pause
     exit 1
 }
