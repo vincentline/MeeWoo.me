@@ -245,11 +245,8 @@
     this.progressBar = progressBar;
     this.progressThumb = progressThumb;
     
-    console.log('[PlayerController] 初始化进度条拖拽', { progressBar: progressBar, progressThumb: progressThumb });
-    
     // 鼠标/触摸开始
     var onDragStart = function(e) {
-      console.log('[PlayerController] 开始拖拽', e.type);
       e.preventDefault();
       _this.isDragging = true;
       
@@ -272,7 +269,6 @@
     
     // 拖拽结束
     var onDragEnd = function() {
-      console.log('[PlayerController] 结束拖拽');
       _this.isDragging = false;
       
       // 移除全局事件监听
@@ -291,25 +287,21 @@
       var x = clientX - rect.left;
       var percentage = x / rect.width;
       
-      console.log('[PlayerController] 更新进度:', percentage);
       _this.seekTo(percentage);
     };
     
     // 绑定滑块事件
     progressThumb.addEventListener('mousedown', onDragStart);
     progressThumb.addEventListener('touchstart', onDragStart, { passive: false });
-    console.log('[PlayerController] 已绑定滑块事件');
     
     // 点击进度条跳转
     progressBar.addEventListener('click', function(e) {
-      console.log('[PlayerController] 点击进度条', e.target);
       // 如果点击的是滑块，不处理（由拖拽处理）
       if (e.target === progressThumb || progressThumb.contains(e.target)) {
         return;
       }
       updateProgress(e);
     });
-    console.log('[PlayerController] 已绑定进度条点击事件');
     
     // 保存清理函数
     this._cleanupDrag = function() {

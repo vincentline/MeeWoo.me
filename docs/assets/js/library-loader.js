@@ -1,6 +1,49 @@
 /**
  * 库加载管理器 - Library Loader
  * 统一管理所有外部库的动态加载，支持优先级队列和进度显示
+ * 
+ * ==================== 工作原理 ====================
+ * 
+ * 1. 【预加载阶段】页面启动时自动预加载所有库（低优先级，后台执行）
+ *    - 在 app.js mounted() 中调用 preloadLibraries()
+ *    - 按照 priority 值从小到大依次加载（vue=0 最先，ffmpeg=30 最后）
+ *    - disabled:true 的库会被跳过（如 svgaweb）
+ * 
+ * 2. 【插队加载阶段】用户打开功能时按需加载（高优先级，立即执行）
+ *    - 调用 load(libs, highPriority=true) 时会插队到队列最前面
+ *    - 例如：打开转SVGA弹窗时，protobuf/pako 会立即插队加载
+ *    - 插队任务会中断当前预加载，优先执行，完成后继续预加载
+ * 
+ * 3. 【加载队列机制】
+ *    - queue: 所有待加载任务的队列 [{libs, priority, resolve, reject}]
+ *    - highPriority=true → priority=0 → unshift() 插到队列最前面
+ *    - highPriority=false → priority=10 → push() 追加到队列末尾
+ *    - 每次 processQueue() 会对队列按 priority 排序，优先级高的先执行
+ * 
+ * 4. 【进度通知机制】
+ *    - currentLib: 当前正在加载的库 {name, url, progress}
+ *    - listeners: 进度监听器数组，通过 onProgress(callback) 注册
+ *    - 加载过程中会实时更新 progress（0→50→100），触发所有监听器
+ * 
+ * 5. 【容错降级】
+ *    - 如果库已加载（checkFn()=true），直接跳过
+ *    - 加载失败不会阻塞其他库，继续处理队列
+ *    - 实际使用时（如 svga-builder.js）会检测库是否存在，不存在则降级
+ * 
+ * ==================== 使用示例 ====================
+ * 
+ * // 页面启动：预加载所有库（低优先级）
+ * window.libraryLoader.preloadLibraries();
+ * 
+ * // 用户操作：插队加载必需库（高优先级）
+ * window.libraryLoader.load(['protobuf', 'pako'], true);
+ * 
+ * // 监听加载进度
+ * window.libraryLoader.onProgress(function(currentLib) {
+ *   if (currentLib) {
+ *     console.log(currentLib.name, currentLib.progress);
+ *   }
+ * });
  */
 (function(window) {
   'use strict';
@@ -8,6 +51,13 @@
   /**
    * 库配置表
    * 包含所有需要动态加载的外部库的配置信息
+   * 
+   * 配置说明：
+   * - name: 库的显示名称（用于进度提示）
+   * - url: CDN 地址
+   * - checkFn: 检测库是否已加载的函数（返回 true 表示已加载）
+   * - priority: 预加载优先级（数字越小越优先，0 最高）
+   * - disabled: 是否禁用预加载（可选，true 则跳过）
    */
   var LIBRARY_CONFIG = {
     'vue': {
@@ -58,11 +108,18 @@
       checkFn: function() { return typeof pako !== 'undefined'; },
       priority: 25
     },
+    'pngquant': {
+      name: 'PngQuant',
+      url: 'https://unpkg.com/@saschazar/wasm-pngquant@2.0.11/dist/wasm-pngquant.js',
+      checkFn: function() { return typeof wasmPngquant !== 'undefined'; },
+      priority: 26  // 优先级略低于protobuf/pako，因为是选配功能
+    },
     'svgaweb': {
       name: 'SVGA-Web',
       url: 'https://cdn.jsdelivr.net/npm/svga-web@2.4.2/svga-web.min.js',
       checkFn: function() { return typeof SVGA !== 'undefined' && SVGA.Downloader; },
-      priority: 25
+      priority: 25,
+      disabled: true  // 禁用这个库，不预加载
     },
     'ffmpeg': {
       name: 'FFmpeg',
@@ -184,6 +241,17 @@
    * @param {string|Array<string>} libKeys - 库的键名或键名数组
    * @param {boolean} highPriority - 是否高优先级
    * @returns {Promise}
+   * 
+   * 工作机制：
+   * 1. highPriority=true：插队加载（priority=0，unshift 插到队列最前面）
+   *    - 用于用户主动触发的功能，需要立即加载库
+   *    - 例：app.js 中打开转SVGA弹窗时调用 loadLibrary(['protobuf', 'pako'], true)
+   * 
+   * 2. highPriority=false：预加载（priority=10，push 追加到队列末尾）
+   *    - 用于页面启动时的预加载，在后台慢慢加载
+   *    - 例：app.js mounted() 中调用 preloadLibraries()
+   * 
+   * 3. 队列排序：每次 processQueue() 会按 priority 排序，插队任务一定优先
    */
   LibraryLoader.prototype.load = function(libKeys, highPriority) {
     var _this = this;
@@ -254,17 +322,39 @@
   };
 
   /**
-   * 预加载非关键库
+   * 预加载所有非关键库（空闲时按优先级排队加载）
    */
   LibraryLoader.prototype.preload = function() {
-    // Lottie 和 Howler 是次要功能，优先级较低
-    this.load(['lottie', 'howler'], false)
-      .then(function() {
-        console.log('Lottie 和 Howler 加载完成');
+    var _this = this;
+    
+    // 获取所有库并按优先级排序
+    var allLibs = Object.keys(LIBRARY_CONFIG)
+      .map(function(key) {
+        return { key: key, priority: LIBRARY_CONFIG[key].priority };
       })
-      .catch(function(error) {
-        console.warn('部分库加载失败:', error);
+      .sort(function(a, b) {
+        return a.priority - b.priority;
       });
+    
+    // 排除已加载的库和禁用的库
+    var toLoad = allLibs.filter(function(lib) {
+      var config = LIBRARY_CONFIG[lib.key];
+      return !_this.isLoaded(lib.key) && !config.disabled;
+    }).map(function(lib) {
+      return lib.key;
+    });
+    
+    if (toLoad.length === 0) {
+      return;
+    }
+    
+    // 延迟1秒后开始预加载，避免影响首屏渲染
+    setTimeout(function() {
+      // 逐个加载（低优先级）
+      toLoad.forEach(function(libKey) {
+        _this.load(libKey, false).catch(function() {});
+      });
+    }, 1000);
   };
 
   /**

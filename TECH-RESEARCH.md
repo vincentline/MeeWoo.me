@@ -221,7 +221,7 @@ if (alpha > 0) {
 ```
 
 ##### 1.4 LibraryLoader (库加载管理器)
-- **文件**: `docs/assets/js/library-loader.js` (8.5KB)
+- **文件**: `docs/assets/js/library-loader.js` (10.5KB)
 - **功能**: 统一管理所有外部库的动态加载
 - **核心能力**:
   - 优先级队列加载
@@ -230,24 +230,61 @@ if (alpha > 0) {
   - 缓存管理
 
 **管理的库**:
-- Vue.js
-- SVGA Player
-- Lottie
-- Howler.js
-- Marked
-- GIF.js
-- Protobuf.js
-- Pako
-- FFmpeg.wasm
+- Vue.js (priority: 0)
+- SVGA Player (priority: 1)
+- Lottie (priority: 5)
+- Howler.js (priority: 6)
+- GIF.js (priority: 15)
+- Marked (priority: 20)
+- Protobuf.js (priority: 25)
+- Pako (priority: 25)
+- PngQuant (priority: 26) - PNG压缩库
+- SVGA-Web (disabled) - 已禁用
+- FFmpeg.wasm (priority: 30)
+
+**工作原理**:
+
+1. **预加载阶段**（低优先级，后台执行）
+   - 页面启动时自动预加载所有库
+   - 在 `app.js mounted()` 中调用 `preloadLibraries()`
+   - 按照 `priority` 值从小到大依次加载（vue=0 最先，ffmpeg=30 最后）
+   - `disabled: true` 的库会被跳过
+
+2. **插队加载阶段**（高优先级，立即执行）
+   - 用户打开功能时按需加载
+   - 调用 `load(libs, highPriority=true)` 时会插队到队列最前面
+   - 例如：打开转SVGA弹窗时，`protobuf/pako` 会立即插队加载
+   - 插队任务会中断当前预加载，优先执行，完成后继续预加载
+
+3. **加载队列机制**
+   - `queue`: 所有待加载任务的队列 `[{libs, priority, resolve, reject}]`
+   - `highPriority=true` → `priority=0` → `unshift()` 插到队列最前面
+   - `highPriority=false` → `priority=10` → `push()` 追加到队列末尾
+   - 每次 `processQueue()` 会对队列按 `priority` 排序，优先级高的先执行
+
+4. **进度通知机制**
+   - `currentLib`: 当前正在加载的库 `{name, url, progress}`
+   - `listeners`: 进度监听器数组，通过 `onProgress(callback)` 注册
+   - 加载过程中会实时更新 `progress`（0→50→100），触发所有监听器
+
+5. **容错降级**
+   - 如果库已加载（`checkFn()=true`），直接跳过
+   - 加载失败不会阻塞其他库，继续处理队列
+   - 实际使用时（如 svga-builder.js）会检测库是否存在，不存在则降级
 
 **使用方式**:
 ```javascript
-// 预加载常用库
-await LibraryLoader.preload(['vue', 'svgaplayer']);
+// 页面启动：预加载所有库（低优先级）
+window.libraryLoader.preloadLibraries();
 
-// 懒加载
-await LibraryLoader.load('ffmpeg', (progress) => {
-  console.log('加载进度:', progress);
+// 用户操作：插队加载必需库（高优先级）
+window.libraryLoader.load(['protobuf', 'pako'], true);
+
+// 监听加载进度
+window.libraryLoader.onProgress(function(currentLib) {
+  if (currentLib) {
+    console.log(currentLib.name + ': ' + currentLib.progress + '%');
+  }
 });
 ```
 
@@ -365,7 +402,7 @@ AdController.init()
 | player-controller.js | 11.0KB | 338行 | 播放控制 |
 | svga-builder.js | 13.2KB | 384行 | SVGA构建 |
 | dual-channel-composer.js | 6.8KB | 197行 | 双通道合成 |
-| library-loader.js | 8.5KB | 297行 | 库加载管理 |
+| library-loader.js | 10.5KB | 376行 | 库加载管理 |
 | gif-exporter.js | 8.0KB | ~250行 | GIF导出 |
 | ad-controller.js | 6.8KB | 205行 | 广告控制 |
 | site-config-loader.js | 7.8KB | ~250行 | 配置加载 |
