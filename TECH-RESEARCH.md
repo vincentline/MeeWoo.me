@@ -1,10 +1,332 @@
 # 技术调研报告
 
-> **最后更新**: 2025-12-29  
+> **最后更新**: 2025-12-30  
 > **文档状态**: ✅ 持续更新
 
 ## 📋 调研目标
 为 SVGA Preview 项目的功能开发提供技术方案支持和实现记录。
+
+---
+
+## 📊 阶段7：播放器重构与音频同步修复
+**完成时间**：2025-12-30
+
+### 1. 适配器模式重构 ✅
+
+#### 问题背景
+项目支持多种动画格式（SVGA/Lottie/双通道MP4），每种格式的播放器 API 不统一：
+- SVGA: `svgaPlayer.startAnimation()`, `pauseAnimation()`, `stepToPercentage()`
+- Lottie: `animation.play()`, `pause()`, `goToAndStop()`
+- 双通道MP4: `video.play()`, `pause()`, `currentTime`
+
+导致业务代码中大量 `if-else` 判断，难以维护。
+
+#### 技术方案
+采用**适配器模式**（Adapter Pattern）统一播放控制接口。
+
+**设计结构**：
+```
+PlayerController (统一调度器)
+    |
+    ├─→ LottiePlayerAdapter
+    ├─→ SvgaPlayerAdapter
+    └─→ YyevaPlayerAdapter
+
+统一接口：
+- play()
+- pause()
+- seekTo(percentage)
+- setMuted(muted)
+- canHandle() // 判断是否可以处理当前状态
+```
+
+**核心代码**：
+```javascript
+// 基础适配器
+function PlayerAdapter(state) {
+  this.state = state;
+}
+
+PlayerAdapter.prototype.canHandle = function() {
+  return false;
+};
+
+// SVGA 适配器
+function SvgaPlayerAdapter(state) {
+  PlayerAdapter.call(this, state);
+}
+
+SvgaPlayerAdapter.prototype = Object.create(PlayerAdapter.prototype);
+SvgaPlayerAdapter.prototype.canHandle = function() {
+  return this.state.hasFile && this.state.svgaPlayer;
+};
+
+// 统一调度器
+function PlayerController(state) {
+  this.state = state;
+  this.adapters = [
+    new LottiePlayerAdapter(state),
+    new SvgaPlayerAdapter(state),
+    new YyevaPlayerAdapter(state),
+    new FramesPlayerAdapter(state)
+  ];
+}
+
+PlayerController.prototype.getActiveAdapter = function() {
+  for (var i = 0; i < this.adapters.length; i++) {
+    if (this.adapters[i].canHandle()) {
+      return this.adapters[i];
+    }
+  }
+  return null;
+};
+
+PlayerController.prototype.play = function() {
+  var adapter = this.getActiveAdapter();
+  if (adapter) adapter.play();
+};
+```
+
+**优势**：
+1. **接口统一**：业务代码只调用 `playerController.play()`，不关心底层实现
+2. **易于扩展**：新增播放器只需添加新的适配器
+3. **职责分离**：每个适配器专注于一种播放器的控制逻辑
+4. **自动匹配**：通过 `canHandle()` 自动选择合适的适配器
+
+**文件位置**：`docs/assets/js/player-controller.js`
+
+---
+
+### 2. SVGA 音频同步修复 ✅
+
+#### 问题梳理
+
+| 问题 | 表现 | 影响 |
+|-----|------|------|
+| 1. Lottie 拖动暂停 | 拖动进度条时强制暂停播放 | 用户体验差 |
+| 2. SVGA 进度不更新 | 播放时进度条和时间不动 | 无法看到播放进度 |
+| 3. SVGA 静音失效 | 有音频的 SVGA 不显示静音按钮 | 功能缺失 |
+| 4. 暂停后音频继续 | 暂停动画但声音继续播放 | 音画不同步 |
+| 5. 音频叠加 | 暂停/播放出现多个声音同时播放 | 严重bug |
+| 6. 声音从头播放 | 暂停后播放，声音从头开始 | 音画不同步 |
+
+#### 修复过程
+
+**问题1：Lottie 拖动暂停**
+
+原因：`seekTo()` 使用 `goToAndStop()` 导致强制暂停
+
+修复：
+```javascript
+LottiePlayerAdapter.prototype.seekTo = function(percentage) {
+  var targetFrame = Math.round(percentage * this.state.totalFrames);
+  // 根据播放状态选择方法
+  if (this.state.isPlaying) {
+    this.state.lottiePlayer.goToAndPlay(targetFrame, true);
+  } else {
+    this.state.lottiePlayer.goToAndStop(targetFrame, true);
+  }
+};
+```
+
+**问题2：SVGA 进度不更新**
+
+原因：`onFrame` 是方法，不是属性，错误用法：`player.onFrame = callback`
+
+修复（查询官方文档后）：
+```javascript
+// 错误用法
+this.svgaPlayer.onFrame = function(frame) { ... };
+
+// 正确用法
+this.svgaPlayer.onFrame(function(frame) {
+  _this.currentFrame = frame;
+  _this.progress = Math.round((frame / _this.totalFrames) * 100);
+});
+```
+
+**问题3：SVGA 静音失效**
+
+原因：`loadSvgaFile()` 中没有调用音频提取方法
+
+修复：
+```javascript
+loadSvgaFile: function(validatedData) {
+  var file = validatedData.file;
+  
+  // 添加音频提取
+  file.arrayBuffer().then(function(arrayBuffer) {
+    _this.parseSvgaAudioData(arrayBuffer);
+  });
+  
+  // ... 其他代码
+}
+```
+
+**问题4-6：音频同步问题（核心修复）**
+
+**尝试方案1：Howler.mute()**
+```javascript
+// 暂停时静音
+Howler.mute(true);
+// 播放时取消静音
+Howler.mute(false);
+```
+❌ 失败：只是静音，音频还在后台播放
+
+**尝试方案2：Howler.stop()**
+```javascript
+// 暂停时停止
+Howler.stop();
+// 播放时重新播放
+Howler.mute(false);
+```
+❌ 失败：音频从头开始，不是从暂停位置继续
+
+**尝试方案3：保存/恢复音频位置**
+```javascript
+var svgaAudioStates = [];
+
+// 暂停时保存位置
+Howler._howls.forEach(function(howl) {
+  svgaAudioStates.push(howl.seek());
+  howl.pause();
+});
+
+// 播放时恢复位置
+Howler._howls.forEach(function(howl, index) {
+  howl.seek(svgaAudioStates[index]);
+});
+```
+❌ 失败：时序不稳定，有时声音消失，有时叠加
+
+**最终方案：阻止 SVGA 重创建音频实例**
+
+核心思路：
+1. SVGA 的 `stepToPercentage(..., true)` 会重新创建 Howler 音频实例
+2. 我们记录旧实例，让 SVGA 创建新实例后立即停止
+3. 恢复旧实例继续播放，保持音频位置不变
+
+```javascript
+SvgaPlayerAdapter.prototype.play = function() {
+  var _this = this;
+  
+  // 1. 记录当前的音频实例
+  var existingHowls = [];
+  if (typeof Howler !== 'undefined' && Howler._howls) {
+    existingHowls = Howler._howls.slice(); // 复制数组
+  }
+  
+  // 2. SVGA 从当前位置继续播放（会创建新的音频实例）
+  var currentPercentage = (this.state.progress || 0) / 100;
+  this.state.svgaPlayer.stepToPercentage(currentPercentage, true);
+  
+  // 3. 延迟 50ms，处理音频实例
+  setTimeout(function() {
+    if (typeof Howler !== 'undefined' && Howler._howls) {
+      // 停止新创建的音频实例
+      Howler._howls.forEach(function(howl) {
+        if (howl && existingHowls.indexOf(howl) === -1) {
+          howl.stop(); // 这是新实例，停止它
+        }
+      });
+      
+      // 恢复旧的音频实例（从暂停位置继续）
+      if (!_this.state.isMuted) {
+        existingHowls.forEach(function(howl) {
+          if (howl && !howl.playing()) {
+            howl.play(); // 旧实例，恢复播放
+          }
+        });
+      }
+    }
+  }, 50);
+};
+
+SvgaPlayerAdapter.prototype.pause = function() {
+  // 暂停动画
+  this.state.svgaPlayer.pauseAnimation();
+  
+  // 暂停所有 Howler 音频（保留播放位置）
+  if (typeof Howler !== 'undefined' && Howler._howls) {
+    Howler._howls.forEach(function(howl) {
+      if (howl && howl.playing()) {
+        howl.pause();
+      }
+    });
+  }
+};
+```
+
+#### 关键技术点
+
+1. **Howler._howls 内部数组**
+   - Howler.js 维护所有音频实例的数组
+   - 可以通过对比数组来识别新旧实例
+
+2. **数组对比算法**
+   ```javascript
+   if (existingHowls.indexOf(howl) === -1) {
+     // 这是新实例
+   }
+   ```
+
+3. **Howler API**
+   - `howl.pause()` - 暂停并保留播放位置
+   - `howl.play()` - 从暂停位置继续播放
+   - `howl.stop()` - 停止并重置到开头
+   - `howl.seek()` - 获取或设置播放位置（秒）
+
+4. **异步时序控制**
+   - 使用 `setTimeout(50ms)` 等待 SVGA 创建音频实例
+   - 延迟时间基于测试调优
+
+5. **SVGA API**
+   - `stepToPercentage(percentage, andPlay)`
+   - 第二个参数 `true` 会触发音频播放
+   - 第二个参数 `false` 只跳转不播放
+
+#### 测试结果
+
+| 场景 | 预期 | 实际 | 结果 |
+|-----|------|------|------|
+| 暂停后播放 | 动画和音频从暂停位置继续 | ✅ 符合预期 | 通过 |
+| 多次暂停/播放 | 音画同步，无叠加 | ✅ 符合预期 | 通过 |
+| 拖动进度条 | 跳转到新位置，无叠加 | ✅ 符合预期 | 通过 |
+| 静音控制 | 正确显示按钮，功能正常 | ✅ 符合预期 | 通过 |
+| Lottie 拖动 | 播放中拖动不暂停 | ✅ 符合预期 | 通过 |
+
+#### 文件修改
+
+| 文件 | 修改内容 | 行数变化 |
+|-----|---------|--------|
+| player-controller.js | 适配器模式重构 + 音频同步修复 | +200行 |
+| app.js | 修复 onFrame 调用 + 音频提取 | +30行 |
+
+---
+
+### 技术总结
+
+#### 设计模式应用
+- **适配器模式**：统一多种播放器接口
+- **策略模式**：自动选择合适的适配器
+- **单一职责原则**：每个适配器只负责一种播放器
+
+#### 核心技术
+1. **SVGA Player Web API**：正确使用官方 API
+2. **Howler.js 内部机制**：利用 `_howls` 数组管理实例
+3. **JavaScript 原型链**：实现适配器继承
+4. **异步时序控制**：setTimeout 处理创建时序
+5. **数组对比算法**：识别新旧对象实例
+
+#### 经验教训
+1. **查阅官方文档**：`onFrame` 是方法不是属性，避免猜测
+2. **理解底层机制**：SVGA 会重新创建音频实例
+3. **多方案尝试**：3种方案失败后找到最优解
+4. **防御性编程**：检查 `typeof Howler !== 'undefined'`
+5. **代码注释**：复杂逻辑添加详细注释
+
+---
 
 ## 📊 阶段2开发总结
 
