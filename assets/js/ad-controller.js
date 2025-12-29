@@ -57,7 +57,6 @@
             this.applyConfig();
 
             this.initialized = true;
-            console.log('[AdController] 初始化完成');
         }
 
         /**
@@ -72,7 +71,6 @@
             containers.forEach(container => {
                 const position = container.getAttribute('data-ad-position');
                 this.containers.set(position, container);
-                console.log(`[AdController] 发现广告位容器: ${position}`);
             });
         }
 
@@ -94,7 +92,6 @@
             const adConfig = window.SiteConfigLoader.getFeature('advertisement');
             
             if (!adConfig) {
-                console.log('[AdController] 未找到广告位配置，隐藏所有广告位');
                 this.hideAllAds();
                 return;
             }
@@ -104,11 +101,9 @@
             if (enabled && position) {
                 // 启用指定位置的广告位
                 this.showAd(position);
-                console.log(`[AdController] 显示广告位: ${position}`);
             } else {
                 // 隐藏所有广告位
                 this.hideAllAds();
-                console.log('[AdController] 广告位已禁用');
             }
         }
 
@@ -142,7 +137,6 @@
                         // 检查是否已初始化
                         if (!adElement.getAttribute('data-adsbygoogle-status')) {
                             (window.adsbygoogle = window.adsbygoogle || []).push({});
-                            console.log('[AdController] AdSense 广告已初始化');
                         }
                     });
                 } catch (e) {

@@ -127,9 +127,15 @@
           }
           outputCtx.drawImage(sourceCanvas, 0, 0, width, height);
 
-          // 透明底+杂色边：处理半透明像素
-          if (transparent && dither && ditherColor) {
-            this._processDither(outputCtx, width, height, ditherColor);
+          // 透明模式：处理半透明像素
+          if (transparent) {
+            if (dither && ditherColor) {
+              // 杂色边模式：半透明像素与背景色混合
+              this._processDither(outputCtx, width, height, ditherColor);
+            } else {
+              // 非杂色边模式：半透明像素设为完全透明（避免黑色杂边）
+              this._processAlphaThreshold(outputCtx, width, height);
+            }
           }
 
           // 添加帧
@@ -186,6 +192,26 @@
         }
       }
 
+      ctx.putImageData(imageData, 0, 0);
+    },
+    
+    /**
+     * 处理Alpha通道：半透明像素设为完全透明（避免黑色杂边）
+     * GIF格式不支持半透明，只支持完全透明或完全不透明
+     * 将alpha < 128的像素设为完全透明，alpha >= 128的像素设为完全不透明
+     */
+    _processAlphaThreshold: function(ctx, width, height) {
+      var imageData = ctx.getImageData(0, 0, width, height);
+      var data = imageData.data;
+      
+      for (var j = 0; j < data.length; j += 4) {
+        var alpha = data[j + 3];
+        if (alpha > 0 && alpha < 255) {
+          // 半透明像素：alpha阈值处理
+          data[j + 3] = alpha < 128 ? 0 : 255;
+        }
+      }
+      
       ctx.putImageData(imageData, 0, 0);
     },
 

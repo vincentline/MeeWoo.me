@@ -13,6 +13,17 @@
     
     <!-- 库加载管理器（优先加载，独立模块） -->
     <script src="assets/js/library-loader.js"></script>
+    <script>
+      // 立即加载核心库（Vue 和 SVGA Player）
+      (function() {
+        if (window.libraryLoader) {
+          // 高优先级加载核心库
+          window.libraryLoader.load(['vue', 'svgaplayer'], true).catch(function(err) {
+            console.error('核心库加载失败:', err);
+          });
+        }
+      })();
+    </script>
     
     <!-- 站点配置加载器（用于广告位控制等功能） -->
     <script src="assets/js/site-config-loader.js"></script>
@@ -102,8 +113,8 @@
       </transition>
 
       <!-- 库加载进度条 -->
-      <div v-if="libraryLoader.currentLib" class="library-loading-indicator">
-        <div class="loading-text">正在加载 {{ libraryLoader.currentLib.name }}（{{ libraryLoader.currentLib.progress }}%）</div>
+      <div v-if="loadingLibraryInfo" class="library-loading-indicator">
+        <div class="loading-text">正在加载 {{ loadingLibraryInfo.name }}（{{ loadingLibraryInfo.progress }}%）</div>
       </div>
 
       <!-- Help 按钮 -->
@@ -652,8 +663,12 @@
                       <span v-if="!frames.hasFile" class="tooltip-text">请先拖入序列帧图片</span>
                       转SVGA
                     </button>
-                    <button class="btn-secondary tooltip">
-                      <span class="tooltip-text">正在开发中...</span>
+                    <button 
+                      class="btn-secondary tooltip"
+                      :disabled="!frames.hasFile"
+                      @click="openFramesToDualChannelPanel"
+                    >
+                      <span v-if="!frames.hasFile" class="tooltip-text">请先拖入序列帧图片</span>
                       转双通道MP4
                     </button>
                   </div>
@@ -948,7 +963,7 @@
           <!-- MP4信息 -->
           <div class="mp4-info-section">
             <div class="mp4-info-row">MP4尺寸：{{ mp4.originalWidth }}×{{ mp4.originalHeight }}    时长：{{ mp4.fileInfo.duration }}</div>
-            <div class="mp4-compress-hint">注意：第一次转换需要加载FFmpeg（25M），请耐心等待<br>压缩质量调越低，文件就越小，画面越糊。{{ chromaKeyEnabled ? '<br>当前已启用绿幕抠图，将使用抠图后的透明通道。' : '' }}</div>
+            <div class="mp4-compress-hint">注意：第一次转换需要加载FFmpeg（25M），请耐心等待<br>压缩质量调越低，文件就越小，画面越糊。<br>当前已启用绿幕抠图，将使用抠图后的透明通道。</div>
           </div>
 
           <!-- 配置区域 -->
@@ -1919,6 +1934,170 @@
         </div>
       </div>
       
+      <!-- 序列帧转双通道MP4弹窗（序列帧模式右侧弹窗） -->
+      <div class="mp4-panel" :class="{'show': showFramesToDualChannelPanel && currentModule === 'frames'}">
+        <div class="mp4-panel-container">
+          <!-- 标题区 -->
+          <div class="mp4-panel-header">
+            <h3 class="mp4-panel-title">转换为双通道MP4格式</h3>
+            <div class="mp4-panel-divider"></div>
+          </div>
+          
+          <!-- 序列帧信息 -->
+          <div class="mp4-info-section">
+            <div class="mp4-info-row">当前尺寸：{{ frames.originalWidth }}x{{ frames.originalHeight }}    帧数：{{ frames.files.length }}</div>
+            <div class="mp4-compress-hint">注意：第一次转换需要加载FFmpeg（25M），请耐心等待<br>压缩质量调越低，文件就越小，画面越糊。</div>
+          </div>
+
+          <!-- 配置区域 -->
+          <div class="mp4-config-section" :class="{disabled: isConvertingFramesToDualChannel}">
+            <!-- 遮罩位置 -->
+            <div class="mp4-config-item">
+              <div class="mp4-config-label">遮罩位置：</div>
+              <div class="mp4-select-wrapper" :class="{open: showFramesDualChannelModeDropdown, disabled: isConvertingFramesToDualChannel}" @click="!isConvertingFramesToDualChannel && (showFramesDualChannelModeDropdown = !showFramesDualChannelModeDropdown)">
+                <div class="mp4-select-text">
+                  {{ framesToDualChannelConfig.channelMode === 'color-left-alpha-right' ? '左彩右灰' : '左灰右彩' }}
+                </div>
+                <div class="mp4-select-icon">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <!-- 下拉菜单 -->
+                <div class="mp4-select-dropdown">
+                  <div 
+                    class="mp4-select-option"
+                    :class="{selected: framesToDualChannelConfig.channelMode === 'color-left-alpha-right'}"
+                    @click.stop="framesToDualChannelConfig.channelMode = 'color-left-alpha-right'; showFramesDualChannelModeDropdown = false"
+                  >
+                    左彩右灰（左侧彩色通道，右侧Alpha通道）
+                  </div>
+                  <div 
+                    class="mp4-select-option"
+                    :class="{selected: framesToDualChannelConfig.channelMode === 'alpha-left-color-right'}"
+                    @click.stop="framesToDualChannelConfig.channelMode = 'alpha-left-color-right'; showFramesDualChannelModeDropdown = false"
+                  >
+                    左灰右彩（左侧Alpha通道，右侧彩色通道）
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 尺寸 -->
+            <div class="mp4-config-item">
+              <div class="mp4-config-label">尺寸：</div>
+              <div class="mp4-size-container">
+                <div class="mp4-size-input-wrapper">
+                  <input 
+                    type="number" 
+                    class="mp4-input" 
+                    v-model.number="framesToDualChannelConfig.width" 
+                    @input="onFramesToDualChannelWidthChange"
+                    :disabled="isConvertingFramesToDualChannel"
+                    min="1"
+                    max="3000"
+                  />
+                </div>
+                <div class="mp4-size-lock">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4.66667 7.33333V5.33333C4.66667 3.86057 5.86057 2.66667 7.33333 2.66667H8.66667C10.1394 2.66667 11.3333 3.86057 11.3333 5.33333V7.33333M5.33333 7.33333H10.6667C11.403 7.33333 12 7.93029 12 8.66667V12C12 12.7364 11.403 13.3333 10.6667 13.3333H5.33333C4.59695 13.3333 4 12.7364 4 12V8.66667C4 7.93029 4.59695 7.33333 5.33333 7.33333Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="mp4-size-input-wrapper">
+                  <input 
+                    type="number" 
+                    class="mp4-input" 
+                    v-model.number="framesToDualChannelConfig.height" 
+                    @input="onFramesToDualChannelHeightChange"
+                    :disabled="isConvertingFramesToDualChannel"
+                    min="1"
+                    max="3000"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- 压缩质量 -->
+            <div class="mp4-config-item">
+              <div class="mp4-config-label">压缩质量：</div>
+              <div class="mp4-value-container">
+                <div class="mp4-value-input-wrapper">
+                  <input 
+                    type="number" 
+                    class="mp4-input" 
+                    v-model.number="framesToDualChannelConfig.quality"
+                    :disabled="isConvertingFramesToDualChannel"
+                    min="1"
+                    max="100"
+                  />
+                </div>
+                <div class="mp4-value-unit">%</div>
+              </div>
+            </div>
+
+            <!-- 帧率 -->
+            <div class="mp4-config-item">
+              <div class="mp4-config-label">帧率：</div>
+              <div class="mp4-value-container">
+                <div class="mp4-value-input-wrapper">
+                  <input 
+                    type="number" 
+                    class="mp4-input" 
+                    v-model.number="framesToDualChannelConfig.fps"
+                    :disabled="isConvertingFramesToDualChannel"
+                    min="1"
+                    max="120"
+                  />
+                </div>
+                <div class="mp4-value-unit">FPS</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 底部按钮 -->
+          <div class="mp4-panel-footer">
+            <!-- 返回按钮（转换中变为取消按钮） -->
+            <button 
+              v-if="!isConvertingFramesToDualChannel"
+              class="material-btn-back" 
+              @click="closeFramesToDualChannelPanel" 
+              title="返回"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M12 16L6 10L12 4" stroke="#333333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <button 
+              v-else
+              class="material-btn-back mp4-btn-cancel" 
+              @click="framesToDualChannelCancelled = true; isConvertingFramesToDualChannel = false" 
+              title="取消转换"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M5 5L15 15M15 5L5 15" stroke="#ff4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            
+            <!-- 转换按钮 -->
+            <button 
+              class="material-btn-export" 
+              :class="{'mp4-btn-converting': isConvertingFramesToDualChannel}"
+              :data-progress="framesToDualChannelProgress"
+              :disabled="isConvertingFramesToDualChannel"
+              @click="startFramesToDualChannelConversion"
+            >
+              <template v-if="isConvertingFramesToDualChannel">
+                <span class="mp4-progress-text">{{ framesToDualChannelProgress }}%</span>
+                <span class="mp4-stage-text">{{ framesToDualChannelMessage }}</span>
+              </template>
+              <template v-else>
+                开始转换MP4
+              </template>
+            </button>
+          </div>
+        </div>
+      </div>
+      
       <!-- GIF导出弹窗（所有模式通用右侧弹窗） -->
       <div class="svga-panel gif-panel" :class="{'show': showGifPanel}">
         <div class="svga-panel-container">
@@ -2191,29 +2370,6 @@
       />
     </div>
 
-    <!-- 关键库预加载（高优先级） -->
-    <script>
-      // Vue.js - 核心框架
-      (function() {
-        var script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js';
-        script.onerror = function() {
-          // 备用CDN
-          var fallback = document.createElement('script');
-          fallback.src = 'https://unpkg.com/vue@2.6.14/dist/vue.min.js';
-          document.head.appendChild(fallback);
-        };
-        document.head.appendChild(script);
-      })();
-      
-      // SVGA播放器 - 核心功能
-      (function() {
-        var script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/svgaplayerweb@2.3.1/build/svga.min.js';
-        document.head.appendChild(script);
-      })();
-    </script>
-    
     <!-- 双通道图像合成器模块 -->
     <script src="assets/js/dual-channel-composer.js"></script>
     
@@ -2225,6 +2381,9 @@
     
     <!-- 播放控制器模块 -->
     <script src="assets/js/player-controller.js"></script>
+    
+    <!-- 视图控制器模块 -->
+    <script src="assets/js/viewport-controller.js"></script>
     
     <!-- 应用主逻辑 -->
     <script src="assets/js/app.js"></script>

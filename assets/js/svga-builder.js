@@ -361,15 +361,42 @@
     },
 
     /**
-     * Canvas转PNG Uint8Array
+     * Canvas转PNG Uint8Array（支持pngquant压缩）
      * @private
      */
     _canvasToPNG: async function(canvas) {
+      // 先转为普通PNG Blob
       var blob = await new Promise(function(resolve) {
         canvas.toBlob(resolve, 'image/png');
       });
+      
       var arrayBuffer = await blob.arrayBuffer();
-      return new Uint8Array(arrayBuffer);
+      var pngData = new Uint8Array(arrayBuffer);
+      
+      // 如果有pngquant库，使用固定70%质量压缩
+      if (typeof wasmPngquant !== 'undefined') {
+        try {
+          // 初始化pngquant（如果还未初始化）
+          if (!wasmPngquant.isReady) {
+            await wasmPngquant.init();
+          }
+          
+          // 压缩参数：固定70%质量
+          var compressedData = await wasmPngquant.compress(pngData, {
+            quality: [65, 75],  // 质量范围 65-75，平均~70%
+            speed: 3            // 速度3（平衡模式）
+          });
+          
+          return new Uint8Array(compressedData);
+        } catch (e) {
+          // 压缩失败，使用原始数据
+          console.error('PNG压缩失败，使用原始数据:', e);
+          return pngData;
+        }
+      }
+      
+      // 没有pngquant库，返回原始数据
+      return pngData;
     }
   };
 
