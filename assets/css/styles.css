@@ -584,9 +584,9 @@ body.dark-mode .mode-name-label {
   align-items: center;
   padding: 0px 4px;
   gap: 10px;
-  width: 32px;
+  width: 28px;
   height: 28px;
-  background: #E6E6E6;
+  background: #e6e6e67d;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -615,7 +615,7 @@ body.dark-mode .mode-name-label {
 
 /* 暗黑模式 */
 body.dark-mode .clear-canvas-btn {
-  background: #404040;
+  background: #4040407d;
 }
 
 body.dark-mode .clear-canvas-btn svg path {
@@ -1867,6 +1867,11 @@ body.dark-mode .material-btn-replace:hover {
   border: 1px solid #e6e6e6;
   cursor: pointer;
   transition: all 0.15s ease;
+  /* 使用雪碧图 - recover图标 */
+  background-image: url('../img/controls-sprite.png');
+  background-size: 400px 200px;
+  background-position: -240px -160px; /* -480*0.5, -320*0.5 recover.png */
+  background-repeat: no-repeat;
 }
 
 .material-btn-close svg {
@@ -1874,25 +1879,28 @@ body.dark-mode .material-btn-replace:hover {
   height: 24px;
   flex: none;
   order: 0;
+  /* 隐藏SVG，使用背景图 */
+  display: none;
 }
 
 .material-btn-close:hover {
-  background: #F5F5F7;
+  background-color: #F5F5F7;
   border-color: #CCCCCC;
 }
 
 .material-btn-close:active {
-  background: #E8E8ED;
+  background-color: #E8E8ED;
   transform: scale(0.95);
 }
 
 body.dark-mode .material-btn-close {
-  background: #2d2d2d;
+  background-color: #2d2d2d;
+  background-position: -280px -160px; /* -560*0.5, -320*0.5 recover_dark.png */
   border-color: #505050;
 }
 
 body.dark-mode .material-btn-close:hover {
-  background: #3a3a3a;
+  background-color: #3a3a3a;
   border-color: #606060;
 }
 
@@ -4305,7 +4313,7 @@ body.dark-mode .speed-remap-duration-label {
   justify-content: center;
   align-items: center;
   gap: 4px;
-  padding: 0 12px;
+  padding: 0 12px 0 8px;
   height: 28px;
   background: #FFFFFF;
   border: 1px solid #e6e6e6;
@@ -4320,6 +4328,21 @@ body.dark-mode .speed-remap-duration-label {
 .btn-speed-reset svg {
   width: 16px;
   height: 16px;
+  /* 隐藏SVG，使用背景图标 */
+  display: none;
+}
+
+/* 使用雪碧图添加recover图标 - 通过::before伪元素 */
+.btn-speed-reset::before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background-image: url('../img/controls-sprite.png');
+  background-size: 400px 200px;
+  background-position: -240px -160px; /* -480*0.5, -320*0.5 recover.png */
+  background-repeat: no-repeat;
+  flex-shrink: 0;
 }
 
 .btn-speed-reset:hover {
@@ -4336,6 +4359,10 @@ body.dark-mode .btn-speed-reset {
   background: #2d2d2d;
   border-color: #505050;
   color: #e0e0e0;
+}
+
+body.dark-mode .btn-speed-reset::before {
+  background-position: -280px -160px; /* -560*0.5, -320*0.5 recover_dark.png */
 }
 
 body.dark-mode .btn-speed-reset:hover {

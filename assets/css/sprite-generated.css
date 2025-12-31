@@ -1,5 +1,5 @@
 /* 自动生成的雪碧图样式 - 请勿手动编辑 */
-/* 生成时间: 2025-12-24 01:44:21 */
+/* 生成时间: 2026-01-01 02:42:00 */
 
 /* 雪碧图基础样式 */
 .sprite-icon {
@@ -226,6 +226,64 @@
 }
 .sprite-one2one-hover-dark {
   background-position: -80px -320px;
+  width: 80px;
+  height: 80px;
+}
+
+/* CONTAIN 图标 */
+.sprite-contain {
+  background-position: -160px -320px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-contain-hover {
+  background-position: -240px -320px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-contain-dark {
+  background-position: -320px -320px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-contain-hover-dark {
+  background-position: -400px -320px;
+  width: 80px;
+  height: 80px;
+}
+
+/* RECOVER 图标 */
+.sprite-recover {
+  background-position: -480px -320px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-recover-dark {
+  background-position: -560px -320px;
+  width: 80px;
+  height: 80px;
+}
+
+/* CLOSE 图标 */
+.sprite-close {
+  background-position: -640px -320px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-close-dark {
+  background-position: -720px -320px;
+  width: 80px;
+  height: 80px;
+}
+
+/* BACK 图标 */
+.sprite-back {
+  background-position: 0px -400px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-back-dark {
+  background-position: -80px -400px;
   width: 80px;
   height: 80px;
 }

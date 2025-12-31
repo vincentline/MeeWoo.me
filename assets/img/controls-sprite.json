@@ -250,5 +250,65 @@
     "y": -320,
     "width": 80,
     "height": 80
+  },
+  "contain.png": {
+    "x": -160,
+    "y": -320,
+    "width": 80,
+    "height": 80
+  },
+  "contain_hover.png": {
+    "x": -240,
+    "y": -320,
+    "width": 80,
+    "height": 80
+  },
+  "contain_dark.png": {
+    "x": -320,
+    "y": -320,
+    "width": 80,
+    "height": 80
+  },
+  "contain_hover_dark.png": {
+    "x": -400,
+    "y": -320,
+    "width": 80,
+    "height": 80
+  },
+  "recover.png": {
+    "x": -480,
+    "y": -320,
+    "width": 80,
+    "height": 80
+  },
+  "recover_dark.png": {
+    "x": -560,
+    "y": -320,
+    "width": 80,
+    "height": 80
+  },
+  "close.png": {
+    "x": -640,
+    "y": -320,
+    "width": 80,
+    "height": 80
+  },
+  "close_dark.png": {
+    "x": -720,
+    "y": -320,
+    "width": 80,
+    "height": 80
+  },
+  "back.png": {
+    "x": 0,
+    "y": -400,
+    "width": 80,
+    "height": 80
+  },
+  "back_dark.png": {
+    "x": -80,
+    "y": -400,
+    "width": 80,
+    "height": 80
   }
 }
