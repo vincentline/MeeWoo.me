@@ -69,6 +69,24 @@ ICONS = {
         'one2one_hover.png',
         'one2one_dark.png',
         'one2one_hover_dark.png'
+    ],
+    'contain': [
+        'contain.png',
+        'contain_hover.png',
+        'contain_dark.png',
+        'contain_hover_dark.png'
+    ],
+    'recover': [
+        'recover.png',
+        'recover_dark.png',
+    ],
+    'close': [
+        'close.png',
+        'close_dark.png',
+    ],
+    'back': [
+        'back.png',
+        'back_dark.png',
     ]
 }
 
