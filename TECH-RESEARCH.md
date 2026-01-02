@@ -682,11 +682,106 @@ PlayerController.prototype.play = function() {
 3. **职责分离**：每个适配器专注于一种播放器的控制逻辑
 4. **自动匹配**：通过 `canHandle()` 自动选择合适的适配器
 
-**文件位置**：`docs/assets/js/player-controller.js`
+*文件位置**：`docs/assets/js/player-controller.js`
 
 ---
 
-### 2. SVGA 音频同步修复 ✅
+### 2. PlayerController 资源清理修复 ✅
+
+#### 问题描述
+
+**症状**：点击"清空画布"后重新拖入动画文件，进度条无法点击和拖动
+
+**影响范围**：所有模式（SVGA、Lottie、MP4、YYEVA、序列帧）
+
+**严重程度**：高（核心功能完全失效）
+
+#### 根本原因
+
+所有 `cleanup*` 函数（`cleanupSvga`、`cleanupLottie`、`cleanupMp4`、`cleanupYyeva`、`cleanupFrames`）都没有销毁 `PlayerController` 实例，导致：
+
+1. **事件监听器残留**：旧的事件监听器仍然绑定在已失效的 DOM 引用上
+2. **无法响应交互**：当重新加载文件时，虽然调用了 `initPlayerController()`，但由于 DOM 时序问题，进度条控制失效
+3. **内存泄漏**：未清理的监听器导致潜在的内存泄漏
+
+#### 技术细节
+
+**PlayerController 的生命周期**：
+```
+创建 → 绑定事件监听器 → 使用 → 清理（destroy）
+```
+
+**事件监听器绑定位置**：
+- `progressThumb` 上的 `mousedown` / `touchstart` 事件
+- `progressBar` 上的 `click` 事件
+- 全局 `mousemove` / `mouseup` / `touchmove` / `touchend` 事件（拖拽时）
+
+**destroy() 方法的作用**：
+```javascript
+PlayerController.prototype.destroy = function() {
+  if (this._cleanupDrag) {
+    this._cleanupDrag(); // 移除所有事件监听器
+    this._cleanupDrag = null;
+  }
+  this.progressBar = null;
+  this.progressThumb = null;
+};
+```
+
+#### 修复方案
+
+在所有 5 个 cleanup 函数中添加 PlayerController 销毁逻辑：
+
+```javascript
+// 销毁播放控制器（清理进度条事件监听器）
+// 重要：必须在清理时销毁，否则清空画布后重新加载文件时进度条会失效
+// 原因：PlayerController.destroy() 会移除绑定在 progressBar/progressThumb 上的事件监听器
+// 如果不销毁，旧的事件监听器仍然绑定在已失效的 DOM 引用上，导致无法响应点击和拖动
+if (this.playerController) {
+  this.playerController.destroy();
+  this.playerController = null;
+}
+```
+
+**修改文件**：
+- `docs/assets/js/app.js`
+  - `cleanupSvga()` - 第 2774-2778 行
+  - `cleanupYyeva()` - 第 2836-2840 行
+  - `cleanupMp4()` - 第 3021-3025 行
+  - `cleanupLottie()` - 第 2214-2218 行
+  - `cleanupFrames()` - 第 2569-2573 行
+
+#### 测试验证
+
+**测试步骤**：
+1. 拖入任意动画文件（SVGA/Lottie/MP4等）
+2. 验证进度条正常工作
+3. 点击"清空画布"按钮
+4. 再次拖入动画文件
+5. 验证进度条可以点击和拖动
+
+**预期结果**：所有模式下进度条均能正常响应用户交互
+
+#### 经验总结
+
+**教训**：
+- 所有持有事件监听器的控制器实例，必须在资源清理时显式调用 `destroy()`
+- 不能依赖重新初始化来清理旧实例，必须在清理阶段就完成销毁
+- DOM 引用失效后，绑定在上面的事件监听器不会自动解绑
+
+**最佳实践**：
+- 资源清理函数中必须包含所有控制器的销毁逻辑
+- 使用统一的清理模式，避免遗漏
+- 在控制器中实现标准的 `destroy()` 方法来集中管理清理逻辑
+
+**相关问题**：
+- 类似的问题可能存在于其他控制器（如 `ViewportController`），需要检查是否在所有清理函数中都正确销毁
+
+**修复日期**：2026-01-02
+
+---
+
+### 3. SVGA 音频同步修复 ✅
 
 #### 问题梳理
 
