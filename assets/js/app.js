@@ -2211,7 +2211,10 @@ function initApp() {
         this.lottieCanvas = null;
         this.lottieCtx = null;
 
-        // 销毁播放控制器
+        // 销毁播放控制器（清理进度条事件监听器）
+        // 重要：必须在清理时销毁，否则清空画布后重新加载文件时进度条会失效
+        // 原因：PlayerController.destroy() 会移除绑定在 progressBar/progressThumb 上的事件监听器
+        // 如果不销毁，旧的事件监听器仍然绑定在已失效的 DOM 引用上，导致无法响应点击和拖动
         if (this.playerController) {
           this.playerController.destroy();
           this.playerController = null;
@@ -2566,7 +2569,8 @@ function initApp() {
         this.framesCtx = null;
         this.framesImages = [];
 
-        // 销毁播放控制器
+        // 销毁播放控制器（清理进度条事件监听器）
+        // 重要：必须在清理时销毁，否则清空画布后重新加载文件时进度条会失效
         if (this.playerController) {
           this.playerController.destroy();
           this.playerController = null;
@@ -2771,7 +2775,8 @@ function initApp() {
           this.svgaObjectUrl = null;
         }
 
-        // 销毁播放控制器
+        // 销毁播放控制器（清理进度条事件监听器）
+        // 重要：必须在清理时销毁，否则清空画布后重新加载文件时进度条会失效
         if (this.playerController) {
           this.playerController.destroy();
           this.playerController = null;
@@ -2833,7 +2838,8 @@ function initApp() {
         this.yyevaCanvas = null;
         this.yyevaCtx = null;
 
-        // 销毁播放控制器
+        // 销毁播放控制器（清理进度条事件监听器）
+        // 重要：必须在清理时销毁，否则清空画布后重新加载文件时进度条会失效
         if (this.playerController) {
           this.playerController.destroy();
           this.playerController = null;
@@ -3018,7 +3024,8 @@ function initApp() {
           this.mp4ObjectUrl = null;
         }
 
-        // 销毁播放控制器
+        // 销毁播放控制器（清理进度条事件监听器）
+        // 重要：必须在清理时销毁，否则清空画布后重新加载文件时进度条会失效
         if (this.playerController) {
           this.playerController.destroy();
           this.playerController = null;
