@@ -1802,6 +1802,18 @@
             </div>
           </div>
 
+          <!-- 质量 -->
+          <div class="svga-config-item">
+            <div class="svga-config-label">质量：</div>
+            <div class="svga-value-container">
+              <div class="svga-value-input-wrapper">
+                <input type="number" class="svga-input" v-model.number="gifConfig.quality" :disabled="isExportingGIF"
+                  min="1" max="30" />
+              </div>
+              <div class="svga-value-unit" style="font-size: 11px; color: #999;">越小越好</div>
+            </div>
+          </div>
+
           <!-- 透明底开关 -->
           <div class="svga-config-item">
             <div class="svga-config-label">透明底</div>
@@ -1965,6 +1977,12 @@
 
   <!-- GIF导出器模块 -->
   <script src="assets/js/gif-exporter.js"></script>
+
+  <!-- 文件验证器模块 -->
+  <script src="assets/js/file-validator.js"></script>
+
+  <!-- 工具函数库模块 -->
+  <script src="assets/js/utils.js"></script>
 
   <!-- 播放控制器模块 -->
   <script src="assets/js/player-controller.js"></script>

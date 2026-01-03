@@ -264,9 +264,9 @@ function initApp() {
         preCompressReplacedImages: null,    // 压缩前的replacedImages（用于撤销）
         preCompressScaleInfo: null,         // 压缩前的compressedScaleInfo（用于撤销）
 
-        // 音频数据（从原始SVGA文件提取）- 非响应式
-        // svgaAudioData: null, // { audioKey: Uint8Array }
-        // svgaMovieData: null, // protobuf解析后的MovieEntity
+        // 音频数据（从原始SVGA文件提取）
+        svgaAudioData: null, // { audioKey: Uint8Array }
+        svgaMovieData: null, // protobuf解析后的MovieEntity
 
         // GIF 导出状态和配置
         showGifPanel: false,
@@ -274,6 +274,7 @@ function initApp() {
           width: 0,
           height: 0,
           fps: 30,           // 1-60
+          quality: 10,       // 1-30，数字越小质量越高（文件越大）
           transparent: false, // 透明底
           dither: false,      // 杂色边
           ditherColor: '#ffffff' // 杂色边颜色
@@ -472,10 +473,7 @@ function initApp() {
         // 序列帧帧率设置弹窗
         showFramesFpsDialog: false,
         framesFpsInput: 25,      // 弹窗中的帧率输入值
-        framesWasPlayingBeforeDialog: undefined, // 打开帧率弹窗前的播放状态
-
-        // 音频状态（修复 ReferenceError）
-        hasAudio: false
+        framesWasPlayingBeforeDialog: undefined // 打开帧率弹窗前的播放状态
       };
     },
     methods: {
@@ -787,10 +785,6 @@ function initApp() {
         this.$refs.fileInput.click();
       },
 
-      triggerChangePreviewFile: function () {
-        this.triggerFileUpload();
-      },
-
       /**
        * 重新上传SVGA文件（用于替换当前文件）
        * 对应 index.html 中的 handleReuploadSVGA
@@ -846,271 +840,25 @@ function initApp() {
 
       /**
        * 判断是否是序列帧格式
-       * 序列帧文件名应该包含连续的数字编号，如: frame001.png, frame002.png
+       * 注：已迁移至 file-validator.js 模块
        * @param {Array<File>} imageFiles
        * @returns {boolean}
        */
       isSequenceFrames: function (imageFiles) {
-        if (imageFiles.length < 2) return false;
-
-        // 提取文件名中的数字部分
-        var numberPattern = /\d+/g;
-        var fileInfos = [];
-
-        for (var i = 0; i < imageFiles.length; i++) {
-          var name = imageFiles[i].name;
-          var baseName = name.replace(/\.[^.]+$/, ''); // 去掉扩展名
-          var matches = baseName.match(numberPattern);
-
-          if (!matches || matches.length === 0) {
-            // 文件名中没有数字，不是序列帧
-            return false;
-          }
-
-          // 取最后一个数字作为序号
-          var seqNum = parseInt(matches[matches.length - 1], 10);
-          // 提取前缀（数字前的部分）
-          var lastNumIndex = baseName.lastIndexOf(matches[matches.length - 1]);
-          var prefix = baseName.substring(0, lastNumIndex);
-
-          fileInfos.push({ file: imageFiles[i], seqNum: seqNum, prefix: prefix });
-        }
-
-        // 检查前缀是否一致
-        var firstPrefix = fileInfos[0].prefix;
-        var allSamePrefix = fileInfos.every(function (info) {
-          return info.prefix === firstPrefix;
-        });
-
-        if (!allSamePrefix) {
-          // 前缀不一致，不是序列帧
-          return false;
-        }
-
-        // 检查序号是否连续
-        var seqNums = fileInfos.map(function (info) { return info.seqNum; }).sort(function (a, b) { return a - b; });
-        for (var j = 1; j < seqNums.length; j++) {
-          if (seqNums[j] - seqNums[j - 1] !== 1) {
-            // 序号不连续，不是序列帧
-            return false;
-          }
-        }
-
-        return true;
+        // 调用模块化的文件验证器
+        return this.fileValidator.isSequenceFrames(imageFiles);
       },
 
       /**
        * 统一的文件验证器（在切换模式之前预验证，避免错误文件影响当前播放）
+       * 注：已迁移至 file-validator.js 模块
        * @param {File} file - 文件对象
        * @param {String} fileType - 文件类型：'svga' | 'lottie' | 'yyeva' | 'mp4'
        * @returns {Promise} - resolve(validatedData) 或 reject(errorMessage)
        */
       validateFile: function (file, fileType) {
-        var _this = this;
-
-        return new Promise(function (resolve, reject) {
-          if (fileType === 'svga') {
-            // SVGA 验证：尝试解析 protobuf
-            var reader = new FileReader();
-            reader.onload = function (e) {
-              var arrayBuffer = e.target.result;
-              var blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
-              var objectUrl = URL.createObjectURL(blob);
-              var parser = new SVGA.Parser();
-
-              parser.load(
-                objectUrl,
-                function (videoItem) {
-                  URL.revokeObjectURL(objectUrl);
-                  resolve({ videoItem: videoItem, file: file });
-                },
-                function (error) {
-                  URL.revokeObjectURL(objectUrl);
-                  reject('SVGA文件解析失败：' + (error.message || error));
-                }
-              );
-            };
-            reader.onerror = function () {
-              reject('文件读取失败');
-            };
-            reader.readAsArrayBuffer(file);
-
-          } else if (fileType === 'lottie') {
-            // Lottie 验证：检查 JSON 格式和必要字段
-            var fileName = (file.name || '').toLowerCase();
-
-            if (fileName.endsWith('.lottie')) {
-              // .lottie 文件（ZIP格式）
-              _this.loadLibrary('jszip', true).then(function () {
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                  JSZip.loadAsync(e.target.result).then(function (zip) {
-                    var jsonFiles = [];
-                    zip.forEach(function (relativePath, file) {
-                      if (relativePath.endsWith('.json') && !relativePath.startsWith('__MACOSX')) {
-                        jsonFiles.push(relativePath);
-                      }
-                    });
-
-                    if (jsonFiles.length === 0) {
-                      reject('.lottie文件中未找到JSON数据');
-                      return;
-                    }
-
-                    var firstJsonFile = zip.file(jsonFiles[0]);
-                    firstJsonFile.async('text').then(function (jsonText) {
-                      try {
-                        var data = JSON.parse(jsonText);
-                        var animationData = data;
-
-                        // 检查是否是 .lottie 标准格式（包装格式）
-                        if (data.animations && Array.isArray(data.animations) && data.animations.length > 0) {
-                          // .lottie 格式可能的结构：
-                          // 1. { animations: [{id, data: {...}}] } - data字段包含动画
-                          // 2. { animations: [{id, animation: {...}}] } - animation字段包含动画
-                          // 3. { animations: [{id}] } + animations/xxx.json - 动画在单独文件
-
-                          if (data.animations[0].data) {
-                            animationData = data.animations[0].data;
-                          } else if (data.animations[0].animation) {
-                            animationData = data.animations[0].animation;
-                          } else {
-                            // 需要从 animations/ 目录读取真正的动画文件
-                            var animId = data.animations[0].id;
-
-                            // 查找 animations/ 目录下的 JSON 文件
-                            var animFile = null;
-                            for (var i = 0; i < jsonFiles.length; i++) {
-                              if (jsonFiles[i].indexOf('animations/') === 0 && jsonFiles[i] !== jsonFiles[0]) {
-                                animFile = jsonFiles[i];
-                                break;
-                              }
-                            }
-
-                            if (animFile) {
-                              zip.file(animFile).async('text').then(function (animText) {
-                                try {
-                                  animationData = JSON.parse(animText);
-                                  validateAndResolve(animationData);
-                                } catch (parseErr) {
-                                  reject('动画文件JSON解析失败：' + parseErr.message);
-                                }
-                              }).catch(function (readErr) {
-                                reject('读取动画文件失败：' + readErr.message);
-                              });
-                              return; // 异步处理，等待动画文件读取
-                            } else {
-                              reject('未找到Lottie动画数据文件');
-                              return;
-                            }
-                          }
-                        }
-
-                        validateAndResolve(animationData);
-
-                      } catch (err) {
-                        reject('JSON解析失败：' + err.message);
-                      }
-
-                      // 验证并返回结果的辅助函数
-                      function validateAndResolve(animData) {
-                        var width = animData.w || animData.width || 0;
-                        var height = animData.h || animData.height || 0;
-
-                        if (!width || !height) {
-                          reject('Lottie文件缺少尺寸信息，可能文件格式不正确');
-                        } else {
-                          resolve({ animationData: animData, file: file });
-                        }
-                      }
-                    }).catch(function (err) {
-                      reject('读取JSON文件失败：' + err.message);
-                    });
-                  }).catch(function (err) {
-                    reject('.lottie文件解压失败：' + err.message);
-                  });
-                };
-                reader.onerror = function () {
-                  reject('文件读取失败');
-                };
-                reader.readAsArrayBuffer(file);
-              }).catch(function (err) {
-                reject('JSZip库加载失败');
-              });
-            } else {
-              // .json 文件
-              var reader = new FileReader();
-              reader.onload = function (e) {
-                try {
-                  var data = JSON.parse(e.target.result);
-                  var animationData = data;
-
-                  // 检查是否是包装格式
-                  if (data.animation && typeof data.animation === 'object') {
-                    animationData = data.animation;
-                  }
-
-                  var width = animationData.w || animationData.width || 0;
-                  var height = animationData.h || animationData.height || 0;
-
-                  if (!width || !height) {
-                    reject('Lottie文件缺少尺寸信息，可能文件格式不正确');
-                  } else {
-                    resolve({ animationData: animationData, file: file });
-                  }
-                } catch (err) {
-                  reject('JSON解析失败：' + err.message);
-                }
-              };
-              reader.onerror = function () {
-                reject('文件读取失败');
-              };
-              reader.readAsText(file);
-            }
-
-          } else if (fileType === 'yyeva') {
-            // 双通MP4 验证：检查视频尺寸比例
-            var objectUrl = URL.createObjectURL(file);
-            var video = document.createElement('video');
-            video.src = objectUrl;
-            video.muted = true;
-
-            video.onloadedmetadata = function () {
-              var videoWidth = video.videoWidth;
-              var videoHeight = video.videoHeight;
-
-              URL.revokeObjectURL(objectUrl);
-
-              if (videoWidth < videoHeight * 0.8) {
-                reject('不支持的视频格式，请上传左右并排布局的双通MP4文件');
-              } else {
-                resolve({ file: file });
-              }
-            };
-            video.onerror = function () {
-              URL.revokeObjectURL(objectUrl);
-              reject('视频文件加载失败');
-            };
-
-          } else if (fileType === 'mp4') {
-            // 普通MP4 验证：基本格式检查
-            var objectUrl = URL.createObjectURL(file);
-            var video = document.createElement('video');
-            video.src = objectUrl;
-            video.muted = true;
-
-            video.onloadedmetadata = function () {
-              URL.revokeObjectURL(objectUrl);
-              resolve({ file: file });
-            };
-            video.onerror = function () {
-              URL.revokeObjectURL(objectUrl);
-              reject('视频文件加载失败');
-            };
-          } else {
-            reject('不支持的文件类型');
-          }
-        });
+        // 调用模块化的文件验证器
+        return this.fileValidator.validateFile(file, fileType);
       },
 
       handleFile: function (file) {
@@ -1174,149 +922,13 @@ function initApp() {
 
       /**
        * 检测MP4是双通道还是普通视频
-       * 通过分析30%和70%位置的帧，检测左右两半的饱和度和亮度差异
+       * 注：已迁移至 file-validator.js 模块
        * @param {File} file - MP4文件
        * @param {Function} callback - 回调函数，参数为isDualChannel(boolean)
        */
       detectMp4Type: function (file, callback) {
-        var objectUrl = URL.createObjectURL(file);
-        var video = document.createElement('video');
-        video.src = objectUrl;
-        video.muted = true;
-
-        // 配置参数
-        var CONFIG = {
-          pureBlackThreshold: 0.015,     // 饱和度<0.015判定为纯黑（alpha通道），降低阈值更严格
-          saturationDiffThreshold: 0.02, // 饱和度差异>0.02判定为双通道，提高阈值避免误判
-          brightnessDiffThreshold: 0.03, // 亮度差异>0.03判定为双通道，提高阈值避免误判
-          checkFramePositions: [0.3, 0.7] // 检测30%和70%位置的帧
-        };
-
-        video.onloadedmetadata = function () {
-          var videoWidth = video.videoWidth;
-          var videoHeight = video.videoHeight;
-          var duration = video.duration;
-
-          // 创建临时canvas用于分析
-          var canvas = document.createElement('canvas');
-          canvas.width = videoWidth;
-          canvas.height = videoHeight;
-          var ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-          var frameIndex = 0;
-          var isDualChannel = false;
-
-          // 计算区域平均饱和度和亮度
-          function calculateMetrics(imageData) {
-            var data = imageData.data;
-            var totalSaturation = 0;
-            var totalBrightness = 0;
-            var count = 0;
-
-            // 抖样计算（每16个像素抽1个，提升性能）
-            for (var i = 0; i < data.length; i += 64) {
-              var r = data[i] / 255;
-              var g = data[i + 1] / 255;
-              var b = data[i + 2] / 255;
-              var max = Math.max(r, g, b);
-              var min = Math.min(r, g, b);
-
-              // 饱和度
-              var saturation = max === 0 ? 0 : (max - min) / max;
-              totalSaturation += saturation;
-
-              // 亮度（使用相对亮度公式）
-              var brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-              totalBrightness += brightness;
-
-              count++;
-            }
-            return {
-              saturation: count === 0 ? 0 : totalSaturation / count,
-              brightness: count === 0 ? 0 : totalBrightness / count
-            };
-          }
-
-          // 分析单帧是否为双通道
-          function analyzeFrame() {
-            ctx.drawImage(video, 0, 0);
-
-            var halfWidth = Math.floor(videoWidth / 2);
-            var leftData = ctx.getImageData(0, 0, halfWidth, videoHeight);
-            var rightData = ctx.getImageData(halfWidth, 0, halfWidth, videoHeight);
-
-            var leftMetrics = calculateMetrics(leftData);
-            var rightMetrics = calculateMetrics(rightData);
-
-            var satDiff = Math.abs(leftMetrics.saturation - rightMetrics.saturation);
-            var brightDiff = Math.abs(leftMetrics.brightness - rightMetrics.brightness);
-
-            // 判断逻辑：
-            // 1. 一边是纯黑（alpha通道，饱和度极低）
-            // 2. 另一边饱和度明显更高（有彩色内容）
-            // 3. 或者亮度差异明显（一边全黑，一边有内容）
-            var hasBlackSide = leftMetrics.saturation < CONFIG.pureBlackThreshold ||
-              rightMetrics.saturation < CONFIG.pureBlackThreshold;
-            var hasSaturationDiff = satDiff > CONFIG.saturationDiffThreshold;
-            var hasBrightnessDiff = brightDiff > CONFIG.brightnessDiffThreshold;
-
-            // 特殊处理：当两边都极暗时（两者都<0.015），放宽差异阈值
-            var bothVeryDark = leftMetrics.saturation < CONFIG.pureBlackThreshold &&
-              rightMetrics.saturation < CONFIG.pureBlackThreshold;
-            if (bothVeryDark) {
-              // 极暗场景：只要有微小差异就判定为双通道
-              hasSaturationDiff = satDiff > 0.003;
-              hasBrightnessDiff = brightDiff > 0.003;
-            }
-
-            var result = hasBlackSide && (hasSaturationDiff || hasBrightnessDiff);
-
-            return result;
-          }
-
-          // 检测下一帧
-          function checkNextFrame() {
-            if (frameIndex >= CONFIG.checkFramePositions.length) {
-              // 所有帧检测完成，返回结果
-              URL.revokeObjectURL(objectUrl);
-              callback(isDualChannel);
-              return;
-            }
-
-            var targetTime = duration * CONFIG.checkFramePositions[frameIndex];
-            video.currentTime = targetTime;
-          }
-
-          // 监听seeked事件
-          video.onseeked = function () {
-            if (analyzeFrame()) {
-              isDualChannel = true;
-            }
-
-            frameIndex++;
-
-            // 如果已经检测到双通道，无需继续
-            if (isDualChannel) {
-              URL.revokeObjectURL(objectUrl);
-              callback(true);
-              return;
-            }
-
-            // 继续检测下一帧
-            checkNextFrame();
-          };
-
-          // 开始检测第一帧
-          checkNextFrame();
-        };
-
-        video.onerror = function () {
-          URL.revokeObjectURL(objectUrl);
-          // 加载失败默认当作普通MP4
-          callback(false);
-        };
-
-        video.load();
+        // 调用模块化的文件验证器
+        this.fileValidator.detectMp4Type(file, callback);
       },
 
 
@@ -1826,6 +1438,9 @@ function initApp() {
           _this.yyevaVideo = video;
           _this.yyevaAlphaPosition = 'left';
 
+          // 检测是否包含音频
+          _this.yyevaHasAudio = _this.detectVideoHasAudio(video);
+
           setTimeout(function () {
             _this.footerTransitioning = false;
             _this.footerContentVisible = true;
@@ -1847,6 +1462,19 @@ function initApp() {
                 video.play().then(function () {
                   _this.isPlaying = true;
                   _this.startYyevaRenderLoop();
+
+                  // 恢复声音状态（如果在初始化时被强制静音了）
+                  if (!_this.isMuted) {
+                    video.muted = false;
+                  }
+
+                  // 播放后再次检测音频（针对Chrome的webkitAudioDecodedByteCount）
+                  setTimeout(function () {
+                    var hasAudio = _this.detectVideoHasAudio(video);
+                    if (hasAudio !== _this.yyevaHasAudio) {
+                      _this.yyevaHasAudio = hasAudio;
+                    }
+                  }, 500);
                 }).catch(function (err) {
                   alert('播放失败');
                 });
@@ -1952,6 +1580,14 @@ function initApp() {
               video.play().then(function () {
                 _this.isPlaying = true;
                 _this.startMp4ProgressLoop();
+
+                // 播放后再次检测音频（针对Chrome的webkitAudioDecodedByteCount）
+                setTimeout(function () {
+                  var hasAudio = _this.detectVideoHasAudio(video);
+                  if (hasAudio !== _this.mp4HasAudio) {
+                    _this.mp4HasAudio = hasAudio;
+                  }
+                }, 500);
               }).catch(function (err) {
                 alert('播放失败');
               });
@@ -2077,44 +1713,35 @@ function initApp() {
         if (this.playerController) {
           this.playerController.setMuted(this.isMuted);
         }
-
-        /* ========== 旧代码（已废弃，由PlayerController统一处理） ==========
-        // 双通道MP4 模式
-        if (this.currentModule === 'yyeva' && this.yyevaVideo) {
-          this.yyevaVideo.muted = this.isMuted;
-        }
-        
-        // 普通MP4 模式
-        if (this.currentModule === 'mp4' && this.mp4Video) {
-          this.mp4Video.muted = this.isMuted;
-        }
-        
-        // SVGA 模式 - 使用Howler全局静音控制
-        // 因为SVGA播放器内部会自动使用Howler播放音频
-        if (this.currentModule === 'svga') {
-          if (typeof Howler !== 'undefined') {
-            Howler.mute(this.isMuted);
-          }
-        }
-        ========== 旧代码结束 ========== */
       },
 
       // 检测视频是否包含音频轨道
       detectVideoHasAudio: function (video) {
         // 方法1: 使用 audioTracks (Safari/Chrome)
-        if (typeof video.audioTracks !== 'undefined') {
-          return video.audioTracks && video.audioTracks.length > 0;
+        if (typeof video.audioTracks !== 'undefined' && video.audioTracks !== null) {
+          return video.audioTracks.length > 0;
         }
-        // 方法2: 使用 webkitAudioDecodedByteCount (Chrome)
-        if (typeof video.webkitAudioDecodedByteCount !== 'undefined') {
-          // 返回 true 表示可能有音频，需要播放后才能确认
-          return true;
-        }
-        // 方法3: 使用 mozHasAudio (Firefox)
+        // 方法2: 使用 mozHasAudio (Firefox)
         if (typeof video.mozHasAudio !== 'undefined') {
           return video.mozHasAudio;
         }
-        // 默认假设有音频（让用户可以尝试静音）
+        // 方法3: 尝试检查 webkitAudioDecodedByteCount（仅在视频加载后）
+        if (typeof video.webkitAudioDecodedByteCount !== 'undefined') {
+          // 如果视频已经加载一段时间，检查是否有音频解码
+          if (video.webkitAudioDecodedByteCount > 0) {
+            return true;
+          }
+          // 如果视频已经播放了一段时间(>0.2s)但byteCount仍为0，则认为无音频
+          if (video.currentTime > 0.2) {
+            return false;
+          }
+          // 注意：如果视频刚开始播放，这个值可能是0，但这不代表没有音频
+          // 所以这里不能断定为 false，除非视频已经播放了一段时间
+        }
+
+        // 默认策略修改：如果无法确定（例如Chrome没有audioTracks且webkitAudioDecodedByteCount为0），
+        // 默认为 true，以免错误地禁用静音按钮。
+        // 用户如果听到没声音自然不会去点，但如果有声音却不能点就是bug。
         return true;
       },
 
@@ -2336,36 +1963,17 @@ function initApp() {
 
       /**
        * 从文件加载图片
-       * 性能优化：使用 Blob URL 替代 Base64 Data URL
-       *   - Base64 会增加约 33% 内存占用，且需要 CPU 编码/解码
-       *   - Blob URL 直接引用文件数据，速度快 2-3 倍，内存省 33%
-       *   - 特别适合高清序列帧场景（几十到上百张图片）
+       * 注：已迁移至 utils.js 模块
        * @param {File} file
        * @returns {Promise<Image>}
        */
       loadImageFromFile: function (file) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-          // 创建 Blob URL（轻量级，不占用额外内存）
-          var blobUrl = URL.createObjectURL(file);
-
-          // 记录 Blob URL 以便后续释放内存
-          if (!_this.framesBlobUrls) {
-            _this.framesBlobUrls = [];
-          }
-          _this.framesBlobUrls.push(blobUrl);
-
-          var img = new Image();
-          img.onload = function () {
-            resolve(img);
-          };
-          img.onerror = function () {
-            // 加载失败时释放 Blob URL
-            URL.revokeObjectURL(blobUrl);
-            reject(new Error('图片加载失败'));
-          };
-          img.src = blobUrl;
-        });
+        // 使用工具库的 loadImageFromFile 方法
+        // 自动管理 Blob URL 并记录到 framesBlobUrls 数组
+        if (!this.framesBlobUrls) {
+          this.framesBlobUrls = [];
+        }
+        return this.utils.loadImageFromFile(file, this.framesBlobUrls);
       },
 
       /**
@@ -2530,20 +2138,7 @@ function initApp() {
         }
       },
 
-      /**
-       * 取消帧率设置
-       */
-      cancelFramesFpsDialog: function () {
-        this.showFramesFpsDialog = false;
 
-        // 恢复之前的播放状态
-        if (this.framesWasPlayingBeforeDialog) {
-          this.isPlaying = true;
-          this.startFramesPlayLoop();
-        }
-        // 清除标记
-        this.framesWasPlayingBeforeDialog = undefined;
-      },
 
       /**
        * 打开改变帧率弹窗
@@ -2568,9 +2163,7 @@ function initApp() {
 
         // 释放所有 Blob URL（性能优化：防止内存泄漏）
         if (this.framesBlobUrls && this.framesBlobUrls.length > 0) {
-          for (var i = 0; i < this.framesBlobUrls.length; i++) {
-            URL.revokeObjectURL(this.framesBlobUrls[i]);
-          }
+          this.utils.revokeObjectURLs(this.framesBlobUrls);
           this.framesBlobUrls = [];
         }
 
@@ -3304,17 +2897,7 @@ function initApp() {
         this.viewportController.handleMouseUp(event);
       },
 
-      resetScale: function () {
-        if (this.viewportController) {
-          this.viewportController.setScaleTo1();
-          this.viewportController.setOffset(0, 0, false);
-          this.viewportController.centerView();
-        } else {
-          this.viewerScale = 1;
-          this.viewerOffsetX = 0;
-          this.centerViewer();
-        }
-      },
+
 
       // 计算初始缩放比例，使播放器高度为屏幕高度的75%
       /**
@@ -3925,11 +3508,7 @@ function initApp() {
         });
       },
 
-      previewMaterials: function () {
-        // 预览功能：当前已通过 applyReplacedMaterials 实时预览
-        // 关闭弹窗即可看到效果
-        this.closeMaterialPanel();
-      },
+
 
       /* ==================== 素材压缩功能 ==================== */
 
@@ -4134,24 +3713,21 @@ function initApp() {
       _loadImage: function (src) {
         return new Promise(function (resolve, reject) {
           var img = new Image();
+          // 设置 crossOrigin 属性以允许加载跨域图片
+          // 注意：如果服务器未正确配置 CORS 头，这可能会导致加载失败
+          // 对于 data URI，此设置无影响
+          img.crossOrigin = 'Anonymous';
           img.onload = function () { resolve(img); };
-          img.onerror = function () { reject(new Error('图片加载失败')); };
+          img.onerror = function (e) {
+            // 详细错误日志，帮助排查问题
+            console.error('图片加载失败，src:', src.substring(0, 100) + '...');
+            reject(new Error('图片加载失败'));
+          };
           img.src = src;
         });
       },
 
-      /**
-       * Blob转DataURL
-       * @private
-       */
-      _blobToDataURL: function (blob) {
-        return new Promise(function (resolve, reject) {
-          var reader = new FileReader();
-          reader.onload = function () { resolve(reader.result); };
-          reader.onerror = function () { reject(new Error('读取失败')); };
-          reader.readAsDataURL(blob);
-        });
-      },
+
 
       /**
        * 重新计算总内存占用
@@ -4476,7 +4052,19 @@ function initApp() {
           height = this.mp4.originalHeight;
           fps = parseFloat(this.mp4.fileInfo.fps) || 30;
           duration = this.mp4Video ? this.mp4Video.duration : 0;
-          totalFrames = Math.ceil(duration * fps);
+
+          // 支持变速：如果启用了变速，使用变速后的时长
+          if (this.speedRemapConfig.enabled && this.speedRemapConfig.keyframes && this.speedRemapConfig.keyframes.length >= 2) {
+            var frameMap = this.buildFrameMap();
+            if (frameMap && frameMap.length > 0) {
+              totalFrames = frameMap.length;
+              duration = totalFrames / fps;
+            } else {
+              totalFrames = Math.ceil(duration * fps);
+            }
+          } else {
+            totalFrames = Math.ceil(duration * fps);
+          }
         } else if (this.currentModule === 'lottie' && this.lottie.hasFile) {
           width = this.lottie.originalWidth;
           height = this.lottie.originalHeight;
@@ -4589,6 +4177,9 @@ function initApp() {
             width: config.width,
             height: config.height,
             fps: fps,
+            // 传入用户原始输入值(1-30)，在GIFExporter内部进行反转映射
+            quality: parseInt(config.quality) || 10,
+            repeat: 0, // 0 = 无限循环
             totalFrames: totalFrames,
             transparent: config.transparent,
             dither: config.dither,
@@ -4599,10 +4190,26 @@ function initApp() {
             getFrame: async function (frameIndex) {
               // 变速支持：使用帧映射表获取原始帧号
               var actualFrameIndex = frameIndex;
-              if (frameMap && frameMap[frameIndex] !== undefined) {
-                actualFrameIndex = frameMap[frameIndex];
+              var seekFps = fps; // 默认为导出帧率
+
+              if (frameMap) {
+                if (frameMap[frameIndex] !== undefined) {
+                  actualFrameIndex = frameMap[frameIndex];
+                  // 修复：使用帧映射时，actualFrameIndex是原始视频的帧索引
+                  // 所以必须使用原始视频的FPS来计算时间点，而不是导出FPS
+                  if (_this.currentModule === 'mp4' && _this.mp4 && _this.mp4.fileInfo && _this.mp4.fileInfo.fps) {
+                    seekFps = parseFloat(_this.mp4.fileInfo.fps) || 30;
+                  }
+                } else if (frameMap.length > 0) {
+                  // 越界保护：使用最后一帧
+                  actualFrameIndex = frameMap[frameMap.length - 1];
+                  if (_this.currentModule === 'mp4' && _this.mp4 && _this.mp4.fileInfo && _this.mp4.fileInfo.fps) {
+                    seekFps = parseFloat(_this.mp4.fileInfo.fps) || 30;
+                  }
+                }
               }
-              await _this.seekToFrame(actualFrameIndex, fps, sourceInfo);
+
+              await _this.seekToFrame(actualFrameIndex, seekFps, sourceInfo);
               await new Promise(function (r) { setTimeout(r, 50); });
               return _this.getCurrentFrameCanvas();
             },
@@ -4986,12 +4593,12 @@ function initApp() {
 
       /* 工具方法 */
 
+      /**
+       * 格式化字节大小
+       * 注：已迁移至 utils.js 模块
+       */
       formatBytes: function (bytes) {
-        if (!bytes && bytes !== 0) return '';
-        var kb = bytes / 1024;
-        if (kb < 1024) return kb.toFixed(2) + ' KB';
-        var mb = kb / 1024;
-        return mb.toFixed(4) + ' MB';
+        return this.utils.formatBytes(bytes);
       },
 
       /* ==================== 绿幕抠图功能 ==================== */
@@ -5595,42 +5202,15 @@ function initApp() {
         event.preventDefault();
       },
 
-      /**
-       * 获取指定帧的播放速度
-       * 根据相邻K帧的位置比例计算速度
-       */
-      getSpeedAtFrame: function (frame) {
-        var keyframes = this.speedRemapConfig.keyframes;
-        if (!keyframes || keyframes.length < 2) return 1.0;
 
-        var totalFrames = this.speedRemapConfig.originalTotalFrames || 1;
-
-        // 找到frame所在的两个关键帧区间
-        for (var i = 0; i < keyframes.length - 1; i++) {
-          var k1 = keyframes[i];
-          var k2 = keyframes[i + 1];
-
-          if (frame >= k1.originalFrame && frame <= k2.originalFrame) {
-            // 计算该区间的速度
-            // 速度 = 原始帧范围 / 输出位置范围
-            var frameDelta = k2.originalFrame - k1.originalFrame;
-            var positionDelta = k2.position - k1.position;
-
-            if (positionDelta <= 0) return 1.0;
-            if (frameDelta <= 0) return 1.0;
-
-            // frameDelta帧 在 positionDelta*totalFrames帧 时间内播放
-            var speed = frameDelta / (positionDelta * totalFrames);
-            return speed;
-          }
-        }
-
-        return 1.0;
-      },
 
       /**
        * 构建帧映射表
        * 输出帧号 -> 原始帧号
+       */
+      /**
+       * 构建速度重映射的帧映射表
+       * @returns {Array<number>} 输出帧到原始帧的索引映射
        */
       buildFrameMap: function () {
         var config = this.speedRemapConfig;
@@ -5638,7 +5218,6 @@ function initApp() {
           return null;
         }
 
-        var fps = config.fps;
         var totalFrames = config.originalTotalFrames;
         var keyframes = config.keyframes;
 
@@ -5647,13 +5226,31 @@ function initApp() {
         var endPos = keyframes[keyframes.length - 1].position;
         var outputRatio = endPos - startPos;
 
-        // 输出总帧数 = outputRatio * 原始总帧数
+        // 修复：GIF导出时长计算错误导致尾部重复
+        // 变速后的总帧数不应该简单按比例计算，而是应该由变速曲线决定
+        // 但这里我们保持输出时长不变（即 0-1 映射到 0-duration），
+        // 只是改变中间的播放速率。所以输出总帧数应该等于原始总帧数（如果保持fps不变）。
+        // 之前的逻辑 `outputTotalFrames = Math.ceil(outputRatio * totalFrames)` 
+        // 只有在裁剪了时间范围（startPos > 0 或 endPos < 1）时才成立。
+        // 如果是全时长变速（0 -> 1），outputTotalFrames 应该等于 totalFrames。
+
+        // 修正逻辑：根据输出时间范围比例计算输出帧数
         var outputTotalFrames = Math.ceil(outputRatio * totalFrames);
+
+        // 如果输出帧数过少（比如被压缩到很短），至少保留1帧
+        if (outputTotalFrames < 1) outputTotalFrames = 1;
+
         var frameMap = [];
 
         for (var outFrame = 0; outFrame < outputTotalFrames; outFrame++) {
           // 输出位置 (0-1) 映射到 startPos-endPos
-          var outPosition = startPos + (outFrame / outputTotalFrames) * outputRatio;
+          // 注意：最后一帧应该映射到 endPos，但为了防止越界，使用 outputTotalFrames - 1 作为分母
+          // 但在循环中，outFrame 是从 0 到 outputTotalFrames - 1
+          // 所以 outPosition 计算应该是 outFrame / outputTotalFrames * outputRatio
+          // 这样最后一帧的位置会略小于 endPos，这是正确的（采样点在帧的开始时间）
+
+          var progress = outFrame / outputTotalFrames;
+          var outPosition = startPos + progress * outputRatio;
 
           // 根据输出位置查找原始帧
           var originalFrame = this.getOriginalFrameAtPosition(outPosition);
@@ -8834,6 +8431,7 @@ function initApp() {
         var width = config.width || sourceInfo.width || 100;
         var height = config.height || sourceInfo.height || 100;
         var fps = config.fps || 30;
+        // 使用 sourceInfo.duration，已经支持变速
         var duration = sourceInfo.duration || 0;
         var totalFrames = Math.ceil(duration * fps);
 
@@ -9021,6 +8619,10 @@ function initApp() {
       // 初始化非响应式属性（避免Vue深度代理导致的性能问题）
       this.libraryLoader = window.libraryLoader;
       this.playerController = null;
+
+      // 初始化文件验证器和工具库
+      this.fileValidator = new FileValidator(this.libraryLoader);
+      this.utils = window.SvgaUtils;
 
       // SVGA
       this.svgaPlayer = null;
