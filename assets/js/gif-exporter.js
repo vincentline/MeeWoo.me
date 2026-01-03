@@ -19,7 +19,7 @@
  * });
  */
 
-(function(global) {
+(function (global) {
   'use strict';
 
   var GIFExporter = {
@@ -29,9 +29,10 @@
     /**
      * 导出GIF
      * @param {Object} config 配置对象
+     * @param {Number} config.quality GIF质量 (1-30，数字越小质量越高，文件越大)
      * @returns {Promise<Blob>} GIF blob
      */
-    export: async function(config) {
+    export: async function (config) {
       var _this = this;
 
       // 参数校验
@@ -46,12 +47,19 @@
       var transparent = config.transparent || false;
       var dither = config.dither || false;
       var ditherColor = config.ditherColor || '#ffffff';
+      // quality: 1-30，数字越小质量越高（文件越大），默认10
+      // 修复：用户输入1-30（通常认为1是低质量/小文件，30是高质量/大文件）
+      // 但gif.js内部实现是：1是最佳质量（不降采样），30是最差质量（最大降采样）
+      // 为了符合用户直觉（数值越大质量越好），我们需要反转这个值
+      // 映射关系：用户输入 1(低) -> gif.js 30(差)；用户输入 30(高) -> gif.js 1(好)
+      var userQuality = Math.max(1, Math.min(30, config.quality || 10));
+      var quality = 31 - userQuality;
 
       // 回调函数
-      var onProgress = config.onProgress || function() {};
-      var onComplete = config.onComplete || function() {};
-      var onError = config.onError || function() {};
-      var shouldCancel = config.shouldCancel || function() { return false; };
+      var onProgress = config.onProgress || function () { };
+      var onComplete = config.onComplete || function () { };
+      var onError = config.onError || function () { };
+      var shouldCancel = config.shouldCancel || function () { return false; };
 
       // 创建输出canvas
       var outputCanvas = document.createElement('canvas');
@@ -65,9 +73,10 @@
       // 创建GIF编码器
       var gifOptions = {
         workers: 2,
-        quality: 10,
+        quality: quality,  // 1-30，数字越小质量越高
         width: width,
         height: height,
+        repeat: 0,  // 0 = 无限循环
         workerScript: this.workerScript
       };
 
@@ -78,21 +87,21 @@
       var gif = new GIF(gifOptions);
 
       // 编码完成Promise
-      var encodingPromise = new Promise(function(resolve, reject) {
-        gif.on('progress', function(p) {
+      var encodingPromise = new Promise(function (resolve, reject) {
+        gif.on('progress', function (p) {
           // 编码阶段：50%-100%
           onProgress(50 + Math.floor(p * 50), 'encoding', '编码中...');
         });
 
-        gif.on('finished', function(blob) {
+        gif.on('finished', function (blob) {
           resolve(blob);
         });
 
-        gif.on('abort', function() {
+        gif.on('abort', function () {
           reject(new Error('用户取消'));
         });
 
-        gif.on('error', function(error) {
+        gif.on('error', function (error) {
           reject(new Error('GIF编码失败: ' + (error.message || error)));
         });
       });
@@ -171,7 +180,7 @@
     /**
      * 处理杂色边（半透明像素与背景色混合）
      */
-    _processDither: function(ctx, width, height, ditherColor) {
+    _processDither: function (ctx, width, height, ditherColor) {
       var imageData = ctx.getImageData(0, 0, width, height);
       var data = imageData.data;
 
@@ -194,16 +203,16 @@
 
       ctx.putImageData(imageData, 0, 0);
     },
-    
+
     /**
      * 处理Alpha通道：半透明像素设为完全透明（避免黑色杂边）
      * GIF格式不支持半透明，只支持完全透明或完全不透明
      * 将alpha < 128的像素设为完全透明，alpha >= 128的像素设为完全不透明
      */
-    _processAlphaThreshold: function(ctx, width, height) {
+    _processAlphaThreshold: function (ctx, width, height) {
       var imageData = ctx.getImageData(0, 0, width, height);
       var data = imageData.data;
-      
+
       for (var j = 0; j < data.length; j += 4) {
         var alpha = data[j + 3];
         if (alpha > 0 && alpha < 255) {
@@ -211,7 +220,7 @@
           data[j + 3] = alpha < 128 ? 0 : 255;
         }
       }
-      
+
       ctx.putImageData(imageData, 0, 0);
     },
 
@@ -220,7 +229,7 @@
      * @param {Blob} blob GIF blob
      * @param {string} fileName 文件名
      */
-    download: function(blob, fileName) {
+    download: function (blob, fileName) {
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
@@ -228,7 +237,7 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(function() { URL.revokeObjectURL(url); }, 100);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 100);
     },
 
     /**
@@ -236,7 +245,7 @@
      * @param {Object} config 配置对象
      * @returns {Object} { frames, duration, fileSize, fileSizeBytes }
      */
-    estimate: function(config) {
+    estimate: function (config) {
       var width = config.width || 100;
       var height = config.height || 100;
       var fps = config.fps || 30;
@@ -274,7 +283,7 @@
     /**
      * 格式化字节数
      */
-    formatBytes: function(bytes) {
+    formatBytes: function (bytes) {
       if (bytes >= 1024 * 1024) {
         return (bytes / 1024 / 1024).toFixed(2) + ' MB';
       } else if (bytes >= 1024) {
