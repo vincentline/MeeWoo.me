@@ -1,6 +1,16 @@
 import json
 import csv
 
+# 定义需要处理的样式key列表
+STYLE_KEYS = [
+    'name01',
+    'Username01',
+    'Assistant',
+    'img_2103118107',
+    'img_2103118097',
+    'img_394'
+]
+
 # 读取CSV
 rows = []
 with open('docs/assets/dar_svga/file-list.csv', 'r', encoding='utf-8-sig') as f:
@@ -15,89 +25,60 @@ for row in rows:
         'svga': row['svga']
     }
     
-    # 判断是否有textStyle数据
-    has_name01 = any([
-        row.get('name01_fontWeight'),
-        row.get('name01_fillColor'),
-        row.get('name01_strokeColor'),
-        row.get('name01_strokeWidth'),
-        row.get('name01_textShadow'),
-        row.get('name01_gradient_colors'),
-        row.get('name01_multiShadow')
-    ])
+    text_style = {}
     
-    has_username01 = any([
-        row.get('Username01_fontWeight'),
-        row.get('Username01_fillColor'),
-        row.get('Username01_strokeColor'),
-        row.get('Username01_strokeWidth'),
-        row.get('Username01_textShadow'),
-        row.get('Username01_gradient_colors'),
-        row.get('Username01_multiShadow')
-    ])
-    
-    if has_name01 or has_username01:
-        item['textStyle'] = {}
+    for key in STYLE_KEYS:
+        # 检查该key是否有任何属性有值
+        has_style = any([
+            row.get(f'{key}_fontWeight'),
+            row.get(f'{key}_fillColor'),
+            row.get(f'{key}_strokeColor'),
+            row.get(f'{key}_strokeWidth'),
+            row.get(f'{key}_textShadow'),
+            row.get(f'{key}_gradient_colors'),
+            row.get(f'{key}_multiShadow')
+        ])
         
-        # 处理name01
-        if has_name01:
-            name01 = {}
+        if has_style:
+            style_obj = {}
             
-            if row.get('name01_fontWeight'):
-                name01['fontWeight'] = row['name01_fontWeight']
-            if row.get('name01_fillColor'):
-                name01['fillColor'] = row['name01_fillColor']
-            if row.get('name01_strokeColor'):
-                name01['strokeColor'] = row['name01_strokeColor']
-            if row.get('name01_strokeWidth'):
-                name01['strokeWidth'] = float(row['name01_strokeWidth']) if '.' in row['name01_strokeWidth'] else int(row['name01_strokeWidth'])
-            if row.get('name01_textShadow'):
-                name01['textShadow'] = row['name01_textShadow']
+            if row.get(f'{key}_fontWeight'):
+                style_obj['fontWeight'] = row[f'{key}_fontWeight']
+            if row.get(f'{key}_fillColor'):
+                style_obj['fillColor'] = row[f'{key}_fillColor']
+            if row.get(f'{key}_strokeColor'):
+                style_obj['strokeColor'] = row[f'{key}_strokeColor']
+            
+            stroke_width = row.get(f'{key}_strokeWidth')
+            if stroke_width:
+                style_obj['strokeWidth'] = float(stroke_width) if '.' in stroke_width else int(stroke_width)
+                
+            if row.get(f'{key}_textShadow'):
+                style_obj['textShadow'] = row[f'{key}_textShadow']
             
             # 处理gradient
-            if row.get('name01_gradient_colors'):
-                colors = row['name01_gradient_colors'].split('|')
-                positions = [float(p) for p in row['name01_gradient_positions'].split('|')]
-                name01['gradient'] = {
+            if row.get(f'{key}_gradient_colors'):
+                colors = row[f'{key}_gradient_colors'].split('|')
+                pos_str = row.get(f'{key}_gradient_positions', '')
+                if pos_str:
+                    positions = [float(p) for p in pos_str.split('|')]
+                else:
+                    # 如果没有位置信息，默认为均匀分布或由使用方处理
+                    positions = []
+                
+                style_obj['gradient'] = {
                     'colors': colors,
                     'positions': positions
                 }
             
             # 处理multiShadow
-            if row.get('name01_multiShadow'):
-                name01['multiShadow'] = row['name01_multiShadow'].split('|')
+            if row.get(f'{key}_multiShadow'):
+                style_obj['multiShadow'] = row[f'{key}_multiShadow'].split('|')
+                
+            text_style[key] = style_obj
             
-            item['textStyle']['name01'] = name01
-        
-        # 处理Username01
-        if has_username01:
-            username01 = {}
-            
-            if row.get('Username01_fontWeight'):
-                username01['fontWeight'] = row['Username01_fontWeight']
-            if row.get('Username01_fillColor'):
-                username01['fillColor'] = row['Username01_fillColor']
-            if row.get('Username01_strokeColor'):
-                username01['strokeColor'] = row['Username01_strokeColor']
-            if row.get('Username01_strokeWidth'):
-                username01['strokeWidth'] = float(row['Username01_strokeWidth']) if '.' in row['Username01_strokeWidth'] else int(row['Username01_strokeWidth'])
-            if row.get('Username01_textShadow'):
-                username01['textShadow'] = row['Username01_textShadow']
-            
-            # 处理gradient
-            if row.get('Username01_gradient_colors'):
-                colors = row['Username01_gradient_colors'].split('|')
-                positions = [float(p) for p in row['Username01_gradient_positions'].split('|')]
-                username01['gradient'] = {
-                    'colors': colors,
-                    'positions': positions
-                }
-            
-            # 处理multiShadow
-            if row.get('Username01_multiShadow'):
-                username01['multiShadow'] = row['Username01_multiShadow'].split('|')
-            
-            item['textStyle']['Username01'] = username01
+    if text_style:
+        item['textStyle'] = text_style
     
     result.append(item)
 
