@@ -1375,8 +1375,8 @@ body.dark-mode .btn-large-primary {
 }
 
 .btn-large-primary:hover {
-  background-color: #e6e6e6;
-  border-color: #5b5b5b;
+  background-color: #f3f3f3;
+  border-color: #d3d3d3;
 }
 
 body.dark-mode .btn-large-primary:hover {
@@ -2548,8 +2548,8 @@ body.dark-mode .material-btn-new:hover {
 }
 
 .material-btn-back:hover {
-  background: #e6e6e6;
-  border-color: #5B5B5B;
+  background: #f3f3f3;
+  border-color: #d3d3d3;
 }
 
 .material-btn-back:active {
