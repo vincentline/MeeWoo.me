@@ -1,0 +1,1004 @@
+/**
+ * ==================== 素材编辑器模块 (Material Editor) ====================
+ * 
+ * 功能说明：
+ * 提供素材图片的编辑功能，支持：
+ * 1. 替换底图
+ * 2. 添加文字覆盖层（支持CSS样式）
+ * 3. 预览缩放和平移
+ * 4. 素材图和文字层的独立拖拽、缩放和激活
+ * 5. 重叠元素的层级切换
+ * 6. 导出编辑后的图片为PNG
+ * 
+ * 依赖：
+ * - html2canvas (用于生成图片)
+ * - Vue (作为Mixin使用)
+ * 
+ * 使用方式：
+ * 在 app.js 中引入此文件，并将 MaterialEditor 作为 mixin 混入 Vue 实例
+ */
+
+(function (window) {
+    'use strict';
+
+    var MaterialEditor = {
+        data: function () {
+            return {
+                // 编辑器状态
+                editor: {
+                    show: false,
+                    targetIndex: -1,     // 当前编辑的素材索引
+                    loading: false,      // 生成中状态
+
+                    // 视图状态
+                    scale: 1.0,          // 预览缩放
+                    offsetX: 0,          // 预览X位移
+                    offsetY: 0,          // 预览Y位移
+
+                    // 内容状态
+                    baseImage: null,     // 当前底图 (Image Object or DataURL)
+                    baseImageWidth: 0,   // 底图原始宽度
+                    baseImageHeight: 0,  // 底图原始高度
+
+                    // 编辑状态
+                    showImage: true,     // 显示底图
+                    showText: false,     // 显示文字
+                    textContent: '',     // 文字内容
+                    textStyle: '',       // 文字CSS样式
+
+                    // 激活状态管理
+                    activeElement: 'none',  // 当前激活的元素: 'none'|'image'|'text'
+                    lastClickElement: 'none', // 上次点击的元素，用于重叠区域切换
+                    lastClickTime: 0,         // 上次点击时间
+
+                    // 素材图交互状态
+                    imageOffsetX: 0,     // 素材图X偏移(像素)
+                    imageOffsetY: 0,     // 素材图Y偏移(像素)
+                    imageScale: 1.0,     // 素材图缩放
+                    imageDragging: false,
+                    imageDragStartX: 0,
+                    imageDragStartY: 0,
+                    imageMouseMoved: false,  // 标记是否发生了拖拽移动
+
+                    // 文字层交互状态
+                    textDragging: false,
+                    textDragStartX: 0,
+                    textDragStartY: 0,
+                    textPosX: 50,        // 文字X位置 (百分比 0-100)
+                    textPosY: 50,        // 文字Y位置 (百分比 0-100)
+                    textScale: 1.0,      // 文字缩放
+                    textMouseMoved: false  // 标记是否发生了拖拽移动
+                },
+
+                // 存储每个素材的编辑历史
+                // key: imageKey, value: { textContent, textStyle, showImage, showText, textPosX, textPosY, textScale, imageOffsetX, imageOffsetY, imageScale, customBaseImage }
+                materialEditStates: {}
+            };
+        },
+
+        computed: {
+            /**
+             * 过滤后的文字样式，只保留允许的属性，过滤掉布局相关属性
+             * 避免用户粘贴的CSS包含 position/width/height 等破坏布局
+             */
+            editorTextStyleFiltered: function () {
+                if (!this.editor.textStyle) return {};
+
+                var styleStr = this.editor.textStyle;
+                var styles = {};
+
+                // 去除注释
+                styleStr = styleStr.replace(/\/\*[\s\S]*?\*\//g, '');
+
+                // 分割属性
+                var rules = styleStr.split(';');
+
+                // 黑名单：布局、尺寸、定位相关的属性
+                var blockedProperties = [
+                    'position',
+                    'top', 'bottom', 'left', 'right',
+                    'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height',
+                    // 'display', // 允许 display 以支持某些文字特效
+                    'flex', 'flex-grow', 'flex-shrink', 'flex-basis', 'flex-direction', 'flex-wrap', 'flex-flow',
+                    'justify-content', 'justify-items', 'justify-self',
+                    'align-content', 'align-items', 'align-self',
+                    'place-content', 'place-items', 'place-self',
+                    'order', 'gap',
+                    'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+                    'z-index',
+                    'transform', 'transform-origin',
+                    'float', 'clear',
+                    'white-space',
+                    'overflow', 'overflow-x', 'overflow-y'
+                ];
+
+                for (var i = 0; i < rules.length; i++) {
+                    var rule = rules[i].trim();
+                    if (!rule) continue;
+
+                    var colonIndex = rule.indexOf(':');
+                    if (colonIndex === -1) continue;
+
+                    var prop = rule.substring(0, colonIndex).trim().toLowerCase();
+                    var value = rule.substring(colonIndex + 1).trim();
+
+                    if (!prop || !value) continue;
+
+                    // 检查是否在黑名单中
+                    if (blockedProperties.indexOf(prop) !== -1) {
+                        continue;
+                    }
+
+                    styles[prop] = value;
+                }
+
+                // 自动修复：如果使用了 background-clip: text，必须确保文字颜色透明
+                var hasBackgroundClip = styles['-webkit-background-clip'] === 'text' || styles['background-clip'] === 'text';
+                var hasTransparentColor = styles['color'] === 'transparent' || styles['-webkit-text-fill-color'] === 'transparent' || styles['text-fill-color'] === 'transparent';
+
+                if (hasBackgroundClip && !hasTransparentColor) {
+                    styles['color'] = 'transparent';
+                    // 某些浏览器可能需要这个
+                    if (!styles['-webkit-text-fill-color']) {
+                        styles['-webkit-text-fill-color'] = 'transparent';
+                    }
+                }
+
+                return styles;
+            },
+
+            /**
+             * 将过滤后的样式对象转换为CSS字符串
+             */
+            editorTextStyleString: function () {
+                var styles = this.editorTextStyleFiltered;
+                var str = '';
+                for (var key in styles) {
+                    if (styles.hasOwnProperty(key)) {
+                        str += key + ':' + styles[key] + ';';
+                    }
+                }
+                return str;
+            }
+        },
+
+        watch: {
+            // 监听文字内容变化，实时更新 Canvas 预览
+            'editor.textContent': function () {
+                var _this = this;
+                this.$nextTick(function () {
+                    _this.renderEditorPreview();
+                });
+            },
+            // 监听文字样式变化
+            'editor.textStyle': function () {
+                var _this = this;
+                this.$nextTick(function () {
+                    _this.renderEditorPreview();
+                });
+            },
+            // 监听文字位置变化
+            'editor.textPosX': function () {
+                this.renderEditorPreview();
+            },
+            'editor.textPosY': function () {
+                this.renderEditorPreview();
+            },
+            // 监听文字缩放变化
+            'editor.textScale': function () {
+                this.renderEditorPreview();
+            },
+            // 监听显示文字开关
+            'editor.showText': function () {
+                var _this = this;
+                this.$nextTick(function () {
+                    _this.renderEditorPreview();
+                });
+            }
+        },
+
+        methods: {
+            /**
+             * 渲染编辑器预览 Canvas
+             */
+            renderEditorPreview: function () {
+                var _this = this;
+                if (!this.editor.show || !this.editor.showText) {
+                    return;
+                }
+
+                // 等待 Canvas 元素渲染
+                this.$nextTick(function () {
+                    var canvas = _this.$refs.editorTextCanvas;
+                    if (!canvas) {
+                        return;
+                    }
+
+                    var ctx = canvas.getContext('2d');
+                    var width = _this.editor.baseImageWidth;
+                    var height = _this.editor.baseImageHeight;
+
+                    // 清空 Canvas
+                    ctx.clearRect(0, 0, width, height);
+
+                    // 计算文字位置
+                    var centerX = (width * _this.editor.textPosX) / 100;
+                    var centerY = (height * _this.editor.textPosY) / 100;
+
+                    // 保存状态
+                    ctx.save();
+
+                    // 移动到文字中心点
+                    ctx.translate(centerX, centerY);
+
+                    // 应用缩放
+                    ctx.scale(_this.editor.textScale, _this.editor.textScale);
+
+                    // 使用 drawRichText 绘制带样式的文字
+                    _this.drawRichText(ctx, width, height);
+
+                    // 恢复状态
+                    ctx.restore();
+                });
+            },
+
+            /**
+             * 打开素材编辑器
+             * @param {Object} item - 素材对象
+             */
+            openMaterialEditor: function (item) {
+                console.log('openMaterialEditor called', item);
+                var _this = this;
+                var material = item;
+
+                // 兼容旧的索引调用方式（防御性编程）
+                if (typeof item === 'number') {
+                    material = this.materialList[item];
+                }
+
+                if (!material) {
+                    console.error('Material not found');
+                    return;
+                }
+
+                // 加载html2canvas库
+                if (this.loadLibrary) {
+                    this.loadLibrary('html2canvas', true).catch(function (err) {
+                        console.error('Failed to load html2canvas', err);
+                    });
+                } else {
+                    console.warn('loadLibrary method missing');
+                }
+
+                // 初始化编辑器状态
+                // 使用 imageKey 作为唯一标识，而不是 index
+                this.editor.targetKey = material.imageKey;
+                this.editor.show = true;
+                this.editor.loading = false;
+                this.editor.scale = 1.0;
+                this.editor.offsetX = 0;
+                this.editor.offsetY = 0;
+
+                console.log('Editor state set to show=true', this.editor);
+
+                // 恢复之前的编辑状态 或 初始化默认值
+                var savedState = this.materialEditStates[material.imageKey];
+                if (savedState) {
+                    this.editor.showImage = savedState.showImage;
+                    this.editor.showText = savedState.showText;
+                    this.editor.textContent = savedState.textContent || '';
+                    this.editor.textStyle = savedState.textStyle || '';
+                    this.editor.textPosX = savedState.textPosX !== undefined ? savedState.textPosX : 50;
+                    this.editor.textPosY = savedState.textPosY !== undefined ? savedState.textPosY : 50;
+                    this.editor.textScale = savedState.textScale !== undefined ? savedState.textScale : 1.0;
+                    this.editor.imageOffsetX = savedState.imageOffsetX !== undefined ? savedState.imageOffsetX : 0;
+                    this.editor.imageOffsetY = savedState.imageOffsetY !== undefined ? savedState.imageOffsetY : 0;
+                    this.editor.imageScale = savedState.imageScale !== undefined ? savedState.imageScale : 1.0;
+                } else {
+                    this.editor.showImage = true;
+                    this.editor.showText = false;
+                    this.editor.textContent = '示例文案';
+                    this.editor.textStyle = 'color: white;\ntext-shadow: 1px 1px 2px #000000;\nfont-size: 24px;\nfont-weight: bold;';
+                    this.editor.textPosX = 50;
+                    this.editor.textPosY = 50;
+                    this.editor.textScale = 1.0;
+                    this.editor.imageOffsetX = 0;
+                    this.editor.imageOffsetY = 0;
+                    this.editor.imageScale = 1.0;
+                }
+
+                // 重置激活状态
+                this.editor.activeElement = 'none';
+                this.editor.lastClickElement = 'none';
+                this.editor.lastClickTime = 0;
+
+                // 获取当前显示的图片
+                var imgUrl = material.previewUrl; // 默认为SVGA原图
+                // 编辑器底图逻辑：
+                // 1. 如果有保存的编辑状态中的自定义底图，优先使用
+                // 2. 否则，如果有被替换的图（replacedImages），使用替换图（注意：这里的替换图可能是之前编辑生成的，也可能是外部替换的）
+                // 3. 最后使用原图
+
+                // 修正逻辑：如果 replacedImages 中有图，说明当前显示的就是这张图。
+                // 编辑器应该基于当前显示的图进行编辑，除非用户有未保存的草稿？
+                // 这里的 savedState 实际上就是已保存的编辑状态。
+
+                if (savedState && savedState.customBaseImage) {
+                    imgUrl = savedState.customBaseImage;
+                } else if (this.replacedImages[material.imageKey]) {
+                    // 这种情况可能是单纯的“替换此图”操作，没有经过编辑器。
+                    // 此时底图就是这张替换图。
+                    imgUrl = this.replacedImages[material.imageKey];
+                }
+
+                this.editor.baseImage = imgUrl;
+
+                // 获取图片尺寸以便计算比例
+                var img = new Image();
+                img.onload = function () {
+                    _this.editor.baseImageWidth = img.width;
+                    _this.editor.baseImageHeight = img.height;
+
+                    // 图片加载完成后，计算默认缩放比例
+                    // 使 .editor-preview-wrapper 按 .editor-preview-area 容器50%宽度等比例显示
+                    _this.$nextTick(function () {
+                        var previewArea = document.querySelector('.editor-preview-area');
+                        if (previewArea && img.width > 0) {
+                            var containerWidth = previewArea.clientWidth;
+                            // 默认缩放：容器宽度的50% / 图片原始宽度
+                            var defaultScale = (containerWidth * 0.5) / img.width;
+                            // 限制缩放范围
+                            if (defaultScale > 5.0) defaultScale = 5.0;
+                            if (defaultScale < 0.1) defaultScale = 0.1;
+                            _this.editor.scale = parseFloat(defaultScale.toFixed(2));
+                        }
+
+                        _this.renderEditorPreview();
+                    });
+                };
+                img.src = imgUrl;
+            },
+
+            /**
+             * 关闭编辑器
+             */
+            closeMaterialEditor: function () {
+                this.editor.show = false;
+            },
+
+            /**
+             * 预览区域鼠标按下，处理整体拖拽和取消激活
+             */
+            onPreviewAreaMouseDown: function (e) {
+                // 如果点击的是空白区域，取消激活状态
+                if (e.target.classList.contains('editor-preview-area') ||
+                    e.target.classList.contains('editor-preview-wrapper') ||
+                    e.target.classList.contains('editor-preview-content')) {
+                    this.editor.activeElement = 'none';
+
+                    // 开始拖拽预览区域
+                    var startX = e.clientX;
+                    var startY = e.clientY;
+                    var startOffsetX = this.editor.offsetX;
+                    var startOffsetY = this.editor.offsetY;
+                    var _this = this;
+
+                    var onMouseMove = function (moveEvent) {
+                        var dx = moveEvent.clientX - startX;
+                        var dy = moveEvent.clientY - startY;
+                        _this.editor.offsetX = startOffsetX + dx;
+                        _this.editor.offsetY = startOffsetY + dy;
+                    };
+
+                    var onMouseUp = function () {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                    };
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                }
+            },
+
+            /**
+             * 预览区域滚轮，缩放预览
+             */
+            onPreviewAreaWheel: function (e) {
+                // 如果没有激活元素，缩放预览区域
+                if (this.editor.activeElement === 'none') {
+                    e.preventDefault();
+                    var delta = e.deltaY > 0 ? -0.1 : 0.1;
+                    this.handleEditorZoom(delta);
+                }
+            },
+
+            /**
+             * 素材图鼠标按下
+             */
+            onImageMouseDown: function (e) {
+                e.stopPropagation();
+
+                // 重置移动标记
+                this.editor.imageMouseMoved = false;
+
+                // 开始拖拽
+                this.editor.imageDragging = true;
+                this.editor.imageDragStartX = e.clientX;
+                this.editor.imageDragStartY = e.clientY;
+
+                var _this = this;
+                var startOffsetX = this.editor.imageOffsetX;
+                var startOffsetY = this.editor.imageOffsetY;
+
+                var onMouseMove = function (moveEvent) {
+                    if (!_this.editor.imageDragging) return;
+
+                    // 标记已发生移动
+                    _this.editor.imageMouseMoved = true;
+
+                    var dx = moveEvent.clientX - _this.editor.imageDragStartX;
+                    var dy = moveEvent.clientY - _this.editor.imageDragStartY;
+
+                    // 只有当前元素激活时才移动
+                    if (_this.editor.activeElement === 'image') {
+                        // 除以 editor.scale 因为 wrapper 被缩放了，确保素材图跟随鼠标移动
+                        _this.editor.imageOffsetX = startOffsetX + dx / _this.editor.scale;
+                        _this.editor.imageOffsetY = startOffsetY + dy / _this.editor.scale;
+                    }
+                };
+
+                var onMouseUp = function () {
+                    _this.editor.imageDragging = false;
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+
+                    // 如果没有移动，认为是点击事件
+                    if (!_this.editor.imageMouseMoved) {
+                        var now = Date.now();
+
+                        // 处理重叠区域切换逻辑
+                        if (_this.editor.showText &&
+                            _this.editor.activeElement === 'image' &&
+                            _this.editor.lastClickElement === 'image' &&
+                            (now - _this.editor.lastClickTime) < 500) {
+                            // 快速点击同一元素，切换到文字层
+                            _this.editor.activeElement = 'text';
+                            _this.editor.lastClickElement = 'text';
+                        } else {
+                            // 激活素材图
+                            _this.editor.activeElement = 'image';
+                            _this.editor.lastClickElement = 'image';
+                        }
+                        _this.editor.lastClickTime = now;
+                    }
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            },
+
+            /**
+             * 素材图滚轮缩放
+             */
+            onImageWheel: function (e) {
+                if (this.editor.activeElement === 'image') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var delta = e.deltaY > 0 ? -0.1 : 0.1;
+                    var newScale = this.editor.imageScale + delta;
+                    if (newScale < 0.1) newScale = 0.1;
+                    if (newScale > 10.0) newScale = 10.0;
+                    this.editor.imageScale = parseFloat(newScale.toFixed(1));
+                }
+            },
+
+            /**
+             * 文字层鼠标按下
+             */
+            onTextMouseDown: function (e) {
+                e.stopPropagation();
+
+                // 重置移动标记
+                this.editor.textMouseMoved = false;
+
+                // 开始拖拽
+                this.editor.textDragging = true;
+                this.editor.textDragStartX = e.clientX;
+                this.editor.textDragStartY = e.clientY;
+
+                var _this = this;
+
+                var onMouseMove = function (moveEvent) {
+                    if (!_this.editor.textDragging) return;
+
+                    // 标记已发生移动
+                    _this.editor.textMouseMoved = true;
+
+                    // 只有当前元素激活时才移动
+                    if (_this.editor.activeElement === 'text') {
+                        var dx = moveEvent.clientX - _this.editor.textDragStartX;
+                        var dy = moveEvent.clientY - _this.editor.textDragStartY;
+
+                        // 将像素位移转换为百分比
+                        // 需要除以 editor.scale 因为 wrapper 被缩放了，确保文字跟随鼠标移动
+                        var percentX = (dx / _this.editor.scale / _this.editor.baseImageWidth) * 100;
+                        var percentY = (dy / _this.editor.scale / _this.editor.baseImageHeight) * 100;
+
+                        _this.editor.textPosX += percentX;
+                        _this.editor.textPosY += percentY;
+
+                        _this.editor.textDragStartX = moveEvent.clientX;
+                        _this.editor.textDragStartY = moveEvent.clientY;
+                    }
+                };
+
+                var onMouseUp = function () {
+                    _this.editor.textDragging = false;
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+
+                    // 如果没有移动，认为是点击事件
+                    if (!_this.editor.textMouseMoved) {
+                        var now = Date.now();
+
+                        // 处理重叠区域切换逻辑
+                        if (_this.editor.showImage &&
+                            _this.editor.activeElement === 'text' &&
+                            _this.editor.lastClickElement === 'text' &&
+                            (now - _this.editor.lastClickTime) < 500) {
+                            // 快速点击同一元素，切换到素材图
+                            _this.editor.activeElement = 'image';
+                            _this.editor.lastClickElement = 'image';
+                        } else {
+                            // 激活文字层
+                            _this.editor.activeElement = 'text';
+                            _this.editor.lastClickElement = 'text';
+                        }
+                        _this.editor.lastClickTime = now;
+                    }
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            },
+
+            /**
+             * 上传替换底图
+             */
+            triggerEditorUpload: function () {
+                this.$refs.editorFileInput.click();
+            },
+
+            onEditorFileChange: function (e) {
+                var _this = this;
+                var file = e.target.files[0];
+                if (!file) return;
+
+                var reader = new FileReader();
+                reader.onload = function (event) {
+                    _this.editor.baseImage = event.target.result;
+
+                    // 更新尺寸
+                    var img = new Image();
+                    img.onload = function () {
+                        _this.editor.baseImageWidth = img.width;
+                        _this.editor.baseImageHeight = img.height;
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+            },
+
+            /**
+             * 文字层滚轮缩放
+             */
+            onTextWheel: function (e) {
+                if (this.editor.activeElement === 'text') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var delta = e.deltaY > 0 ? -0.1 : 0.1;
+                    var newScale = this.editor.textScale + delta;
+                    if (newScale < 0.1) newScale = 0.1;
+                    if (newScale > 10.0) newScale = 10.0;
+                    this.editor.textScale = parseFloat(newScale.toFixed(1));
+                }
+            },
+
+            /**
+             * 处理预览缩放
+             */
+            handleEditorZoom: function (delta) {
+                var newScale = this.editor.scale + delta;
+                if (newScale < 0.1) newScale = 0.1;
+                if (newScale > 5.0) newScale = 5.0;
+                this.editor.scale = parseFloat(newScale.toFixed(1));
+            },
+
+            /**
+             * 处理预览平移（按钮）
+             */
+            moveEditorView: function (dx, dy) {
+                this.editor.offsetX += dx;
+                this.editor.offsetY += dy;
+            },
+
+            /**
+             * 保存编辑结果
+             * 使用 Canvas + SVG foreignObject 方案，以支持高级 CSS 文字特效（如渐变、描边等）
+             */
+            saveMaterialEdit: function () {
+                var _this = this;
+                this.editor.loading = true;
+
+                // 1. 准备画布
+                var canvas = document.createElement('canvas');
+                var width = this.editor.baseImageWidth || 100;
+                var height = this.editor.baseImageHeight || 100;
+                canvas.width = width;
+                canvas.height = height;
+                var ctx = canvas.getContext('2d');
+
+                // 辅助函数：加载图片
+                var loadImage = function (src) {
+                    return new Promise(function (resolve, reject) {
+                        var img = new Image();
+                        // 只有网络图片才启用 crossOrigin，本地 blob/data 不需要且可能导致 tainted 问题
+                        if (src.indexOf('http') === 0) {
+                            img.crossOrigin = 'Anonymous';
+                        }
+                        img.onload = function () { resolve(img); };
+                        img.onerror = function (e) { reject(e); };
+                        img.src = src;
+                    });
+                };
+
+                // 2. 绘制流程
+                var drawProcess = Promise.resolve();
+
+                // 2.1 绘制底图（支持偏移和缩放）
+                if (this.editor.showImage && this.editor.baseImage) {
+                    drawProcess = drawProcess.then(function () {
+                        return loadImage(_this.editor.baseImage).then(function (img) {
+                            // 应用素材图的偏移和缩放
+                            ctx.save();
+                            ctx.translate(_this.editor.imageOffsetX, _this.editor.imageOffsetY);
+                            ctx.scale(_this.editor.imageScale, _this.editor.imageScale);
+                            ctx.drawImage(img, 0, 0, width, height);
+                            ctx.restore();
+                        });
+                    });
+                }
+
+                // 2.2 绘制文字 (使用 Canvas API 替代 SVG foreignObject 以避免 Tainted Canvas)
+                if (this.editor.showText && this.editor.textContent) {
+                    drawProcess = drawProcess.then(function () {
+                        _this.drawRichText(ctx, width, height);
+                    });
+                }
+
+                // 3. 完成并导出
+                drawProcess.then(function () {
+                    canvas.toBlob(function (blob) {
+                        if (blob) {
+                            _this.handleEditedBlob(blob);
+                        } else {
+                            throw new Error('Canvas to Blob failed');
+                        }
+                    }, 'image/png');
+                }).catch(function (err) {
+                    console.error('生成图片失败:', err);
+                    alert('生成图片失败，请重试\n' + (err.message || err));
+                    _this.editor.loading = false;
+                });
+            },
+
+            /**
+             * 生成透明素材
+             */
+            generateTransparentMaterial: function () {
+                var canvas = document.createElement('canvas');
+                canvas.width = this.editor.baseImageWidth || 100;
+                canvas.height = this.editor.baseImageHeight || 100;
+                var _this = this;
+                canvas.toBlob(function (blob) {
+                    _this.handleEditedBlob(blob);
+                });
+            },
+
+            /**
+             * 处理生成的 Blob
+             */
+            handleEditedBlob: function (blob) {
+                var _this = this;
+                var key = this.editor.targetKey;
+
+                // 根据 key 查找 material
+                var material = null;
+                for (var i = 0; i < this.materialList.length; i++) {
+                    if (this.materialList[i].imageKey === key) {
+                        material = this.materialList[i];
+                        break;
+                    }
+                }
+
+                if (!material) {
+                    console.error('Material not found for key:', key);
+                    return;
+                }
+
+                // 保存编辑状态
+                // 使用 Vue.set 确保响应式更新
+                this.$set(this.materialEditStates, key, {
+                    showImage: this.editor.showImage,
+                    showText: this.editor.showText,
+                    textContent: this.editor.textContent,
+                    textStyle: this.editor.textStyle,
+                    textPosX: this.editor.textPosX,
+                    textPosY: this.editor.textPosY,
+                    textScale: this.editor.textScale,
+                    imageOffsetX: this.editor.imageOffsetX,
+                    imageOffsetY: this.editor.imageOffsetY,
+                    imageScale: this.editor.imageScale,
+                    // 如果底图不是原图，需要保存自定义底图
+                    customBaseImage: this.editor.baseImage !== material.previewUrl ? this.editor.baseImage : null
+                });
+
+                // 生成 blob URL 并替换素材
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var url = e.target.result;
+
+                    // 1. 更新 replacedImages (用于 SVGA 渲染)
+                    _this.$set(_this.replacedImages, material.imageKey, url);
+
+                    // 2. 更新 material 对象 (用于列表缩略图显示)
+                    material.previewUrl = url;
+                    material.isReplaced = true;
+
+                    // 3. 更新文件大小信息
+                    if (blob) {
+                        material.fileSize = blob.size;
+                        if (_this.formatBytes) {
+                            material.fileSizeText = _this.formatBytes(blob.size);
+                        }
+                    }
+
+                    // 4. 应用到播放器 (触发 SVGA 刷新)
+                    if (_this.applyReplacedMaterials) {
+                        _this.applyReplacedMaterials();
+                    } else if (_this.svgaPlayer) {
+                        _this.svgaPlayer.setImage(url, material.imageKey);
+                    }
+
+                    // 关闭编辑器
+                    _this.editor.loading = false;
+                    _this.editor.show = false;
+
+                    if (_this.showToast) {
+                        _this.showToast('素材编辑已保存');
+                    }
+                };
+                reader.readAsDataURL(blob);
+            },
+
+            /**
+             * 恢复原图时清除编辑状态
+             * @param {number|string} indexOrKey - 索引或Key
+             */
+            clearMaterialEditState: function (indexOrKey) {
+                // 兼容处理：如果是数字，尝试去 materialList 找 key
+                var key = indexOrKey;
+                if (typeof indexOrKey === 'number') {
+                    if (this.materialList[indexOrKey]) {
+                        key = this.materialList[indexOrKey].imageKey;
+                    }
+                }
+
+                if (key && this.materialEditStates[key]) {
+                    this.$delete(this.materialEditStates, key);
+                }
+            },
+
+            /**
+             * 解析 text-shadow 字符串
+             */
+            parseShadows: function (shadowStr) {
+                var shadows = [];
+                // 匹配模式: x y blur color (支持 hex 和 rgba)
+                // 示例: 0px 1px 0px #EF9A4B
+                var regex = /(-?\d+(?:px)?)\s+(-?\d+(?:px)?)\s+(-?\d+(?:px)?)\s+(#[0-9a-fA-F]+|rgba?\([^)]+\))/g;
+                var match;
+                while ((match = regex.exec(shadowStr)) !== null) {
+                    shadows.push({
+                        x: parseFloat(match[1]),
+                        y: parseFloat(match[2]),
+                        blur: parseFloat(match[3]),
+                        color: match[4]
+                    });
+                }
+                return shadows;
+            },
+
+            /**
+             * 解析 stroke/border 字符串
+             */
+            parseStroke: function (strokeStr) {
+                // 匹配模式: width [style] color
+                // 示例: 1px solid #FFF3B9 或 1px #FFF
+                var regex = /(\d+(?:px)?)\s+(?:solid\s+)?(#[0-9a-fA-F]+|rgba?\([^)]+\))/;
+                var match = strokeStr.match(regex);
+                if (match) {
+                    return {
+                        width: parseFloat(match[1]),
+                        color: match[2]
+                    };
+                }
+                return null;
+            },
+
+            /**
+             * 使用 Canvas API 绘制富文本（支持渐变、描边、投影）
+             */
+            drawRichText: function (ctx, width, height) {
+                var style = this.editorTextStyleFiltered;
+                var text = this.editor.textContent;
+                if (!text) return;
+
+                var fontSize = parseFloat(style['font-size']) || 24;
+                var fontFamily = style['font-family'] || 'sans-serif';
+                var fontWeight = style['font-weight'] || 'normal';
+                var fontStyle = style['font-style'] || 'normal';
+
+                // 清除引号
+                fontFamily = fontFamily.replace(/['"]/g, '');
+
+                ctx.save();
+
+                // 1. 定位
+                var x = width * (this.editor.textPosX / 100);
+                var y = height * (this.editor.textPosY / 100);
+                ctx.translate(x, y);
+                ctx.scale(this.editor.textScale, this.editor.textScale);
+
+                // 2. 字体设置
+                ctx.font = fontStyle + ' ' + fontWeight + ' ' + fontSize + 'px "' + fontFamily + '"';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // 3. 解析渐变（如果有）
+                var fillStyle = style['color'] || '#000000';
+                var bgStr = style['background'] || style['background-image'];
+                var hasBackgroundClip = style['-webkit-background-clip'] === 'text' || style['background-clip'] === 'text';
+
+                if (bgStr && bgStr.indexOf('gradient') !== -1 && hasBackgroundClip) {
+                    // 解析渐变方向
+                    var angleMatch = bgStr.match(/linear-gradient\((\d+)deg/);
+                    var angle = angleMatch ? parseInt(angleMatch[1]) : 180; // 默认 180deg
+
+                    // 解析颜色停靠点
+                    var colors = [];
+                    var colorRegex = /(#[0-9a-fA-F]+|rgba?\([^)]+\))\s*(\d+(?:\.\d+)?%?)/g;
+                    var m;
+                    while ((m = colorRegex.exec(bgStr)) !== null) {
+                        var stop = m[2];
+                        // 处理百分比
+                        if (stop.indexOf('%') !== -1) {
+                            stop = parseFloat(stop) / 100;
+                        } else {
+                            stop = parseFloat(stop) / 100;
+                        }
+                        colors.push({
+                            color: m[1],
+                            stop: stop
+                        });
+                    }
+
+                    if (colors.length >= 2) {
+                        // 确保第一个和最后一个停靠点
+                        if (colors[0].stop === null || isNaN(colors[0].stop)) colors[0].stop = 0;
+                        if (colors[colors.length - 1].stop === null || isNaN(colors[colors.length - 1].stop)) {
+                            colors[colors.length - 1].stop = 1;
+                        }
+
+                        // 根据角度设置渐变方向
+                        var x0, y0, x1, y1;
+                        var textHeight = fontSize;
+
+                        if (angle === 0) {
+                            // 0deg: 从下到上
+                            x0 = 0; y0 = textHeight * 0.6; x1 = 0; y1 = -textHeight * 0.6;
+                        } else if (angle === 90) {
+                            // 90deg: 从左到右
+                            var textWidth = ctx.measureText(text).width;
+                            x0 = -textWidth / 2; y0 = 0; x1 = textWidth / 2; y1 = 0;
+                        } else if (angle === 270) {
+                            // 270deg: 从右到左
+                            var textWidth = ctx.measureText(text).width;
+                            x0 = textWidth / 2; y0 = 0; x1 = -textWidth / 2; y1 = 0;
+                        } else {
+                            // 180deg 或默认: 从上到下
+                            x0 = 0; y0 = -textHeight * 0.6; x1 = 0; y1 = textHeight * 0.6;
+                        }
+
+                        var grad = ctx.createLinearGradient(x0, y0, x1, y1);
+
+                        for (var k = 0; k < colors.length; k++) {
+                            var s = Math.max(0, Math.min(1, colors[k].stop));
+                            grad.addColorStop(s, colors[k].color);
+                        }
+                        fillStyle = grad;
+                    }
+                }
+
+                // 4. 绘制投影 (text-shadow) - 多层阴影
+                if (style['text-shadow']) {
+                    var shadowsStr = style['text-shadow'];
+
+                    // 处理 rgba 中的逗号，避免分割错误
+                    var tempStr = shadowsStr.replace(/rgba?\([^)]+\)/gi, function (match) {
+                        return match.replace(/,/g, '|');
+                    });
+
+                    var shadowsArr = tempStr.split(',').map(function (s) {
+                        return s.replace(/\|/g, ',').trim();
+                    });
+
+                    // 绘制每层阴影
+                    for (var i = 0; i < shadowsArr.length; i++) {
+                        var shadow = shadowsArr[i];
+                        // 解析: offsetX offsetY blur color
+                        var shadowMatch = shadow.match(/(-?[\d.]+)px\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+(#[0-9a-fA-F]+|rgba?\([^)]+\))/i);
+
+                        if (shadowMatch) {
+                            ctx.save();
+                            ctx.shadowOffsetX = parseFloat(shadowMatch[1]);
+                            ctx.shadowOffsetY = parseFloat(shadowMatch[2]);
+                            ctx.shadowBlur = parseFloat(shadowMatch[3]);
+                            ctx.shadowColor = shadowMatch[4];
+
+                            // 绘制阴影（使用渐变或纯色作为 fillStyle）
+                            ctx.fillStyle = fillStyle;
+                            ctx.fillText(text, 0, 0);
+                            ctx.restore();
+                        }
+                    }
+
+                    // 清除阴影设置
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                    ctx.shadowBlur = 0;
+                }
+
+                // 5. 绘制描边 (Stroke)
+                var strokeStr = style['-webkit-text-stroke'] || style['border'];
+                if (strokeStr) {
+                    var stroke = this.parseStroke(strokeStr);
+                    if (stroke) {
+                        ctx.lineWidth = stroke.width;
+                        ctx.strokeStyle = stroke.color;
+                        ctx.lineJoin = 'round';
+                        ctx.strokeText(text, 0, 0);
+                    }
+                }
+
+                // 6. 绘制填充 (Fill)
+                ctx.fillStyle = fillStyle;
+                ctx.fillText(text, 0, 0);
+
+                ctx.restore();
+            },
+
+            /**
+             * 清除所有编辑状态
+             */
+            clearAllMaterialEditStates: function () {
+                this.materialEditStates = {};
+            }
+        }
+    };
+
+    // 导出
+    window.MaterialEditor = MaterialEditor;
+
+})(window);

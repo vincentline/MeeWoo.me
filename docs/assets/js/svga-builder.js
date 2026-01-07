@@ -78,32 +78,49 @@
       var scaledHeight = Math.round(height * scaleFactor);
       var scaleUp = 1 / scaleFactor;
 
-      // 阶段1：处理帧 - 缩放并转为PNG Uint8Array（0-50%）
+      // 优化：如果质量100%且尺寸未改，直接使用原始 PNG文件，无需 Canvas 处理
+      var needsProcessing = (quality !== 100 || scaledWidth !== width || scaledHeight !== height);
+
       var pngFrames = [];
-      var canvas = document.createElement('canvas');
-      canvas.width = scaledWidth;
-      canvas.height = scaledHeight;
-      var ctx = canvas.getContext('2d');
 
-      for (var i = 0; i < totalFrames; i++) {
-        var frame = frames[i];
+      if (!needsProcessing) {
+        // 直接读取原始 PNG 文件为 Uint8Array（0-50%）
+        for (var i = 0; i < totalFrames; i++) {
+          var frame = frames[i];
+          var arrayBuffer = await _this._blobToArrayBuffer(frame.blob);
+          var pngData = new Uint8Array(arrayBuffer);
+          pngFrames.push(pngData);
 
-        // 从blob创建图片
-        var img = await _this._loadImageFromBlob(frame.blob);
+          // 进度回调（0-50%）
+          onProgress((i + 1) / totalFrames * 0.5);
+        }
+      } else {
+        // 阶段1：处理帧 - 缩放并转为PNG Uint8Array（0-50%）
+        var canvas = document.createElement('canvas');
+        canvas.width = scaledWidth;
+        canvas.height = scaledHeight;
+        var ctx = canvas.getContext('2d');
 
-        // 绘制缩放后的帧
-        ctx.clearRect(0, 0, scaledWidth, scaledHeight);
-        ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
+        for (var i = 0; i < totalFrames; i++) {
+          var frame = frames[i];
 
-        // 清理blob URL
-        URL.revokeObjectURL(img.src);
+          // 从 blob创建图片
+          var img = await _this._loadImageFromBlob(frame.blob);
 
-        // 转为PNG Uint8Array
-        var pngData = await _this._canvasToPNG(canvas);
-        pngFrames.push(pngData);
+          // 绘制缩放后的帧
+          ctx.clearRect(0, 0, scaledWidth, scaledHeight);
+          ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
 
-        // 进度回调（0-50%）
-        onProgress((i + 1) / totalFrames * 0.5);
+          // 清理blob URL
+          URL.revokeObjectURL(img.src);
+
+          // 转为PNG Uint8Array
+          var pngData = await _this._canvasToPNG(canvas);
+          pngFrames.push(pngData);
+
+          // 进度回调（0-50%）
+          onProgress((i + 1) / totalFrames * 0.5);
+        }
       }
 
       // 阶段2：编码SVGA（50-100%）
@@ -348,7 +365,7 @@
     },
 
     /**
-     * 从Blob加载图片
+     * 从 Blob加载图片
      * @private
      */
     _loadImageFromBlob: function (blob) {
@@ -357,6 +374,19 @@
         image.onload = function () { resolve(image); };
         image.onerror = function () { reject(new Error('图片加载失败')); };
         image.src = URL.createObjectURL(blob);
+      });
+    },
+
+    /**
+     * 将 Blob 转为 ArrayBuffer
+     * @private
+     */
+    _blobToArrayBuffer: function (blob) {
+      return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function () { resolve(reader.result); };
+        reader.onerror = function () { reject(new Error('Blob读取失败')); };
+        reader.readAsArrayBuffer(blob);
       });
     },
 

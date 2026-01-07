@@ -644,12 +644,286 @@ await ffmpeg.load();
 
 ---
 
-*最后更新：2025-12-30*
+*最后更新：2026-01-08*
 *阶段2完成日期：2024-12-13*
 *阶段3完成日期：2025-12-20*
 *代码优化完成日期：2025-12-21*
 *阶段6完成日期：2025-12-29*
 *SVGA音频同步修复：2025-12-30*
+*沉浸模式完成日期：2026-01-01*
+*素材压缩功能完成日期：2026-01-02*
+*变速编辑器完成日期：2026-01-04*
+*代码模块化第二阶段完成日期：2026-01-04*
+
+---
+
+## 阶段11：代码模块化第二阶段 ✅
+**状态：已完成**
+**完成时间：2026-01-04**
+
+### 功能概述
+继续代码模块化重构，将更多功能从app.js中抽离为独立模块，进一步提升代码可维护性。
+
+### 已完成功能
+
+#### 1. 文件验证器模块 ✅
+**文件**：`file-validator.js` (20.2KB)
+
+**功能**：
+- 统一文件类型验证入口
+- 自动识别文件格式（SVGA/双通道MP4/普通MP4/Lottie/序列帧）
+- 支持批量文件验证
+- 文件大小限制检查
+
+**代码位置**：`docs/assets/js/file-validator.js`
+
+#### 2. 工具函数库 ✅
+**文件**：`utils.js` (16.3KB)
+
+**功能**：
+- 通用工具函数集合
+- 字符串处理、数组操作
+- 颜色转换、格式化
+- 防抖、节流函数
+
+**代码位置**：`docs/assets/js/utils.js`
+
+#### 3. 素材编辑器模块 ✅
+**文件**：`material-editor.js` (23.7KB)
+
+**功能**：
+- 素材图片编辑功能
+- 替换底图
+- 添加文字覆盖层（支持CSS样式）
+- 预览缩放和平移
+- 导出编辑后图片为PNG
+
+**技术亮点**：
+- 作为Vue Mixin混入主应用
+- 样式过滤（阻止布局相关CSS属性）
+- 支持文字拖拽定位
+
+**代码位置**：`docs/assets/js/material-editor.js`
+
+#### 4. MP4转换器模块 ✅
+**文件**：`mp4-converter.js` (5.7KB)
+
+**功能**：
+- 普通MP4转双通道MP4
+- 普通MP4转SVGA
+- ffmpeg.wasm集成
+
+**代码位置**：`docs/assets/js/mp4-converter.js`
+
+### 成果统计
+
+| 类别 | 数量 | 说明 |
+|------|------|------|
+| 新增模块 | 4个 | file-validator/utils/material-editor/mp4-converter |
+| 抽离代码 | ~66KB | 从app.js抽离 |
+| Mixin模式 | 1个 | MaterialEditor作为Vue Mixin |
+
+---
+
+## 阶段10：变速编辑器（K帧时间轴重映射）✅
+**状态：已完成**
+**完成时间：2026-01-04**
+
+### 功能概述
+为普通MP4模式增加时间轴重映射（变速）能力，通过K帧节点控制视频播放速度，实现帧级精度的速度变化。
+
+**核心使用场景**：AI生成的短视频速度调整困难，需要帧级别的精确速度控制。
+
+### 已完成功能
+
+#### 1. K帧时间轴编辑器 ✅
+**交互设计**：
+- 底部浮层新增「变速」按钮
+- 点击后浮层外左侧显示时间轴编辑器
+- 时间轴固定宽度400px，高度16px
+- 起点/终点节点固定（黑色），中间K帧可拖拽（蓝色）
+
+**节点操作**：
+- 添加K帧：点击时间轴空白处，弹出速度选择器
+- 调整位置：拖拽蓝色手柄（11px宽），吸附到帧位置
+- 调整速度：点击节点弹出速度滑块（0.5x - 5.0x）
+- 删除K帧：速度面板中的删除按钮
+
+#### 2. 速度插值算法 ✅
+**线性插值**：
+```javascript
+function getSpeedAtFrame(frame, keyframes) {
+  // 找到frame所在的两个关键帧区间
+  const ratio = (frame - k1.frame) / (k2.frame - k1.frame);
+  return k1.speed + (k2.speed - k1.speed) * ratio;
+}
+```
+
+#### 3. 数据结构 ✅
+```javascript
+speedRemapConfig: {
+  enabled: false,              // 是否启用变速
+  keyframes: [                 // 关键帧数组
+    { frame: 0, speed: 1.0, draggable: false },
+    { frame: 60, speed: 2.0, draggable: true },
+    { frame: 150, speed: 1.0, draggable: false }
+  ],
+  outputDuration: 3.2,         // 预计输出时长
+  outputTotalFrames: 96        // 预计输出帧数
+}
+```
+
+#### 4. 导出时应用变速 ✅
+- 计算帧映射表
+- 三种格式支持（MP4/SVGA/GIF）
+
+### 技术亮点
+
+1. **帧级精度**：2.67px/帧的精度（400px / 150帧）
+2. **实时预览**：拖拽时实时计算输出时长
+3. **平滑插值**：支持线性和Ease-In-Out两种模式
+4. **统一导出**：变速配置自动应用到所有导出格式
+
+### 文件变更
+
+- `docs/index.html` - 变速UI布局和交互
+- `docs/assets/css/styles.css` - 时间轴和K帧样式
+- `docs/assets/js/app.js` - 变速数据和方法
+- `video_edit.md` - 详细设计文档
+
+---
+
+## 阶段9：SVGA素材压缩与导出流程优化 ✅
+**状态：已完成**
+**完成时间：2026-01-02**
+
+### 功能概述
+素材压缩功能允许用户缩小SVGA中的图片尺寸，减少内存占用和文件体积。
+
+**核心特性**：
+- 图片尺寸缩小（scalePercent: 10-100%）
+- 与导出SVGA功能合并，一键「压缩并导出」
+- 导出时自动修改sprite的transform实现放大显示
+- 支持撤销压缩
+
+### 技术结论
+- ✅ 尺寸缩小是最有效的压缩方式（内存减少 = 像素减少）
+- ❌ 前端PNG质量压缩效果有限，无法达到专业工具水平
+- ℹ️ 进一步优化需后端集成TinyPNG/pngquant等专业工具
+
+### 已完成功能
+
+#### 1. 压缩流程 ✅
+```
+原始图片 (250x250)
+    ↓
+尺寸缩小 (scalePercent=70% → 175x175)
+    ↓
+Canvas原生PNG编码
+    ↓
+导出SVGA时使用小图 + 修改transform
+```
+
+#### 2. Transform处理核心算法 ✅
+**关键发现**：
+- transform矩阵的a/b/c/d必须同步缩放
+- tx/ty不能缩放（画布坐标系下的绝对偏移量）
+- layout完全不变
+
+```javascript
+var scaleUp = originalWidth / scaledWidth;
+frame.transform.a = origA * scaleUp;
+frame.transform.b = origB * scaleUp;
+frame.transform.c = origC * scaleUp;
+frame.transform.d = origD * scaleUp;
+frame.transform.tx = origTx;  // 保持不变
+frame.transform.ty = origTy;  // 保持不变
+```
+
+#### 3. UI/UX优化 ✅
+- 「压缩并导出新SVGA」按钮（合并操作）
+- 已压缩时显示绿色✓标记
+- 弹窗内有「撤销」按钮
+- 导出成功使用toast提示
+
+### 数据对比
+- 原始文件：975KB
+- 尺寸缩小70%：内存占用 13.8MB → 6.8MB（减小51%）
+
+### 文件变更
+- `docs/assets/js/app.js` - 压缩相关方法和数据
+- `docs/index.html` - 压缩弹窗UI
+
+---
+
+## 阶段8：沉浸模式（Immersive Mode）✅
+**状态：已完成**
+**完成时间：2026-01-01**
+
+### 功能概述
+沉浸模式为用户提供更大的动画展示空间，通过隐藏非核心UI元素，让用户专注于内容本身。
+
+**核心特性**：
+- 标题栏向上退出消失（300ms动画）
+- 底部完整浮层切换为mini浮层（154px → 80px）
+- 视图自动向上移动，充分利用空间
+- 隐藏恢复播放、清空画布、帮助按钮
+- 模式名称居中显示
+
+### 已完成功能
+
+#### 1. 状态管理 ✅
+```javascript
+data: {
+  isImmersiveMode: false  // 沉浸模式状态
+}
+```
+
+#### 2. 视图控制器调整 ✅
+- 新增 `setHeaderHeight()` 和 `setFooterHeight()` 方法
+- 动态计算可用高度
+- 自动调用 `centerView()` 重新居中
+
+**可用高度对比**：
+| 模式 | headerHeight | footerHeight | 可用高度（1080p） |
+|------|--------------|--------------|------------------|
+| 普通 | 36px | 154px | 890px |
+| 沉浸 | 0px | 80px | 1000px |
+
+沉浸模式增加110px显示空间。
+
+#### 3. Mini浮层 ✅
+**保留功能**：
+- ✅ 播放/暂停
+- ✅ 静音控制
+- ✅ 1:1/适应屏幕切换
+- ✅ 退出沉浸模式
+- ✅ 模式名称显示
+
+**禁用功能**：
+- ❌ 恢复播放
+- ❌ 清空画布
+- ❌ 帮助按钮
+- ❌ 进度条显示
+
+#### 4. 视觉居中优化 ✅
+```javascript
+// 统一向上偏移20px获得更好的视觉效果
+this.offsetY = this.headerHeight + (availableHeight - contentHeight) / 2 - 20;
+```
+
+### 技术亮点
+
+1. **动态视图计算**：切换模式时自动重新居中
+2. **视觉居中调整**：数学居中往往视觉偏下，统一向上偏移20px
+3. **雪碧图更新**：从6行扩展到8行，新增Mini图标
+4. **Toast防闪现**：页面加载时不闪现toast容器
+
+### 文件变更
+- `docs/assets/js/app.js` - 沉浸模式状态和方法
+- `docs/assets/js/viewport-controller.js` - 动态高度计算
+- `docs/assets/css/styles.css` - Mini浮层样式
+- `docs/index.html` - Mini浮层HTML结构
 
 ---
 
@@ -1324,20 +1598,23 @@ frameSequence: {
 - ✅ 代码模块化整理
 - ✅ 文件结构优化
 - ✅ 清理无用资源
-- 🔄 阶段5功能开发
+- ✅ 沉浸模式
+- ✅ 素材压缩功能
+- ✅ 变速编辑器
+- ✅ 代码模块化第二阶段
 
-### 中期目标（如需要）
-- 抽取库加载管理器为`library-loader.js`
-- 抽取格式转换功能为`converters.js`
-- 抽取导出功能为`exporters.js`
+### 中期目标
 - 序列帧高级功能：支持ZIP包导入、再导出为序列帧
+- Lottie模块完善（播放、导出、转换）
+- 素材自助页面优化
 
 ### 长期目标
 - 性能优化（大文件处理、内存优化）
 - 批量处理功能
+- 后端集成TinyPNG/pngquant进一步优化压缩
 - 使用Vue CLI构建工具
 - TypeScript迁移
 
 ---
 
-*最后更新：2025-12-26*
+*最后更新：2026-01-08*

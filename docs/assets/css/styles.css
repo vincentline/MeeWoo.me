@@ -39,6 +39,169 @@ body.dark-mode {
   flex-direction: column;
 }
 
+/* ==================== 通用输入框样式系统 ==================== */
+
+/* 基础输入框样式 - 用于input元素内部 */
+.base-input {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #333333;
+  text-align: center;
+  outline: none;
+}
+
+/* 隐藏数字输入框箭头 */
+.base-input::-webkit-outer-spin-button,
+.base-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.base-input[type="number"] {
+  -webkit-appearance: textfield;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+body.dark-mode .base-input {
+  color: #cccccc;
+}
+
+.base-input:disabled {
+  color: #D3D3D3;
+}
+
+body.dark-mode .base-input:disabled {
+  color: #666666;
+}
+
+/* 输入框容器通用样式 */
+.input-wrapper {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0 16px;
+  gap: 4px;
+  min-width: 50px;
+  background: #F3F3F3;
+  border: 2px solid #F3F3F3;
+  border-radius: 12px;
+  flex: none;
+  flex-grow: 0;
+}
+
+.input-wrapper:hover {
+  background: #FCFCFC;
+  border: 2px solid #333333;
+}
+
+.input-wrapper:focus-within {
+  background: #FFFFFF;
+  border: 2px solid #333333;
+}
+
+body.dark-mode .input-wrapper {
+  background: #3a3a3a;
+  border: 2px solid #3a3a3a;
+}
+
+body.dark-mode .input-wrapper:hover {
+  background: #454545;
+  border: 2px solid #999999;
+}
+
+body.dark-mode .input-wrapper:focus-within {
+  background: #3a3a3a;
+  border: 2px solid #999999;
+}
+
+/* 尺寸修饰符 */
+.input-wrapper--sm {
+  height: 32px;
+  border-radius: 8px;
+}
+
+.input-wrapper--md {
+  height: 40px;
+}
+
+.input-wrapper--lg {
+  height: 44px;
+}
+
+/* 边框修饰符 */
+.input-wrapper--thin {
+  border-width: 1px;
+}
+
+.input-wrapper--thin:hover,
+.input-wrapper--thin:focus-within {
+  border-width: 1px;
+}
+
+/* 单位标签样式 */
+.input-unit {
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #333333;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+body.dark-mode .input-unit {
+  color: #cccccc;
+}
+
+/* 单位标签 - 提示文字样式 */
+.input-unit--hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: #999999;
+}
+
+body.dark-mode .input-unit--hint {
+  color: #666666;
+}
+
+/* 多行输入框容器 */
+.input-wrapper--textarea {
+  width: 100%;
+  height: auto;
+  padding: 8px 12px;
+  align-items: flex-start;
+}
+
+.input-wrapper--textarea-lg {
+  min-height: 160px;
+}
+
+/* 多行输入框元素 */
+.textarea-input {
+  text-align: left;
+  resize: none;
+}
+
+.textarea-input--sm {
+  height: 60px;
+}
+
+.textarea-input--lg {
+  height: 144px;
+  overflow: hidden;
+}
+
 /* ==================== 顶部导航栏 ==================== */
 
 .header-navbar {
@@ -147,7 +310,7 @@ body.dark-mode .theme-toggle svg {
   fill: #e0e0e0;
 }
 
-/* Tooltip 气泡 */
+/* Tooltip 姘旀场 */
 .tooltip {
   position: relative;
   display: inline-block;
@@ -252,7 +415,7 @@ body.dark-mode .library-loading-indicator .loading-text {
   opacity: 1;
 }
 
-/* Help 按钮样式 */
+/* Help 鎸夐挳鏍峰紡 */
 .help-button {
   width: 40px;
   height: 40px;
@@ -387,7 +550,7 @@ body.dark-mode .help-popup {
   /* 显示时可接收拖拽事件 */
 }
 
-/* 拖拽提示 */
+/* 鎷栨嫿鎻愮ず */
 .drop-hint {
   display: flex;
   flex-direction: column;
@@ -409,7 +572,7 @@ body.dark-mode .help-popup {
   color: #333333;
 }
 
-/* 暗黑模式 */
+/* 鏆楅粦妯″紡 */
 body.dark-mode .drop-overlay {
   background-color: rgba(0, 0, 0, 0.7);
 }
@@ -426,7 +589,7 @@ body.dark-mode .drop-hint-text {
  * 结构：包裹文件名 + 播放器画布，大小由 JS 动态设置为原始尺寸（如 1080x1920）
  * 缩放机制：
  *   - transform-origin: top center → 缩放原点在顶部中心，缩放时视觉顶部保持在y=0处
- *   - transform: translate + scale → 由 JS 动态设置，translate 控制位置，scale 控制缩放比例
+ *   - transform: translate + scale → 由 JS 动态设置，translate 控制位置，scale 控制缩放
  * 关键设计：
  *   - 使用 top center 而非 center center，避免缩放后视觉顶部位置偏移导致内容显示偏下
  *   - width/height 为原始尺寸，缩放通过 transform: scale() 实现，保证布局计算正确
@@ -496,7 +659,7 @@ body.dark-mode .viewer-filename {
   -ms-interpolation-mode: bicubic;
 }
 
-/* 空状态覆盖层 */
+/* 绌虹姸鎬佽鐩栧眰 */
 .empty-state-overlay {
   position: absolute;
   inset: 0;
@@ -554,7 +717,7 @@ body.dark-mode .empty-state-tip-line2 {
   color: #CCCCCC;
 }
 
-/* ==================== 底部浮层 ==================== */
+/* ==================== 搴曢儴娴眰 ==================== */
 
 .footer-bar {
   position: absolute;
@@ -571,7 +734,7 @@ body.dark-mode .empty-state-tip-line2 {
   transition: background-color 0.3s, height 0.3s ease;
 }
 
-/* 广告位 */
+/* 骞垮憡浣?*/
 .ad-slot {
   display: none;
   width: 240px;
@@ -581,7 +744,7 @@ body.dark-mode .empty-state-tip-line2 {
   flex-shrink: 0;
 }
 
-/* 底部主控制区容器 */
+/* 搴曢儴涓绘帶鍒跺尯瀹瑰櫒 */
 .footer-main-wrapper {
   position: relative;
   display: flex;
@@ -589,7 +752,7 @@ body.dark-mode .empty-state-tip-line2 {
   align-items: flex-end;
 }
 
-/* 右上角清空按钮区域 */
+/* 鍙充笂瑙掓竻绌烘寜閽尯鍩?*/
 .footer-top-actions {
   display: flex;
   flex-direction: row;
@@ -608,14 +771,14 @@ body.dark-mode .empty-state-tip-line2 {
   bottom: 60px;
 }
 
-/* 沉浸模式下模式名称居中显示 */
+/* 娌夋蹈妯″紡涓嬫ā寮忓悕绉板眳涓樉绀?*/
 .footer-top-actions-immersive {
   left: 50%;
   right: auto;
   transform: translateX(-50%);
 }
 
-/* 模式名称容器 */
+/* 妯″紡鍚嶇О瀹瑰櫒 */
 .mode-name-box {
   display: flex;
   align-items: center;
@@ -624,12 +787,12 @@ body.dark-mode .empty-state-tip-line2 {
   background: #ffffff;
   border: 1px solid #F3F3F3;
   border-radius: 8px;
-  /* 沉浸模式下淡出动画 */
+  /* 娌夋蹈妯″紡涓嬫贰鍑哄姩鐢?*/
   opacity: 1;
   transition: opacity 1s ease;
 }
 
-/* 沉浸模式下5s后淡出 */
+/* 娌夋蹈妯″紡涓?s鍚庢贰鍑?*/
 .mode-name-box.fade-out {
   opacity: 0;
   pointer-events: none;
@@ -640,7 +803,7 @@ body.dark-mode .mode-name-box {
   border-color: #404040;
 }
 
-/* 模式名称标签 */
+/* 妯″紡鍚嶇О鏍囩 */
 .mode-name-label {
   font-family: 'Segoe UI', sans-serif;
   font-weight: 400;
@@ -657,7 +820,7 @@ body.dark-mode .mode-name-label {
   color: #e0e0e0;
 }
 
-/* 清空画布按钮（右上角） */
+/* 娓呯┖鐢诲竷鎸夐挳锛堝彸涓婅锛?*/
 .clear-canvas-btn {
   box-sizing: border-box;
   display: flex;
@@ -695,7 +858,7 @@ body.dark-mode .mode-name-label {
   background: #FF5252;
 }
 
-/* 暗黑模式 */
+/* 鏆楅粦妯″紡 */
 body.dark-mode .clear-canvas-btn {
   background: #4040407d;
 }
@@ -720,7 +883,7 @@ body.dark-mode .clear-canvas-btn:active svg path {
   stroke: #333333;
 }
 
-/* 底部主控制区 */
+/* 搴曢儴涓绘帶鍒跺尯 */
 .footer-main {
   flex: 0 1 auto;
   min-width: 1000px;
@@ -742,7 +905,7 @@ body.dark-mode .clear-canvas-btn:active svg path {
     height 0.3s ease, bottom 0.3s ease;
 }
 
-/* 空状态：宽度300px，居中 */
+/* 绌虹姸鎬侊細瀹藉害300px锛屽眳涓?*/
 .footer-main.footer-main-empty {
   min-width: 240px;
   max-width: 600px;
@@ -753,7 +916,7 @@ body.dark-mode .clear-canvas-btn:active svg path {
   bottom: 160px;
 }
 
-/* 空状态样式 */
+/* 绌虹姸鎬佹牱寮?*/
 .footer-empty-tip {
   display: flex;
   align-items: center;
@@ -799,7 +962,17 @@ body.dark-mode .footer-main {
   box-shadow: 0px 10px 32px 0px rgba(0, 0, 0, 0.5);
 }
 
-/* 第一行：模块切换 + 清空按钮 */
+/* 底部内容布局容器 */
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  justify-content: space-between;
+  transition: opacity 0.2s ease;
+}
+
+/* 绗竴琛岋細妯″潡鍒囨崲 + 娓呯┖鎸夐挳 */
 .footer-row-tabs {
   display: flex;
   flex-direction: row;
@@ -919,7 +1092,7 @@ body.dark-mode .tab-btn.is-active {
   background-color: #333333;
 }
 
-/* 第二行：文件信息 */
+/* 绗簩琛岋細鏂囦欢淇℃伅 */
 .footer-row-info {
   display: flex;
   flex-direction: row;
@@ -1054,7 +1227,7 @@ body.dark-mode .info-item-value {
   background-position: -80px -40px;
 }
 
-/* 暗黑模式 */
+/* 鏆楅粦妯″紡 */
 body.dark-mode .play-btn {
   background-position: -280px 0px;
 }
@@ -1079,7 +1252,7 @@ body.dark-mode .play-btn.is-playing:active {
   background-position: -200px -40px;
 }
 
-/* 静音按钮 */
+/* 闈欓煶鎸夐挳 */
 .mute-btn {
   width: 28px;
   height: 28px;
@@ -1104,7 +1277,7 @@ body.dark-mode .play-btn.is-playing:active {
   background-position: -320px -40px;
 }
 
-/* 静音状态（已开启静音） */
+/* 闈欓煶鐘舵€侊紙宸插紑鍚潤闊筹級 */
 .mute-btn.is-muted {
   background-position: -360px -40px;
 }
@@ -1433,7 +1606,7 @@ body.dark-mode .btn-large-primary:disabled {
   opacity: 1;
 }
 
-/* 缩放按钮 */
+/* 缂╂斁鎸夐挳 */
 .zoom-btn {
   width: 28px;
   height: 28px;
@@ -1466,7 +1639,7 @@ body.dark-mode .zoom-btn[data-type="out"]:hover {
   background-position: -280px -120px;
 }
 
-/* 放大按钮 */
+/* 鏀惧ぇ鎸夐挳 */
 .zoom-btn[data-type="in"] {
   background-position: 0px -120px;
 }
@@ -1483,7 +1656,7 @@ body.dark-mode .zoom-btn[data-type="in"]:hover {
   background-position: -200px -120px;
 }
 
-/* 百分比显示 */
+/* 鐧惧垎姣旀樉绀?*/
 .scale-percentage {
   width: 60px;
   font-family: 'Segoe UI', sans-serif;
@@ -1514,7 +1687,6 @@ body.dark-mode .scale-percentage {
   cursor: pointer;
   outline: none;
   padding: 0;
-  margin-left: 4px;
 }
 
 .reset-scale-btn:hover {
@@ -1553,9 +1725,9 @@ body.dark-mode .reset-scale-btn.is-contain:hover {
   /* contain_hover_dark.png */
 }
 
-/* ==================== 沉浸模式样式 ==================== */
+/* ==================== 娌夋蹈妯″紡鏍峰紡 ==================== */
 
-/* 标题栏隐藏动画 */
+/* 鏍囬鏍忛殣钘忓姩鐢?*/
 .header-navbar.header-hidden {
   transform: translateY(-100%);
   opacity: 0;
@@ -1563,15 +1735,15 @@ body.dark-mode .reset-scale-btn.is-contain:hover {
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
-/* 底部浮层沉浸模式 */
+/* 搴曢儴娴眰娌夋蹈妯″紡 */
 .footer-bar.footer-immersive {
   height: 88px;
   transition: height 0.3s ease;
 }
 
-/* wrapper沉浸模式 */
+/* wrapper娌夋蹈妯″紡 */
 .footer-main-wrapper.footer-main-wrapper-immersive {
-  /* 沉浸模式下调整布局：mini浮层居中，foter-top-actions保持右对齐 */
+  /* 沉浸模式下调整布局：mini浮层居中，footer-top-actions保持右对齐 */
   align-items: center;
 }
 
@@ -1678,7 +1850,7 @@ body.dark-mode .mini-play-btn.is-playing:hover {
   /* mini_stop_hover_dark.png */
 }
 
-/* Mini浮层静音按钮 */
+/* Mini娴眰闈欓煶鎸夐挳 */
 .mini-mute-btn {
   width: 28px;
   height: 28px;
@@ -1880,7 +2052,7 @@ body.dark-mode .clear-btn svg path {
   stroke: #e0e0e0;
 }
 
-/* 空状态底部提示 */
+/* 绌虹姸鎬佸簳閮ㄦ彁绀?*/
 .footer-empty-tip {
   display: flex;
   flex-direction: column;
@@ -1916,7 +2088,7 @@ body.dark-mode .footer-empty-tip-sub {
   color: #999999;
 }
 
-/* ==================== 素材弹窗 ==================== */
+/* ==================== 绱犳潗寮圭獥 ==================== */
 
 .material-panel {
   position: fixed;
@@ -1981,7 +2153,7 @@ body.dark-mode .material-panel.show .material-panel-container {
   transition: color 0.3s;
 }
 
-/* 标题：素材图替换 */
+/* 鏍囬锛氱礌鏉愬浘鏇挎崲 */
 .stats-header {
   font-family: 'Segoe UI', sans-serif;
   font-style: normal;
@@ -2047,7 +2219,7 @@ body.dark-mode .stats-help {
   color: #666666;
 }
 
-/* 搜索框 */
+/* 鎼滅储妗?*/
 .material-search {
   width: 100%;
   margin-top: 0;
@@ -2092,7 +2264,7 @@ body.dark-mode .material-search-input:focus {
   border-color: #00b4ff;
 }
 
-/* 滚动区域 */
+/* 婊氬姩鍖哄煙 */
 .material-panel-scroll {
   display: flex;
   flex-direction: row;
@@ -2108,7 +2280,7 @@ body.dark-mode .material-search-input:focus {
   overflow-x: hidden;
 }
 
-/* 滚动条样式 - 默认隐藏 */
+/* 婊氬姩鏉℃牱寮?- 榛樿闅愯棌 */
 .material-panel-scroll::-webkit-scrollbar {
   width: 6px;
 }
@@ -2176,7 +2348,7 @@ body.dark-mode .material-panel-scroll::-webkit-scrollbar-thumb:hover {
   object-fit: contain;
 }
 
-/* 素材信息区 (Frame 17) */
+/* 绱犳潗淇℃伅鍖?(Frame 17) */
 .material-info {
   display: flex;
   flex-direction: column;
@@ -2277,7 +2449,7 @@ body.dark-mode .material-meta {
   color: #8e8e93;
 }
 
-/* 操作按钮区 (Frame 29) */
+/* 鎿嶄綔鎸夐挳鍖?(Frame 29) */
 .material-actions {
   width: 161px;
   height: 28px;
@@ -2290,7 +2462,7 @@ body.dark-mode .material-meta {
   flex-direction: row;
 }
 
-/* 替换按钮 (btn01_Medium) */
+/* 鏇挎崲鎸夐挳 (btn01_Medium) */
 .material-btn-replace {
   box-sizing: border-box;
   display: flex;
@@ -2380,7 +2552,7 @@ body.dark-mode .material-btn-replace:hover {
   height: 24px;
   flex: none;
   order: 0;
-  /* 隐藏SVG，使用背景图 */
+  /* 闅愯棌SVG锛屼娇鐢ㄨ儗鏅浘 */
   display: none;
 }
 
@@ -2509,7 +2681,7 @@ body.dark-mode .material-btn-new:hover {
   border-color: #606060;
 }
 
-/* 底部按钮区 */
+/* 搴曢儴鎸夐挳鍖?*/
 .material-panel-footer {
   display: flex;
   flex-direction: row;
@@ -2529,15 +2701,15 @@ body.dark-mode .material-btn-new:hover {
 
 }
 
-/* 返回按钮 */
+/* 取消按钮（参考白色大按钮样式） */
 .material-btn-back {
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  padding: 0px;
-  width: 48px;
+  gap: 4px;
+  padding: 0 20px;
   height: 44px;
   background: #FFFFFF;
   border: 1px solid #e6e6e6;
@@ -2545,6 +2717,11 @@ body.dark-mode .material-btn-new:hover {
   cursor: pointer;
   transition: all 0.15s ease;
   flex-shrink: 0;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.57;
+  color: #333333;
 }
 
 .material-btn-back:hover {
@@ -2560,6 +2737,7 @@ body.dark-mode .material-btn-new:hover {
 body.dark-mode .material-btn-back {
   background: #2d2d2d;
   border-color: #505050;
+  color: #e0e0e0;
 }
 
 body.dark-mode .material-btn-back:hover {
@@ -2719,7 +2897,7 @@ body.dark-mode .mp4-panel-divider {
   background: #404040;
 }
 
-/* SVGA信息区 */
+/* SVGA淇℃伅鍖?*/
 .mp4-info-section {
   display: flex;
   flex-direction: column;
@@ -2933,85 +3111,9 @@ body.dark-mode .mp4-select-option.selected {
   flex: none;
 }
 
+/* MP4尺寸输入框 - 继承通用样式，仅定义特有属性 */
 .mp4-size-input-wrapper {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 0 16px;
-  gap: 4px;
   width: 73px;
-  min-width: 50px;
-  height: 44px;
-  background: #F3F3F3;
-  border: none;
-  border-radius: 12px;
-  /* 移除hover过渡动画，直接切换 */
-  flex: none;
-  flex-grow: 0;
-}
-
-.mp4-size-input-wrapper:hover {
-  background: #FCFCFC;
-  border: 1px solid #333333;
-  padding: 0 15px;
-}
-
-.mp4-size-input-wrapper:focus-within {
-  background: #FFFFFF;
-  border: 2px solid #5B5B5B;
-  padding: 0 14px;
-}
-
-body.dark-mode .mp4-size-input-wrapper {
-  background: #3a3a3a;
-  border: none;
-}
-
-body.dark-mode .mp4-size-input-wrapper:hover {
-  background: #454545;
-  border: 1px solid #999999;
-  padding: 0 15px;
-}
-
-body.dark-mode .mp4-size-input-wrapper:focus-within {
-  background: #3a3a3a;
-  border: 2px solid #999999;
-  padding: 0 14px;
-}
-
-.mp4-input {
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  border: none;
-  font-family: 'Segoe UI', sans-serif;
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 24px;
-  color: #333333;
-  text-align: center;
-  outline: none;
-}
-
-/* 隐藏数字输入框的上下箭头 */
-.mp4-input::-webkit-outer-spin-button,
-.mp4-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  margin: 0;
-}
-
-.mp4-input[type=number] {
-  -webkit-appearance: textfield;
-  -moz-appearance: textfield;
-  appearance: textfield;
-}
-
-body.dark-mode .mp4-input {
-  color: #cccccc;
 }
 
 .mp4-size-lock {
@@ -3042,66 +3144,9 @@ body.dark-mode .mp4-size-lock svg {
   flex: none;
 }
 
+/* MP4值输入框 - 继承通用样式，仅定义特有属性 */
 .mp4-value-input-wrapper {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 0 16px;
-  gap: 4px;
   width: 73px;
-  min-width: 50px;
-  height: 44px;
-  background: #F3F3F3;
-  border: none;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-  flex: none;
-  flex-grow: 0;
-}
-
-.mp4-value-input-wrapper:hover {
-  background: #FCFCFC;
-  border: 1px solid #333333;
-  padding: 0 15px;
-}
-
-.mp4-value-input-wrapper:focus-within {
-  background: #FFFFFF;
-  border: 2px solid #5B5B5B;
-  padding: 0 14px;
-}
-
-body.dark-mode .mp4-value-input-wrapper {
-  background: #3a3a3a;
-  border: none;
-}
-
-body.dark-mode .mp4-value-input-wrapper:hover {
-  background: #454545;
-  border: 1px solid #999999;
-  padding: 0 15px;
-}
-
-body.dark-mode .mp4-value-input-wrapper:focus-within {
-  background: #3a3a3a;
-  border: 2px solid #999999;
-  padding: 0 14px;
-}
-
-.mp4-value-unit {
-  font-family: 'Segoe UI', sans-serif;
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 24px;
-  color: #333333;
-  margin: 0;
-  flex-shrink: 0;
-}
-
-body.dark-mode .mp4-value-unit {
-  color: #cccccc;
 }
 
 /* 静音开关 */
@@ -3169,7 +3214,7 @@ body.dark-mode .mp4-mute-toggle.active {
 .mp4-size-input-wrapper:has(input:disabled),
 .mp4-value-input-wrapper:has(input:disabled) {
   background: #F3F3F3;
-  border: 1px solid #E6E6E6;
+  border: 2px solid #F3F3F3;
   padding: 0 15px;
   pointer-events: none;
 }
@@ -3177,7 +3222,7 @@ body.dark-mode .mp4-mute-toggle.active {
 .mp4-size-input-wrapper:has(input:disabled):hover,
 .mp4-value-input-wrapper:has(input:disabled):hover {
   background: #F3F3F3;
-  border: 1px solid #E6E6E6;
+  border: 2px solid #E6E6E6;
   padding: 0 15px;
 }
 
@@ -3202,7 +3247,7 @@ body.dark-mode .mp4-mute-toggle.active {
 }
 
 /* 单位文字disabled */
-.mp4-config-section.disabled .mp4-value-unit {
+.mp4-config-section.disabled .input-unit {
   color: #D3D3D3;
 }
 
@@ -3210,7 +3255,7 @@ body.dark-mode .mp4-mute-toggle.active {
   stroke: #D3D3D3;
 }
 
-body.dark-mode .mp4-config-section.disabled .mp4-value-unit {
+body.dark-mode .mp4-config-section.disabled .input-unit {
   color: #666666;
 }
 
@@ -3651,6 +3696,11 @@ body.dark-mode .svga-compress-hint {
   height: 44px;
 }
 
+/* 配置项间距修饰符 */
+.svga-config-item--mt {
+  margin-top: 16px;
+}
+
 .svga-config-label {
   font-family: 'Segoe UI', sans-serif;
   font-weight: 400;
@@ -3675,52 +3725,9 @@ body.dark-mode .svga-config-label {
   flex: none;
 }
 
+/* SVGA尺寸输入框 - 继承通用样式，仅定义特有属性 */
 .svga-size-input-wrapper {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 0 16px;
-  gap: 4px;
   width: 73px;
-  min-width: 50px;
-  height: 44px;
-  background: #F3F3F3;
-  border: none;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-  flex: none;
-  flex-grow: 0;
-}
-
-.svga-size-input-wrapper:hover {
-  background: #FCFCFC;
-  border: 1px solid #333333;
-  padding: 0 15px;
-}
-
-.svga-size-input-wrapper:focus-within {
-  background: #FFFFFF;
-  border: 2px solid #5B5B5B;
-  padding: 0 14px;
-}
-
-body.dark-mode .svga-size-input-wrapper {
-  background: #3a3a3a;
-  border: none;
-}
-
-body.dark-mode .svga-size-input-wrapper:hover {
-  background: #454545;
-  border: 1px solid #999999;
-  padding: 0 15px;
-}
-
-body.dark-mode .svga-size-input-wrapper:focus-within {
-  background: #3a3a3a;
-  border: 2px solid #999999;
-  padding: 0 14px;
 }
 
 .svga-size-lock {
@@ -3736,46 +3743,6 @@ body.dark-mode .svga-size-lock {
   color: #666666;
 }
 
-.svga-input {
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  border: none;
-  font-family: 'Segoe UI', sans-serif;
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 24px;
-  color: #333333;
-  text-align: center;
-  outline: none;
-}
-
-.svga-input::-webkit-outer-spin-button,
-.svga-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  margin: 0;
-}
-
-.svga-input[type="number"] {
-  -webkit-appearance: textfield;
-  -moz-appearance: textfield;
-  appearance: textfield;
-}
-
-body.dark-mode .svga-input {
-  color: #cccccc;
-}
-
-.svga-input:disabled {
-  color: #D3D3D3;
-}
-
-body.dark-mode .svga-input:disabled {
-  color: #666666;
-}
-
 /* 值输入容器 */
 .svga-value-container {
   display: flex;
@@ -3785,64 +3752,9 @@ body.dark-mode .svga-input:disabled {
   flex: none;
 }
 
+/* SVGA值输入框 - 继承通用样式，仅定义特有属性 */
 .svga-value-input-wrapper {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 0 16px;
-  gap: 4px;
   width: 60px;
-  min-width: 50px;
-  height: 44px;
-  background: #F3F3F3;
-  border: none;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-  flex: none;
-  flex-grow: 0;
-}
-
-.svga-value-input-wrapper:hover {
-  background: #FCFCFC;
-  border: 2px solid #333333;
-  padding: 0 15px;
-}
-
-.svga-value-input-wrapper:focus-within {
-  background: #FFFFFF;
-  border: 2px solid #333333;
-  padding: 0 14px;
-}
-
-body.dark-mode .svga-value-input-wrapper {
-  background: #3a3a3a;
-  border: none;
-}
-
-body.dark-mode .svga-value-input-wrapper:hover {
-  background: #454545;
-  border: 2px solid #999999;
-  padding: 0 15px;
-}
-
-body.dark-mode .svga-value-input-wrapper:focus-within {
-  background: #3a3a3a;
-  border: 2px solid #999999;
-  padding: 0 14px;
-}
-
-.svga-value-unit {
-  font-family: 'Segoe UI', sans-serif;
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 24px;
-  color: #333333;
-}
-
-body.dark-mode .svga-value-unit {
-  color: #cccccc;
 }
 
 /* 静音开关 */
@@ -4134,7 +4046,7 @@ body.dark-mode .chromakey-panel-divider {
   background: #404040;
 }
 
-/* MP4信息区 */
+/* MP4淇℃伅鍖?*/
 .chromakey-info-section {
   display: flex;
   flex-direction: column;
@@ -4339,9 +4251,10 @@ body.dark-mode .chromakey-slider::-moz-range-thumb {
 
 /* 显示状态 */
 .center-modal-overlay.show {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  display: flex !important;
 }
 
 /* 弹窗容器 */
@@ -4465,17 +4378,312 @@ body.dark-mode .btn-undo:hover:not(:disabled) {
 }
 
 
-/* ==================== 序列帧帧率设置弹窗（复用通用样式） ==================== */
-/* 特殊样式：提示文本、水平布局、单位文本 */
+/* ==================== 素材编辑器弹窗 ==================== */
 
-.fps-hint {
-  font-size: 14px;
-  color: #666666;
-  margin-bottom: 16px;
+.material-editor-modal {
+  /* 覆盖默认的 max-width，允许更宽 */
+  max-width: 1000px !important;
 }
 
-body.dark-mode .fps-hint {
+.material-editor-body {
+  flex: 1;
+  display: flex;
+  gap: 24px;
+  overflow: hidden;
+  /* 防止溢出 */
+  padding: 0 !important;
+  /* 移除默认padding，由内部容器控制 */
+}
+
+/* 左侧预览区 */
+.editor-preview-area {
+  flex: 1;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  /* 视口裁剪 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  /* 最小高度 */
+  border: 1px solid #e6e6e6;
+  user-select: none;
+  background-color: #fcfcfc;
+  background-image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNlM2UzZTMiLz48L3N2Zz4=);
+  background-repeat: repeat;
+  background-size: 8px 8px;
+
+}
+
+body.dark-mode .editor-preview-area {
+  background: #202020;
+  border-color: #404040;
+}
+
+/* 预览内容容器 (视口内的可移动层) */
+.editor-preview-wrapper {
+  position: relative;
+  flex: none;
+  /* 初始不偏移 */
+  transform-origin: center center;
+  /* 允许鼠标操作 */
+  cursor: grab;
+}
+
+.editor-preview-wrapper:active {
+  cursor: grabbing;
+}
+
+/* 实际内容层 (1:1 尺寸) */
+.editor-preview-content {
+  position: relative;
+  background-color: transparent;
+  width: 100%;
+  height: 100%;
+}
+
+/* 底图 */
+.editor-base-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: fill;
+  pointer-events: none;
+  /* 图片不响应鼠标，由 wrapper 响应 */
+}
+
+/* 素材图容器 */
+.editor-image-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: move;
+  transition: none;
+  /* pointer-events 由 Vue 动态控制 */
+}
+
+.editor-image-wrapper.active {
+  outline: 2px solid #333333;
+  outline-offset: -2px;
+}
+
+/* 文字 Canvas 容器 */
+.editor-canvas-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: move;
+  transition: none;
+  z-index: 1;
+  /* 文字层在上层，但通过 pointer-events 控制事件响应 */
+  /* pointer-events 由 Vue 动态控制 */
+}
+
+.editor-canvas-wrapper.active {
+  outline: 2px solid #333333;
+  outline-offset: -2px;
+}
+
+/* 文字层 Canvas */
+.editor-text-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+/* 文字层选中/悬停时的辅助框 - 已移除 */
+.editor-text-border {
+  display: none;
+}
+
+/* 缩放控制 */
+.editor-zoom-controls {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  font-size: 14px;
+  z-index: 20;
+}
+
+.editor-zoom-controls button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.editor-zoom-controls button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 平移控制 (新增) */
+.editor-pan-controls {
+  position: absolute;
+  bottom: 80px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 20;
+}
+
+.pan-row {
+  display: flex;
+  gap: 4px;
+}
+
+.pan-btn {
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.pan-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.05);
+}
+
+.pan-btn:active {
+  transform: scale(0.95);
+}
+
+/* 底部按钮组 */
+.editor-bottom-actions {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 0 20px;
+  pointer-events: none;
+  /* 让事件穿透到下层，按钮自身开启 pointer-events */
+}
+
+.editor-bottom-actions>* {
+  pointer-events: auto;
+}
+
+/* 右侧控制区 */
+.editor-controls-area {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 24px 24px 0;
+  /* 右侧padding */
+  overflow-y: auto;
+}
+
+.editor-control-group {
+  display: flex;
+  flex-direction: column;
+}
+
+body.dark-mode .editor-control-group {
+  background: #2a2a2a;
+}
+
+.editor-switch-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #333333;
+}
+
+body.dark-mode .editor-switch-row {
+  color: #e0e0e0;
+}
+
+.editor-text-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editor-control-label {
+  font-size: 14px;
+  color: #666666;
+  margin-bottom: 4px;
+}
+
+.editor-control-label--mt {
+  margin-top: 10px;
+}
+
+body.dark-mode .editor-control-label {
   color: #999999;
+}
+
+.editor-hint {
+  font-size: 12px;
+  color: #999999;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+/* 覆盖 textarea 样式 */
+.svga-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #333333;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.svga-textarea:focus {
+  border-color: #007aff;
+}
+
+body.dark-mode .svga-textarea {
+  background: #333333;
+  border-color: #404040;
+  color: #e0e0e0;
+}
+
+body.dark-mode .svga-textarea:focus {
+  border-color: #0a84ff;
 }
 
 .fps-input-row {
@@ -4703,7 +4911,7 @@ body.dark-mode .speed-remap-segment-overlay.segment-slowdown {
   display: block;
 }
 
-/* hover预览线上方的帧数提示（蓝线上方2px） */
+/* hover预览线上方的帧数提示（蓝线上方4px） */
 .speed-remap-timeline-hover-frame-number {
   position: absolute;
   top: -16px;
@@ -4724,7 +4932,7 @@ body.dark-mode .speed-remap-timeline-hover-frame-number {
   color: #e0e0e0;
 }
 
-/* hover预览线下方的速率提示（蓝线下方2px） */
+/* hover预览线下方的速率提示（蓝线下方4px） */
 .speed-remap-timeline-hover-speed {
   position: absolute;
   top: 18px;
@@ -4865,7 +5073,7 @@ body.dark-mode .keyframe-endpoint .keyframe-line {
   cursor: pointer;
 }
 
-/* 时间刺度容器 */
+/* 时间刻度容器 */
 .speed-remap-timescale {
   position: relative;
   width: 500px;
@@ -4873,7 +5081,7 @@ body.dark-mode .keyframe-endpoint .keyframe-line {
   margin-top: 1px;
 }
 
-/* 刺度点 */
+/* 刻度点 */
 .timescale-tick {
   position: absolute;
   top: 0;
@@ -4883,7 +5091,7 @@ body.dark-mode .keyframe-endpoint .keyframe-line {
   transform: translateX(-50%);
 }
 
-/* 刺度标记 */
+/* 刻度标记 */
 .tick-mark {
   width: 1px;
   height: 3px;
@@ -5340,4 +5548,187 @@ body.dark-mode .keyframe-speed-preset:hover {
 
 .keyframe-speed-confirm:hover {
   background: #66b1ff;
+}
+
+/* ==================== 素材编辑器弹窗 ==================== */
+
+.material-editor-modal {
+  width: 1000px;
+  max-width: 95vw;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.material-editor-body {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  gap: 20px;
+  padding: 0;
+  margin: 16px 0;
+}
+
+/* 左侧预览 */
+.editor-preview-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 10px;
+}
+
+.editor-preview-wrapper {
+  /*overflow: hidden;*/
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e6e6e6;
+}
+
+body.dark-mode .editor-preview-wrapper {
+  border-color: #404040;
+}
+
+.editor-preview-content {
+  position: relative;
+  user-select: none;
+  transform-origin: center center;
+}
+
+.editor-base-image {
+  display: block;
+  max-width: none;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+}
+
+
+/* 预览控制 */
+.editor-zoom-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #f9f9f9;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e6e6e6;
+}
+
+body.dark-mode .editor-zoom-controls {
+  background: #2d2d2d;
+  border-color: #404040;
+}
+
+.editor-zoom-controls button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #666;
+}
+
+body.dark-mode .editor-zoom-controls button {
+  background: #333;
+  border-color: #555;
+  color: #ccc;
+}
+
+/* 底部按钮 */
+.editor-bottom-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 右侧设置 */
+.editor-controls-area {
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-left: 20px;
+  overflow-y: auto;
+}
+
+body.dark-mode .editor-controls-area {
+  border-left-color: #404040;
+}
+
+.material-btn-edit {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  padding: 0px 4px;
+  gap: 10px;
+  position: absolute;
+  width: 32px;
+  height: 28px;
+  left: 87px;
+  top: 0px;
+  background: #FFFFFF;
+  border: 1px solid #e6e6e6;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.material-btn-edit svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+}
+
+.material-btn-edit svg path {
+  stroke: #333333;
+}
+
+body.dark-mode .material-btn-edit svg path {
+  stroke: #CCCCCC;
+}
+
+.material-btn-edit:hover {
+  background: #F5F5F7;
+  border-color: #CCCCCC;
+}
+
+.material-btn-edit:active {
+  background: #E8E8ED;
+  transform: scale(0.95);
+}
+
+body.dark-mode .material-btn-edit {
+  background: #2d2d2d;
+  border-color: #505050;
+}
+
+body.dark-mode .material-btn-edit:hover {
+  background: #3a3a3a;
+  border-color: #606060;
+}
+
+.edit-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  background-color: #ff4444;
+  border-radius: 50%;
+  border: 1px solid #fff;
+  z-index: 2;
 }
