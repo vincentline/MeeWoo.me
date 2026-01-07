@@ -148,6 +148,12 @@
       url: 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js',
       checkFn: function () { return typeof FFmpeg !== 'undefined'; },
       priority: 30
+    },
+    'html2canvas': {
+      name: 'html2canvas',
+      url: 'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js',
+      checkFn: function () { return typeof html2canvas !== 'undefined'; },
+      priority: 25
     }
   };
 

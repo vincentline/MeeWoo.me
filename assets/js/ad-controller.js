@@ -53,6 +53,13 @@
             // 查找所有广告位容器
             this.findAdContainers();
 
+            // 检查是否为本地环境
+            const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+            if (isLocalhost) {
+                console.log('[AdController] 本地环境，跳过广告加载');
+                return;
+            }
+
             // 根据配置应用显示/隐藏逻辑
             this.applyConfig();
 
@@ -129,6 +136,9 @@
          * @param {HTMLElement} container - 广告位容器
          */
         initAdSense(container) {
+            // 确保 AdSense 脚本已加载
+            this.loadAdSenseScript();
+
             // 查找容器中的 AdSense 广告单元
             const adElements = container.querySelectorAll('.adsbygoogle');
             if (adElements.length > 0 && window.adsbygoogle) {
@@ -143,6 +153,27 @@
                     console.error('[AdController] AdSense 初始化失败:', e);
                 }
             }
+        }
+
+        /**
+         * 动态加载 AdSense 脚本
+         */
+        loadAdSenseScript() {
+            if (document.getElementById('adsense-script')) {
+                return; // 已经加载过
+            }
+
+            const script = document.createElement('script');
+            script.id = 'adsense-script';
+            script.async = true;
+            script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291089781078791';
+            script.crossOrigin = 'anonymous';
+            
+            script.onerror = (e) => {
+                console.warn('[AdController] AdSense 脚本加载失败或被拦截 (正常现象):', e);
+            };
+
+            document.head.appendChild(script);
         }
 
         /**

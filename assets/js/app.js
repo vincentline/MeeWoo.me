@@ -117,9 +117,11 @@ function initApp() {
 
   var vueInstance = new Vue({
     el: '#app',
+    mixins: [MaterialEditor],
     data: function () {
       return {
-        currentModule: 'svga', // 'svga' | 'yyeva' | 'mp4' | 'lottie' | 'frames'
+        currentModule: 'svga', // 'svga' | 'yyeva' | 'lottie' | 'mp4' | 'frames'
+        currentLoadTaskId: 0, // 加载任务ID，用于处理异步加载的竞态条件
         dropHover: false,
 
         // 底部浮层过渡状态
@@ -1118,6 +1120,9 @@ function initApp() {
 
         // 3.2 重置素材替换和压缩状态
         this.replacedImages = {};
+        if (this.clearAllMaterialEditStates) {
+          this.clearAllMaterialEditStates();
+        }
         this.showCompressModal = false;
         this.isCompressingMaterials = false;
         this.compressProgress = 0;
@@ -1300,6 +1305,9 @@ function initApp() {
         var file = validatedData.file;
         var videoItem = validatedData.videoItem;
 
+        // 生成加载任务ID
+        var taskId = ++this.currentLoadTaskId;
+
         // 切换模式
         this.switchMode('svga');
 
@@ -1317,8 +1325,10 @@ function initApp() {
 
         // 提取音频数据（异步）
         file.arrayBuffer().then(function (arrayBuffer) {
+          if (taskId !== _this.currentLoadTaskId) return;
           _this.parseSvgaAudioData(arrayBuffer);
         }).catch(function (err) {
+          if (taskId !== _this.currentLoadTaskId) return;
           alert('读取SVGA文件失败');
         });
 
@@ -1348,6 +1358,8 @@ function initApp() {
         this.footerContentVisible = false;
 
         setTimeout(function () {
+          if (taskId !== _this.currentLoadTaskId) return;
+
           _this.footerTransitioning = false;
           _this.footerContentVisible = true;
 
@@ -1391,6 +1403,9 @@ function initApp() {
         var file = validatedData.file;
         var animationData = validatedData.animationData;
 
+        // 生成加载任务ID
+        var taskId = ++this.currentLoadTaskId;
+
         // 切换模式
         this.switchMode('lottie');
 
@@ -1433,8 +1448,10 @@ function initApp() {
 
         // 加载lottie-web库
         this.loadLibrary('lottie', true).then(function () {
+          if (taskId !== _this.currentLoadTaskId) return;
           _this.initLottiePlayer();
         }).catch(function (err) {
+          if (taskId !== _this.currentLoadTaskId) return;
           console.error('Lottie Load Error:', err);
           alert('Lottie库加载失败，请刷新页面重试');
           _this.switchMode('svga');
@@ -1448,6 +1465,9 @@ function initApp() {
       loadYyeva: function (validatedData) {
         var _this = this;
         var file = validatedData.file;
+
+        // 生成加载任务ID，用于处理异步加载的竞态条件
+        var taskId = ++this.currentLoadTaskId;
 
         // 切换模式
         this.switchMode('yyeva');
@@ -1471,6 +1491,16 @@ function initApp() {
         video.muted = true;
 
         video.onloadedmetadata = function () {
+          // 检查任务是否已过时
+          if (taskId !== _this.currentLoadTaskId) {
+            console.warn('YYEVA加载任务已取消 (TaskId mismatch)', taskId);
+            video.onerror = null; // 防止src清空触发onError
+            video.pause();
+            video.src = '';
+            URL.revokeObjectURL(objectUrl);
+            return;
+          }
+
           var videoWidth = video.videoWidth;
           var videoHeight = video.videoHeight;
           var duration = video.duration;
@@ -1495,6 +1525,8 @@ function initApp() {
           _this.yyevaHasAudio = _this.detectVideoHasAudio(video);
 
           setTimeout(function () {
+            if (taskId !== _this.currentLoadTaskId) return;
+
             _this.footerTransitioning = false;
             _this.footerContentVisible = true;
             _this.initYyevaCanvas();
@@ -1507,12 +1539,20 @@ function initApp() {
             // 检测 alpha 位置并渲染第一帧
             video.onseeked = function () {
               video.onseeked = null;
+              if (taskId !== _this.currentLoadTaskId) return;
+
               _this.detectAlphaPosition(video);
               _this.renderYyevaFrame();
 
               // 自动播放
               setTimeout(function () {
+                if (taskId !== _this.currentLoadTaskId) return;
+
                 video.play().then(function () {
+                  if (taskId !== _this.currentLoadTaskId) {
+                    video.pause();
+                    return;
+                  }
                   _this.isPlaying = true;
                   _this.startYyevaRenderLoop();
 
@@ -1523,6 +1563,7 @@ function initApp() {
 
                   // 播放后再次检测音频（针对Chrome的webkitAudioDecodedByteCount）
                   setTimeout(function () {
+                    if (taskId !== _this.currentLoadTaskId) return;
                     var hasAudio = _this.detectVideoHasAudio(video);
                     if (hasAudio !== _this.yyevaHasAudio) {
                       _this.yyevaHasAudio = hasAudio;
@@ -1538,6 +1579,7 @@ function initApp() {
         };
 
         video.onerror = function () {
+          if (taskId !== _this.currentLoadTaskId) return; // 忽略已取消任务的错误
           URL.revokeObjectURL(objectUrl);
           alert('视频加载失败');
         };
@@ -1550,6 +1592,9 @@ function initApp() {
       loadMp4File: function (validatedData) {
         var _this = this;
         var file = validatedData.file;
+
+        // 生成加载任务ID
+        var taskId = ++this.currentLoadTaskId;
 
         // 切换模式
         this.switchMode('mp4');
@@ -1587,6 +1632,22 @@ function initApp() {
         this.mp4Video = video;
 
         video.onloadedmetadata = function () {
+          // 检查任务是否已过时
+          if (taskId !== _this.currentLoadTaskId) {
+            console.warn('MP4加载任务已取消 (TaskId mismatch)', taskId);
+            video.onerror = null; // 防止src清空触发onError
+            video.pause();
+            video.src = '';
+            // objectUrl 在 cleanupMp4 中会被清理，或者这里手动清理也可以
+            // 但因为 this.mp4Video 已经被赋值了，如果 switchMode 调用了 cleanupMp4，它会清理 this.mp4ObjectUrl
+            // 但是如果 taskId 变了，说明有新的 mp4 加载，那么 this.mp4Video 已经被指向新的 video 了
+            // 所以旧的 video 确实成了孤儿
+            // 但这里 loadMp4File 是同步赋值 this.mp4Video = video 的
+            // 所以 cleanupMp4 会清理它。
+            // 只有当异步回调回来时，如果界面已经切换走了，才需要额外小心
+            return;
+          }
+
           var videoWidth = video.videoWidth;
           var videoHeight = video.videoHeight;
           var duration = video.duration;
@@ -1625,17 +1686,26 @@ function initApp() {
           _this.footerContentVisible = false;
 
           setTimeout(function () {
+            if (taskId !== _this.currentLoadTaskId) return;
+
             _this.footerTransitioning = false;
             _this.footerContentVisible = true;
 
             // 自动播放
             setTimeout(function () {
+              if (taskId !== _this.currentLoadTaskId) return;
+
               video.play().then(function () {
+                if (taskId !== _this.currentLoadTaskId) {
+                  video.pause();
+                  return;
+                }
                 _this.isPlaying = true;
                 _this.startMp4ProgressLoop();
 
                 // 播放后再次检测音频（针对Chrome的webkitAudioDecodedByteCount）
                 setTimeout(function () {
+                  if (taskId !== _this.currentLoadTaskId) return;
                   var hasAudio = _this.detectVideoHasAudio(video);
                   if (hasAudio !== _this.mp4HasAudio) {
                     _this.mp4HasAudio = hasAudio;
@@ -1649,6 +1719,7 @@ function initApp() {
         };
 
         video.onerror = function () {
+          if (taskId !== _this.currentLoadTaskId) return; // 忽略已取消任务的错误
           URL.revokeObjectURL(_this.mp4ObjectUrl);
           alert('视频加载失败');
         };
@@ -1663,27 +1734,27 @@ function initApp() {
         // 解析尺寸
         var width = 0, height = 0;
         if (type === 'svga') {
-             width = this.svga.originalWidth;
-             height = this.svga.originalHeight;
+          width = this.svga.originalWidth;
+          height = this.svga.originalHeight;
         } else if (type === 'yyeva') {
-             width = this.yyeva.displayWidth;
-             height = this.yyeva.displayHeight;
+          width = this.yyeva.displayWidth;
+          height = this.yyeva.displayHeight;
         }
 
         if (!width || !height) {
-            if (info.sizeWH) {
-              var parts = info.sizeWH.split('x');
+          if (info.sizeWH) {
+            var parts = info.sizeWH.split('x');
+            if (parts.length === 2) {
+              width = parseInt(parts[0]);
+              height = parseInt(parts[1]);
+            } else {
+              parts = info.sizeWH.split(' × ');
               if (parts.length === 2) {
                 width = parseInt(parts[0]);
                 height = parseInt(parts[1]);
-              } else {
-                 parts = info.sizeWH.split(' × ');
-                 if (parts.length === 2) {
-                   width = parseInt(parts[0]);
-                   height = parseInt(parts[1]);
-                 }
               }
             }
+          }
         }
 
         // 解析帧率
@@ -1704,7 +1775,7 @@ function initApp() {
 
         // 预加载FFmpeg库
         if (this.libraryLoader && !this.libraryLoader.loadedLibs['ffmpeg']) {
-          this.loadLibrary('ffmpeg', true).catch(function () {});
+          this.loadLibrary('ffmpeg', true).catch(function () { });
         }
       },
 
@@ -1742,7 +1813,7 @@ function initApp() {
         try {
           // 准备源信息
           var sourceInfo = this.currentModule === 'svga' ? this.svga.fileInfo : this.yyeva.fileInfo;
-          
+
           // 暂停播放
           var wasPlaying = this.isPlaying;
           await this.pauseForExport();
@@ -1785,7 +1856,7 @@ function initApp() {
             // 填充背景
             var bgColor = _this.currentBgColor;
             if (_this.bgColorKey === 'pattern') {
-              bgColor = '#000000'; 
+              bgColor = '#000000';
             }
             ctx.fillStyle = bgColor;
             ctx.fillRect(0, 0, config.width, config.height);
@@ -2193,6 +2264,88 @@ function initApp() {
 
             // 预加载所有帧
             _this.preloadFrameImages();
+          };
+          img.src = e.target.result;
+        };
+
+        reader.readAsDataURL(firstFile);
+      },
+
+      /**
+       * 恢复播放时加载序列帧（用于 restorePlayback）
+       * @param {Object} options - 配置参数 { file: File 或 Array<File> }
+       */
+      loadFrames: function (options) {
+        var _this = this;
+
+        // 如果传入的是文件数组，直接加载
+        var files = options.file;
+        if (!Array.isArray(files)) {
+          // 如果是单个文件，尝试从 frames.files 获取所有文件
+          if (this.frames.files && this.frames.files.length > 0) {
+            files = this.frames.files;
+          } else {
+            console.error('没有可以加载的序列帧文件');
+            return;
+          }
+        }
+
+        // 排序文件
+        var sortedFiles = this.sortFrameFiles(files);
+
+        // 加载第一帧获取尺寸信息
+        var firstFile = sortedFiles[0];
+        var reader = new FileReader();
+
+        reader.onload = function (e) {
+          var img = new Image();
+          img.onload = function () {
+            // 计算总大小
+            var totalSize = sortedFiles.reduce(function (sum, f) {
+              return sum + f.size;
+            }, 0);
+
+            // 更新状态
+            _this.frames = {
+              hasFile: true,
+              files: sortedFiles,
+              fileInfo: {
+                name: firstFile.name + ' 等 ' + sortedFiles.length + ' 帧',
+                size: totalSize,
+                sizeText: _this.formatBytes(totalSize),
+                fps: 25,
+                sizeWH: img.width + ' x ' + img.height,
+                duration: (sortedFiles.length / 25).toFixed(2) + 's'
+              },
+              originalWidth: img.width,
+              originalHeight: img.height
+            };
+
+            _this.totalFrames = sortedFiles.length;
+            _this.currentFrame = 0;
+            _this.progress = 0;
+            _this.isPlaying = false;
+
+            // 预加载所有帧
+            _this.preloadFrameImages();
+
+            // 直接启动过渡动画和缩放居中，不显示帧率对话框
+            _this.footerTransitioning = true;
+            _this.footerContentVisible = false;
+
+            setTimeout(function () {
+              // 过渡完成，显示内容
+              _this.footerTransitioning = false;
+              _this.footerContentVisible = true;
+
+              // 使用$nextTick确保DOM更新后再计算位置
+              _this.$nextTick(function () {
+                // 计算初始缩放比例并居中（委托给 ViewportController）
+                if (_this.viewportController) {
+                  _this.viewportController.resetView();
+                }
+              });
+            }, 300);
           };
           img.src = e.target.result;
         };
@@ -3640,6 +3793,9 @@ function initApp() {
         delete newReplacedImages[material.imageKey];
         this.replacedImages = newReplacedImages;
 
+        // 清除编辑状态
+        this.clearMaterialEditState(index);
+
         // 重新渲染 SVGA
         this.applyReplacedMaterials();
 
@@ -3661,7 +3817,7 @@ function initApp() {
         if (!material) return;
 
         // 获取图片URL
-        var imageUrl = material.previewUrl;
+        var imageUrl = this.replacedImages[material.imageKey] || material.previewUrl;
         if (!imageUrl) {
           alert('图片数据不存在');
           return;
@@ -5469,7 +5625,7 @@ function initApp() {
        * 构建速度重映射的帧映射表
        * @returns {Array<number>} 输出帧到原始帧的索引映射
        */
-      buildFrameMap: function () {
+      buildFrameMap: function (targetFps) {
         var config = this.speedRemapConfig;
         if (!config.enabled || !config.keyframes || config.keyframes.length < 2) {
           return null;
@@ -5492,7 +5648,21 @@ function initApp() {
         // 如果是全时长变速（0 -> 1），outputTotalFrames 应该等于 totalFrames。
 
         // 修正逻辑：根据输出时间范围比例计算输出帧数
-        var outputTotalFrames = Math.ceil(outputRatio * totalFrames);
+        // 如果指定了 targetFps，则根据目标帧率和持续时间计算帧数
+        var outputTotalFrames;
+
+        // 确保 targetFps 是数字
+        if (targetFps) targetFps = Number(targetFps);
+
+        if (targetFps && targetFps > 0 && this.mp4Video && this.mp4Video.duration) {
+          // 计算输出时长（秒）
+          var outputDuration = outputRatio * this.mp4Video.duration;
+          // 根据目标帧率计算总帧数
+          outputTotalFrames = Math.ceil(outputDuration * targetFps);
+        } else {
+          // 回退到基于原始帧数的估算
+          outputTotalFrames = Math.ceil(outputRatio * totalFrames);
+        }
 
         // 如果输出帧数过少（比如被压缩到很短），至少保留1帧
         if (outputTotalFrames < 1) outputTotalFrames = 1;
@@ -5790,7 +5960,7 @@ function initApp() {
         // 变速支持：如果启用变速，使用帧映射表
         var frameMap = null;
         if (this.speedRemapConfig.enabled && this.speedRemapConfig.keyframes && this.speedRemapConfig.keyframes.length >= 2) {
-          frameMap = this.buildFrameMap();
+          frameMap = this.buildFrameMap(fps);
           if (frameMap && frameMap.length > 0) {
             totalFrames = frameMap.length;
           }
@@ -5825,7 +5995,11 @@ function initApp() {
             originalFrame = frameMap[i];
           }
 
-          var time = originalFrame / fps;
+          var time;
+          // 使用原始视频的总帧数来计算时间点，而不是目标FPS
+          var sourceTotalFrames = this.speedRemapConfig.originalTotalFrames || (duration * 30);
+          time = (originalFrame / sourceTotalFrames) * duration;
+
           video.currentTime = time;
 
           // 等待seek完成
@@ -6583,7 +6757,7 @@ function initApp() {
         // 变速支持：如果启用变速，使用帧映射表
         var frameMap = null;
         if (this.speedRemapConfig.enabled && this.speedRemapConfig.keyframes && this.speedRemapConfig.keyframes.length >= 2) {
-          frameMap = this.buildFrameMap();
+          frameMap = this.buildFrameMap(fps);
           if (frameMap && frameMap.length > 0) {
             totalFrames = frameMap.length;
           }
@@ -6602,12 +6776,15 @@ function initApp() {
           if (this.mp4ToSvgaCancelled) break;
 
           // 变速支持：使用帧映射表获取原始帧号
-          var originalFrame = i;
+          var time;
           if (frameMap && frameMap[i] !== undefined) {
-            originalFrame = frameMap[i];
+            var sourceFrameIndex = frameMap[i];
+            // 使用原始视频的总帧数来计算时间点
+            var sourceTotalFrames = this.speedRemapConfig.originalTotalFrames || (duration * 30);
+            time = (sourceFrameIndex / sourceTotalFrames) * duration;
+          } else {
+            time = i / fps;
           }
-
-          var time = originalFrame / fps;
           if (time > duration) time = duration;
 
           // seek到指定时间
