@@ -10,27 +10,29 @@
         isLoaded: false,
 
         /**
-         * 初始化 FFmpeg
+         * 初始化 FFmpeg（使用统一的FFmpegService）
          */
         init: async function () {
             if (this.isLoaded) return;
 
-            if (typeof FFmpeg === 'undefined') {
-                throw new Error('FFmpeg 库未加载');
+            // 使用FFmpegService的统一实例
+            if (typeof FFmpegService === 'undefined') {
+                throw new Error('FFmpegService 未加载');
             }
 
-            var createFFmpeg = FFmpeg.createFFmpeg;
-            // 使用 unpkg 上的 core 文件，确保版本匹配
-            // 注意：FFmpeg 0.11.x 需要 SharedArrayBuffer，如果环境不支持（无跨域隔离），可能需要降级或报错
-            // 这里使用默认的多线程版本，配合 coi-serviceworker 使用
-            this.ffmpeg = createFFmpeg({
-                log: true,
-                corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
-            });
+            // 确保FFmpegService已初始化
+            await FFmpegService.init();
 
-            await this.ffmpeg.load();
-            this.isLoaded = true;
+            // 使用FFmpegService提供的实例
+            this.ffmpeg = FFmpegService.ffmpeg;
+            this.isLoaded = FFmpegService.isLoaded;
         },
+
+        // 旧代码 - 已迁移至FFmpegService
+        // init: async function () { ... }
+        // 原实现：自己创建ffmpeg实例，独立加载
+        // 新实现：使用FFmpegService的统一实例，避免重复加载
+        // 迁移日期：2026-01-10
 
         /**
          * 转换图像序列为 MP4
@@ -67,8 +69,20 @@
 
                 // 假设输入是 JPEG 格式的 Uint8Array
                 var fileName = 'frame_' + ('00000' + i).slice(-5) + '.jpg';
-                ffmpeg.FS('writeFile', fileName, frames[i]);
-                frameNames.push(fileName);
+                try {
+                    ffmpeg.FS('writeFile', fileName, frames[i]);
+                    frameNames.push(fileName);
+                } catch (e) {
+                    console.error('写入帧文件失败:', fileName, e);
+                    // 尝试清理并重试一次
+                    try {
+                        ffmpeg.FS('unlink', fileName);
+                        ffmpeg.FS('writeFile', fileName, frames[i]);
+                        frameNames.push(fileName);
+                    } catch (retryError) {
+                        throw new Error('写入文件失败: ' + retryError.message);
+                    }
+                }
 
                 // 进度 0-30%
                 onProgress(0.3 * (i + 1) / frames.length);
@@ -139,15 +153,15 @@
             var blob = new Blob([data.buffer], { type: 'video/mp4' });
 
             // 5. 清理文件
-            frameNames.forEach(function (f) { ffmpeg.FS('unlink', f); });
+            frameNames.forEach(function (f) { try { ffmpeg.FS('unlink', f); } catch (e) { } });
             if (hasAudio) {
-                if (audioData) ffmpeg.FS('unlink', 'audio.mp3');
+                if (audioData) try { ffmpeg.FS('unlink', 'audio.mp3'); } catch (e) { }
                 else {
                     try { ffmpeg.FS('unlink', 'source_video.mp4'); } catch (e) { }
                     try { ffmpeg.FS('unlink', 'audio.aac'); } catch (e) { }
                 }
             }
-            ffmpeg.FS('unlink', 'output.mp4');
+            try { ffmpeg.FS('unlink', 'output.mp4'); } catch (e) { }
 
             onProgress(1.0);
             return blob;

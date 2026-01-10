@@ -41,6 +41,7 @@
      * @param {Number} options.height - 显示高度
      * @param {Number} options.fps - 帧率（默认30）
      * @param {Number} options.quality - 质量 10-100（默认80）
+     * @param {Object} options.originalSize - 原始尺寸（可选，用于序列帧优化）{width, height}
      * @param {Array} options.audios - 音频数据数组（可选）[{audioKey, audioData, startFrame, endFrame, ...}]
      * @param {Boolean} options.muted - 是否静音（可选，默认false）
      * @param {Function} options.onProgress - 进度回调 (progress: 0-1)
@@ -60,6 +61,7 @@
       var height = options.height || 100;
       var fps = options.fps || this.defaults.fps;
       var quality = Math.max(10, Math.min(100, options.quality || this.defaults.quality));
+      var originalSize = options.originalSize || null; // 原始尺寸（用于序列帧优化）
       var audios = options.audios || [];
       var muted = options.muted || false;
       var onProgress = options.onProgress || function () { };
@@ -78,12 +80,16 @@
       var scaledHeight = Math.round(height * scaleFactor);
       var scaleUp = 1 / scaleFactor;
 
-      // 优化：如果质量100%且尺寸未改，直接使用原始 PNG文件，无需 Canvas 处理
-      var needsProcessing = (quality !== 100 || scaledWidth !== width || scaledHeight !== height);
+      // 优化：只有序列帧模式且质量100%且尺寸未改动，才直接使用原始PNG文件
+      // MP4/Lottie等其他模式总是需要处理（因为需要缩放和transform矩阵）
+      var canSkipProcessing = originalSize &&
+        quality === 100 &&
+        width === originalSize.width &&
+        height === originalSize.height;
 
       var pngFrames = [];
 
-      if (!needsProcessing) {
+      if (canSkipProcessing) {
         // 直接读取原始 PNG 文件为 Uint8Array（0-50%）
         for (var i = 0; i < totalFrames; i++) {
           var frame = frames[i];
@@ -111,8 +117,10 @@
           ctx.clearRect(0, 0, scaledWidth, scaledHeight);
           ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
 
-          // 清理blob URL
-          URL.revokeObjectURL(img.src);
+          // 清理blob URL (延迟清理以防止浏览器异步绘制时资源丢失)
+          (function(src) {
+              setTimeout(function() { URL.revokeObjectURL(src); }, 100);
+          })(img.src);
 
           // 转为PNG Uint8Array
           var pngData = await _this._canvasToPNG(canvas);
@@ -392,6 +400,15 @@
 
     /**
      * Canvas转PNG Uint8Array（使用pako压缩）
+     * 
+     * 性能优化说明：
+     * 1. 使用 willReadFrequently: true 属性
+     *    - 原因：Canvas2D在频繁调用 getImageData 时会触发浏览器的性能警告，并导致硬件加速失效。
+     *    - 效果：提示浏览器该Canvas将用于频繁读取，浏览器会改用CPU渲染或优化显存回读路径，显著提升 readback 性能。
+     * 2. 使用 pako 进行 Deflate 压缩
+     *    - 原因：原生 toBlob 编码PNG速度较慢且不可控。
+     *    - 效果：手动构建简单的PNG结构（IHDR+IDAT+IEND），绕过浏览器的图像编码器，直接处理像素数据。
+     * 
      * @private
      */
     _canvasToPNG: async function (canvas) {
@@ -399,7 +416,8 @@
       if (typeof pako !== 'undefined') {
         try {
           // 获取像素数据
-          var ctx = canvas.getContext('2d');
+          // [CRITICAL] willReadFrequently: true 是必须的，否则会导致大量 "Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute" 警告
+          var ctx = canvas.getContext('2d', { willReadFrequently: true });
           var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           var pixels = imageData.data;
 
