@@ -517,6 +517,16 @@ function initApp() {
 
       /**
        * 获取当前正在进行的任务列表
+       * 【开发规范】
+       * 如果添加新的转换/导出任务，必须遵循以下步骤：
+       * 1. 在 data 中定义 isConvertingXxx 状态标志
+       * 2. 在 getOngoingTasks 中添加该状态的检查
+       * 3. 在 cancelOngoingTasks 中添加取消逻辑
+       * 4. 确保任务启动函数中设置标志为 true，结束/取消时设为 false
+       * 
+       * 这样可以确保 confirmIfHasOngoingTasks 能正确拦截操作，
+       * 并且 switchMode 能自动取消旧任务。
+       * 
        * @returns {Array<{name: string, key: string, mode: string}>} 任务列表
        */
       getOngoingTasks: function () {
@@ -585,6 +595,42 @@ function initApp() {
           });
         }
 
+        // 序列帧转双通道MP4
+        if (this.isConvertingFramesToDualChannel) {
+          tasks.push({
+            name: '序列帧转双通道',
+            key: 'framestodual',
+            mode: 'frames'
+          });
+        }
+
+        // 转换为普通MP4（所有模式通用）
+        if (this.isConvertingStandardMp4) {
+          tasks.push({
+            name: '转换为普通MP4',
+            key: 'standardmp4',
+            mode: this.currentModule
+          });
+        }
+
+        // Lottie导出 (SVGA模式)
+        if (this.isExportingLottie) {
+          tasks.push({
+            name: 'Lottie导出',
+            key: 'lottie-export',
+            mode: 'svga'
+          });
+        }
+
+        // 视频格式转换 (普通MP4模式)
+        if (this.isConverting) {
+          tasks.push({
+            name: '视频格式转换',
+            key: 'video-convert',
+            mode: 'mp4'
+          });
+        }
+
         return tasks;
       },
 
@@ -627,6 +673,22 @@ function initApp() {
           cancelledTasks.push('MP4转SVGA');
         }
 
+        // 取消序列帧转双通道MP4
+        if (this.isConvertingFramesToDualChannel) {
+          this.isConvertingFramesToDualChannel = false;
+          this.framesToDualChannelProgress = 0;
+          this.framesToDualChannelCancelled = true;
+          cancelledTasks.push('序列帧转双通道');
+        }
+
+        // 取消转换为普通MP4
+        if (this.isConvertingStandardMp4) {
+          this.isConvertingStandardMp4 = false;
+          this.standardMp4Progress = 0;
+          // 该任务通过检查 isConvertingStandardMp4 标志来取消，无需单独的cancelled标志
+          cancelledTasks.push('转换为普通MP4');
+        }
+
         // 取消Lottie转SVGA
         if (this.isConvertingLottieToSvga) {
           this.isConvertingLottieToSvga = false;
@@ -641,6 +703,22 @@ function initApp() {
           this.framesToSvgaProgress = 0;
           this.framesToSvgaCancelled = true;
           cancelledTasks.push('序列帧转SVGA');
+        }
+
+        // 取消Lottie导出
+        if (this.isExportingLottie) {
+          this.isExportingLottie = false;
+          this.lottieExportProgress = 0;
+          // exportLottie 会检测标志位并自动停止
+          cancelledTasks.push('Lottie导出');
+        }
+
+        // 取消视频格式转换
+        if (this.isConverting) {
+          this.isConverting = false;
+          this.videoConvertProgress = 0;
+          this.showVideoConvertModal = false;
+          cancelledTasks.push('视频格式转换');
         }
 
         // 显示取消提示
@@ -826,6 +904,12 @@ function initApp() {
         this.dropHover = false;
         var files = event.dataTransfer && event.dataTransfer.files;
         if (!files || !files.length) return;
+
+        // 检查是否有正在进行的任务
+        if (!this.confirmIfHasOngoingTasks('播放新文件', 'load')) {
+          return;
+        }
+
         this.handleFiles(files);
       },
 
@@ -840,6 +924,13 @@ function initApp() {
       handleReuploadSVGA: function (event) {
         var files = event.target.files;
         if (!files || files.length === 0) return;
+
+        // 检查是否有正在进行的任务
+        if (!this.confirmIfHasOngoingTasks('播放新文件', 'load')) {
+          // 清空 input 值，允许重复选择同一文件
+          event.target.value = '';
+          return;
+        }
 
         var file = files[0];
         // 复用现有的文件处理逻辑，但强制认为是SVGA
@@ -856,6 +947,14 @@ function initApp() {
       onFileSelect: function (event) {
         var files = event.target.files;
         if (!files || !files.length) return;
+
+        // 检查是否有正在进行的任务
+        if (!this.confirmIfHasOngoingTasks('播放新文件', 'load')) {
+          // 清空input，允许重复选择同一文件
+          event.target.value = '';
+          return;
+        }
+
         this.handleFiles(files);
         // 清空input，允许重复选择同一文件
         event.target.value = '';
@@ -1014,6 +1113,13 @@ function initApp() {
       handleChangePreviewFile: function (event) {
         var file = event.target.files[0];
         if (!file) return;
+
+        // 检查是否有正在进行的任务
+        if (!this.confirmIfHasOngoingTasks('播放新文件', 'load')) {
+          // 清空输入，允许重复选择同一文件
+          event.target.value = '';
+          return;
+        }
 
         // 使用统一的文件处理流程
         this.handleFile(file);
@@ -1464,6 +1570,8 @@ function initApp() {
         this.lottie.fileInfo.sizeText = this.formatBytes(file.size);
         this.lottie.fileInfo.fps = frameRate + ' FPS';
         this.lottie.fileInfo.sizeWH = width + 'x' + height;
+        this.lottie.fileInfo.width = width;
+        this.lottie.fileInfo.height = height;
         this.lottie.fileInfo.duration = duration.toFixed(2) + 's';
 
         this.totalFrames = totalFramesCount;
@@ -1555,6 +1663,8 @@ function initApp() {
           _this.yyeva.displayWidth = Math.floor(videoWidth / 2);
           _this.yyeva.displayHeight = videoHeight;
           _this.yyeva.fileInfo.sizeWH = _this.yyeva.displayWidth + ' × ' + _this.yyeva.displayHeight;
+          _this.yyeva.fileInfo.width = _this.yyeva.displayWidth;
+          _this.yyeva.fileInfo.height = _this.yyeva.displayHeight;
           _this.yyeva.fileInfo.fps = fps + ' FPS';
           _this.yyeva.fileInfo.duration = duration.toFixed(2) + 's';
           _this.totalFrames = totalFrames;
@@ -1781,7 +1891,9 @@ function initApp() {
       /* ==================== 普通MP4转换功能 ==================== */
 
       openStandardMp4Panel: function (type) {
-        var info = type === 'svga' ? this.svga.fileInfo : this.yyeva.fileInfo;
+        var info = type === 'svga' ? this.svga.fileInfo :
+          type === 'lottie' ? this.lottie.fileInfo :
+            this.yyeva.fileInfo;
         if (!info) return;
 
         // 解析尺寸
@@ -1789,6 +1901,21 @@ function initApp() {
         if (type === 'svga') {
           width = this.svga.originalWidth;
           height = this.svga.originalHeight;
+        } else if (type === 'lottie') {
+          // 解析 Lottie 尺寸
+          if (info.sizeWH) {
+            var parts = info.sizeWH.split('x');
+            if (parts.length === 2) {
+              width = parseInt(parts[0]);
+              height = parseInt(parts[1]);
+            } else {
+              parts = info.sizeWH.split(' × ');
+              if (parts.length === 2) {
+                width = parseInt(parts[0]);
+                height = parseInt(parts[1]);
+              }
+            }
+          }
         } else if (type === 'yyeva') {
           width = this.yyeva.displayWidth;
           height = this.yyeva.displayHeight;
@@ -1867,10 +1994,15 @@ function initApp() {
 
       startStandardMp4Conversion: async function () {
         if (this.isConvertingStandardMp4) return;
+        var _this = this;
+        this.isConvertingStandardMp4 = true;
+        this.standardMp4Progress = 0;
+        this.standardMp4Message = '准备中...';
 
         var config = this.standardMp4Config;
         if (!config.width || !config.height) {
           alert('请输入有效的尺寸');
+          this.isConvertingStandardMp4 = false;
           return;
         }
 
@@ -1879,12 +2011,15 @@ function initApp() {
           await FFmpegService.init();
         } catch (e) {
           alert('FFmpeg加载失败：' + e.message);
+          this.isConvertingStandardMp4 = false;
           return;
         }
 
         try {
           // 准备源信息
-          var sourceInfo = this.currentModule === 'svga' ? this.svga.fileInfo : this.yyeva.fileInfo;
+          var sourceInfo = this.currentModule === 'svga' ? this.svga.fileInfo :
+            this.currentModule === 'lottie' ? this.lottie.fileInfo :
+              this.yyeva.fileInfo;
 
           // 暂停播放
           var wasPlaying = this.isPlaying;
@@ -1943,37 +2078,6 @@ function initApp() {
             if (_this.currentModule === 'yyeva') {
               // 强制渲染当前帧
               _this.renderYyevaFrame();
-
-              // TEST CODE: 如果是第39帧，下载用于检查（测试完成后请删除此代码块）
-              if (i === 38) { // 帧索引从0开始，所以第39帧是索引38
-                var debugCanvas = _this.yyevaCanvas;
-                if (debugCanvas) {
-                  var debugTempCanvas = document.createElement('canvas');
-                  debugTempCanvas.width = debugCanvas.width;
-                  debugTempCanvas.height = debugCanvas.height;
-                  var debugTempCtx = debugTempCanvas.getContext('2d');
-
-                  // 填充背景色（与MP4转换逻辑一致）
-                  var debugBgColor = _this.currentBgColor;
-                  if (!debugBgColor || debugBgColor === 'transparent' || debugBgColor === 'rgba(0,0,0,0)' || _this.bgColorKey === 'pattern') {
-                    debugBgColor = '#000000'; // 默认黑色
-                  }
-                  debugTempCtx.fillStyle = debugBgColor;
-                  debugTempCtx.fillRect(0, 0, debugTempCanvas.width, debugTempCanvas.height);
-
-                  // 绘制当前帧（透明效果会与背景色合成）
-                  debugTempCtx.drawImage(debugCanvas, 0, 0);
-
-                  // 下载第39帧用于检查
-                  var debugLink = document.createElement('a');
-                  debugLink.download = 'debug_frame_39_' + Date.now() + '.png';
-                  debugLink.href = debugTempCanvas.toDataURL('image/png');
-                  debugLink.click();
-
-                  console.log('Debug: 第39帧已下载，用于检查双通道渲染效果');
-                }
-              }
-              // END TEST CODE
 
               canvas = _this.yyevaCanvas;
 
@@ -2068,7 +2172,9 @@ function initApp() {
           });
 
           // 下载
-          var currentName = (this.currentModule === 'svga' ? this.svga.fileInfo.name : this.yyeva.fileInfo.name) || 'output';
+          var currentName = (this.currentModule === 'svga' ? this.svga.fileInfo.name :
+            this.currentModule === 'lottie' ? this.lottie.fileInfo.name :
+              this.yyeva.fileInfo.name) || 'output';
           var fileName = currentName.replace(/\.[^/.]+$/, "") + '.mp4';
           var url = URL.createObjectURL(mp4Blob);
           var a = document.createElement('a');
@@ -5099,6 +5205,11 @@ function initApp() {
           var renderCtx = renderCanvas.getContext('2d', { alpha: true });
 
           for (var i = 0; i < totalFrames; i++) {
+            // 检查取消
+            if (!this.isExportingLottie) {
+              throw new Error('User Cancelled');
+            }
+
             // 清空画布
             renderCtx.clearRect(0, 0, width, height);
 
@@ -5163,9 +5274,13 @@ function initApp() {
           }
 
         } catch (err) {
-          this.isExportingLottie = false;
-          this.lottieExportProgress = 0;
-          alert('Lottie导出失败: ' + err.message);
+          if (err.message === 'User Cancelled') {
+            // ignore
+          } else {
+            this.isExportingLottie = false;
+            this.lottieExportProgress = 0;
+            alert('Lottie导出失败: ' + err.message);
+          }
         }
       },
 

@@ -426,7 +426,7 @@
                       <button class="btn-large-secondary" :class="{'tooltip': !svga.hasFile}" :disabled="!svga.hasFile"
                         @click="openMP4Panel">
                         <span v-if="!svga.hasFile" class="tooltip-text">请先拖入 SVGA 文件</span>
-                        转双通MP4
+                        转双通道MP4
                       </button>
                     </div>
                   </template>
@@ -490,7 +490,7 @@
                       <button class="btn-large-secondary" :class="{'tooltip': !mp4.hasFile}" :disabled="!mp4.hasFile"
                         @click="openMp4ToDualChannelPanel">
                         <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
-                        转双通MP4
+                        转双通道MP4
                       </button>
                     </div>
                   </template>
@@ -514,9 +514,14 @@
                         转SVGA
                       </button>
                       <button class="btn-large-secondary" :class="{'tooltip': !lottie.hasFile}"
+                        :disabled="!lottie.hasFile" @click="openStandardMp4Panel('lottie')">
+                        <span v-if="!lottie.hasFile" class="tooltip-text">请先拖入 Lottie 文件</span>
+                        转MP4
+                      </button>
+                      <button class="btn-large-secondary" :class="{'tooltip': !lottie.hasFile}"
                         :disabled="!lottie.hasFile" @click="openLottieToDualChannelPanel">
                         <span v-if="!lottie.hasFile" class="tooltip-text">请先拖入 Lottie 文件</span>
-                        转双通MP4
+                        转双通道MP4
                       </button>
                     </div>
                   </template>
@@ -545,7 +550,7 @@
                       <button class="btn-large-secondary tooltip" :disabled="!frames.hasFile"
                         @click="openFramesToDualChannelPanel">
                         <span v-if="!frames.hasFile" class="tooltip-text">请先拖入序列帧图片</span>
-                        转双通MP4
+                        转双通道MP4
                       </button>
                     </div>
                   </template>
@@ -810,7 +815,7 @@
               <span class="mp4-stage-text">{{ mp4ConvertMessage }}</span>
             </template>
             <template v-else>
-              开始转换MP4
+              开始转换双通道MP4
             </template>
           </button>
         </div>
@@ -947,7 +952,7 @@
               <span class="mp4-stage-text">{{ mp4ConvertMessage }}</span>
             </template>
             <template v-else>
-              开始转换MP4
+              开始转换双通道MP4
             </template>
           </button>
         </div>
@@ -1047,14 +1052,7 @@
             </div>
           </div>
 
-          <!-- 静音 -->
-          <div class="mp4-config-item">
-            <div class="mp4-config-label">静音</div>
-            <div class="mp4-mute-toggle" :class="{active: lottieDualChannelConfig.muted, disabled: isConvertingMP4}"
-              @click="!isConvertingMP4 && (lottieDualChannelConfig.muted = !lottieDualChannelConfig.muted)">
-              <div class="mp4-mute-toggle-handle"></div>
-            </div>
-          </div>
+
         </div>
 
         <!-- 底部按钮 -->
@@ -1083,7 +1081,7 @@
               <span class="mp4-stage-text">{{ mp4ConvertMessage }}</span>
             </template>
             <template v-else>
-              开始转换MP4
+              开始转换双通道MP4
             </template>
           </button>
         </div>
@@ -1784,7 +1782,7 @@
               <span class="mp4-stage-text">{{ framesToDualChannelMessage }}</span>
             </template>
             <template v-else>
-              开始转换MP4
+              开始转换双通道MP4
             </template>
           </button>
         </div>
@@ -2044,7 +2042,7 @@
               <div class="input-unit">FPS</div>
             </div>
           </div>
-          <div class="mp4-config-item">
+          <div class="mp4-config-item" v-if="currentModule !== 'lottie'">
             <div class="mp4-config-label">静音</div>
             <div class="mp4-mute-toggle" :class="{active: standardMp4Config.muted, disabled: isConvertingStandardMp4}"
               @click="!isConvertingStandardMp4 && (standardMp4Config.muted = !standardMp4Config.muted)">
@@ -2262,7 +2260,7 @@
   <script src="assets/js/mixins/mixin-ui.js"></script>
   -->
   <!-- 应用主逻辑 -->
-  <script src="assets/js/app.js?v=1.5"></script>
+  <script src="assets/js/app.js?v=1.7"></script>
 </body>
 
 </html>

@@ -74,6 +74,10 @@
                         .then(function (res) {
                             if (res.ok) return url;
                             throw new Error('Network response was not ok');
+                        })
+                        .catch(function () {
+                            // 忽略单个请求的失败，防止控制台报红
+                            return new Promise(function () { }); // 返回永远pending的promise
                         });
                 });
                 // 返回最快成功的那个
@@ -792,9 +796,11 @@
                     '-i', 'frame_%06d.jpg'
                 ];
 
+                // 添加输入文件
                 if (hasAudio) {
                     args.push('-thread_queue_size', '512');
-                    args.push('-i', audioName);
+                    // 添加 -vn 确保不从音频源（可能是视频文件）中读取视频流
+                    args.push('-vn', '-i', audioName);
                 }
 
                 // 视频编码参数
