@@ -2,7 +2,7 @@
 
 > **文档版本**: v1.2  
 > **创建日期**: 2025-12-18  
-> **最后更新**: 2026-01-10  
+> **最后更新**: 2026-01-12  
 > **文档状态**: ✅ 已完成
 
 ---
@@ -493,6 +493,7 @@ const blob = await new Promise(resolve => {
 const mp4Blob = await FFmpegService.convertFramesToMp4({
   frames: frames,             // 输入帧数据（JPEG Blob数组 或 ImageData数组）
   fps: fps,                   // 输出帧率
+  inputFps: inputFps,         // 输入帧率（用于计算时间戳，默认为fps）
   quality: quality,           // 质量 (0-100)
   audioData: audioData,       // 音频数据
   audioSpeedRatio: 1.0,       // 音频变速比率
