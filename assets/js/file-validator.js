@@ -135,75 +135,60 @@
             var reader = new FileReader();
             reader.onload = function (e) {
                 JSZip.loadAsync(e.target.result).then(function (zip) {
-                    var jsonFiles = [];
-                    zip.forEach(function (relativePath, file) {
-                        if (relativePath.endsWith('.json') && !relativePath.startsWith('__MACOSX')) {
-                            jsonFiles.push(relativePath);
-                        }
-                    });
-
-                    if (jsonFiles.length === 0) {
-                        reject('.lottie文件中未找到JSON数据');
-                        return;
-                    }
-
-                    var firstJsonFile = zip.file(jsonFiles[0]);
-                    firstJsonFile.async('text').then(function (jsonText) {
-                        try {
-                            var data = JSON.parse(jsonText);
-                            var animationData = data;
-
-                            // 检查是否是 .lottie 标准格式（包装格式）
-                            if (data.animations && Array.isArray(data.animations) && data.animations.length > 0) {
-                                // .lottie 格式可能的结构：
-                                // 1. { animations: [{id, data: {...}}] } - data字段包含动画
-                                // 2. { animations: [{id, animation: {...}}] } - animation字段包含动画
-                                // 3. { animations: [{id}] } + animations/xxx.json - 动画在单独文件
-
-                                if (data.animations[0].data) {
-                                    animationData = data.animations[0].data;
-                                } else if (data.animations[0].animation) {
-                                    animationData = data.animations[0].animation;
-                                } else {
-                                    // 需要从 animations/ 目录读取真正的动画文件
-                                    var animId = data.animations[0].id;
-
-                                    // 查找 animations/ 目录下的 JSON 文件
-                                    var animFile = null;
-                                    for (var i = 0; i < jsonFiles.length; i++) {
-                                        if (jsonFiles[i].indexOf('animations/') === 0 && jsonFiles[i] !== jsonFiles[0]) {
-                                            animFile = jsonFiles[i];
-                                            break;
+                    // 1. 优先尝试读取 manifest.json (标准 .lottie 格式)
+                    var manifestFile = zip.file('manifest.json');
+                    if (manifestFile) {
+                        manifestFile.async('text').then(function(manifestText) {
+                            try {
+                                var manifest = JSON.parse(manifestText);
+                                var animPath = '';
+                                
+                                // 获取主动画路径
+                                if (manifest.animations && manifest.animations.length > 0) {
+                                    var activeId = manifest.activeAnimationId;
+                                    var targetAnim = manifest.animations[0]; // 默认取第一个
+                                    
+                                    // 如果有指定激活的动画ID，则查找对应动画
+                                    if (activeId) {
+                                        for (var k = 0; k < manifest.animations.length; k++) {
+                                            if (manifest.animations[k].id === activeId) {
+                                                targetAnim = manifest.animations[k];
+                                                break;
+                                            }
                                         }
                                     }
-
-                                    if (animFile) {
-                                        zip.file(animFile).async('text').then(function (animText) {
-                                            try {
-                                                animationData = JSON.parse(animText);
-                                                _this._validateLottieAnimationData(animationData, file, resolve, reject);
-                                            } catch (parseErr) {
-                                                reject('动画文件JSON解析失败：' + parseErr.message);
-                                            }
-                                        }).catch(function (readErr) {
-                                            reject('读取动画文件失败：' + readErr.message);
-                                        });
-                                        return; // 异步处理，等待动画文件读取
-                                    } else {
-                                        reject('未找到Lottie动画数据文件');
-                                        return;
+                                    
+                                    // 拼接路径：.lottie 规范中通常在 animations/ 目录下
+                                    animPath = 'animations/' + targetAnim.id + '.json';
+                                    
+                                    // 尝试直接读取（有些非标准包可能直接放在根目录或路径不同）
+                                    if (!zip.file(animPath)) {
+                                        // 尝试直接用 id 作为文件名
+                                        if (zip.file(targetAnim.id + '.json')) {
+                                            animPath = targetAnim.id + '.json';
+                                        } else if (zip.file(targetAnim.id)) {
+                                            animPath = targetAnim.id;
+                                        }
                                     }
                                 }
+                                
+                                if (animPath && zip.file(animPath)) {
+                                    _this._readZipJsonFile(zip, animPath, file, resolve, reject);
+                                } else {
+                                    // Manifest 存在但找不到对应的动画文件，回退到遍历查找
+                                    _this._findAndReadAnyJson(zip, file, resolve, reject);
+                                }
+                            } catch (err) {
+                                // Manifest 解析失败，回退到遍历查找
+                                _this._findAndReadAnyJson(zip, file, resolve, reject);
                             }
-
-                            _this._validateLottieAnimationData(animationData, file, resolve, reject);
-
-                        } catch (err) {
-                            reject('JSON解析失败：' + err.message);
-                        }
-                    }).catch(function (err) {
-                        reject('读取JSON文件失败：' + err.message);
-                    });
+                        }).catch(function() {
+                            _this._findAndReadAnyJson(zip, file, resolve, reject);
+                        });
+                    } else {
+                        // 2. 没有 manifest.json，回退到遍历查找 .json 文件
+                        _this._findAndReadAnyJson(zip, file, resolve, reject);
+                    }
                 }).catch(function (err) {
                     reject('.lottie文件解压失败：' + err.message);
                 });
@@ -214,6 +199,65 @@
             reader.readAsArrayBuffer(file);
         }).catch(function (err) {
             reject('JSZip库加载失败');
+        });
+    };
+
+    /**
+     * 辅助方法：遍历查找并读取任意 JSON 文件
+     * @private
+     */
+    FileValidator.prototype._findAndReadAnyJson = function(zip, file, resolve, reject) {
+        var _this = this;
+        var jsonFiles = [];
+        zip.forEach(function (relativePath, file) {
+            if (relativePath.endsWith('.json') && !relativePath.startsWith('__MACOSX')) {
+                jsonFiles.push(relativePath);
+            }
+        });
+
+        if (jsonFiles.length === 0) {
+            reject('.lottie文件中未找到JSON数据');
+            return;
+        }
+
+        // 简单的启发式规则：优先找 'data.json' 或包含 'animation' 的文件
+        var targetFile = jsonFiles[0];
+        for (var i = 0; i < jsonFiles.length; i++) {
+            if (jsonFiles[i].toLowerCase().indexOf('data.json') !== -1) {
+                targetFile = jsonFiles[i];
+                break;
+            }
+        }
+        
+        _this._readZipJsonFile(zip, targetFile, file, resolve, reject);
+    };
+
+    /**
+     * 辅助方法：读取 ZIP 中的 JSON 文件并验证
+     * @private
+     */
+    FileValidator.prototype._readZipJsonFile = function(zip, filePath, file, resolve, reject) {
+        var _this = this;
+        zip.file(filePath).async('text').then(function (jsonText) {
+            try {
+                var data = JSON.parse(jsonText);
+                var animationData = data;
+                
+                // 兼容旧的包装格式
+                if (data.animations && Array.isArray(data.animations) && data.animations.length > 0) {
+                    if (data.animations[0].data) {
+                        animationData = data.animations[0].data;
+                    } else if (data.animations[0].animation) {
+                        animationData = data.animations[0].animation;
+                    }
+                }
+                
+                _this._validateLottieAnimationData(animationData, file, resolve, reject);
+            } catch (err) {
+                reject('JSON解析失败：' + err.message);
+            }
+        }).catch(function (err) {
+            reject('读取JSON文件失败：' + err.message);
         });
     };
 
@@ -261,31 +305,24 @@
     };
 
     /**
-     * 验证双通道MP4文件（检查视频尺寸比例）
+     * 验证双通道MP4文件（复用detectMp4Type进行内容检测）
      * @private
      */
     FileValidator.prototype._validateYyeva = function (file, resolve, reject) {
-        var objectUrl = URL.createObjectURL(file);
-        var video = document.createElement('video');
-        video.src = objectUrl;
-        video.muted = true;
-
-        video.onloadedmetadata = function () {
-            var videoWidth = video.videoWidth;
-            var videoHeight = video.videoHeight;
-
-            URL.revokeObjectURL(objectUrl);
-
-            if (videoWidth < videoHeight * 0.8) {
-                reject('不支持的视频格式，请上传左右并排布局的双通MP4文件');
+        var _this = this;
+        
+        // 使用 detectMp4Type 进行严格检测
+        this.detectMp4Type(file, function(isDualChannel, alphaPosition) {
+            if (isDualChannel) {
+                resolve({ 
+                    file: file,
+                    isDualChannel: true,
+                    alphaDirection: alphaPosition
+                });
             } else {
-                resolve({ file: file });
+                reject('检测未发现透明通道特征，请确认是双通道MP4文件');
             }
-        };
-        video.onerror = function () {
-            URL.revokeObjectURL(objectUrl);
-            reject('视频文件加载失败');
-        };
+        });
     };
 
     /**
@@ -338,8 +375,19 @@
 
             // 创建临时canvas用于分析
             var canvas = document.createElement('canvas');
-            canvas.width = videoWidth;
-            canvas.height = videoHeight;
+            
+            // 性能优化：限制分析分辨率
+            // 将分析宽度限制在 320px 以内，大幅提升大分辨率视频的检测速度
+            var MAX_ANALYZE_WIDTH = 320;
+            var scale = Math.min(1, MAX_ANALYZE_WIDTH / videoWidth);
+            
+            // 确保尺寸至少为 1
+            var analyzeWidth = Math.max(1, Math.floor(videoWidth * scale));
+            var analyzeHeight = Math.max(1, Math.floor(videoHeight * scale));
+            
+            canvas.width = analyzeWidth;
+            canvas.height = analyzeHeight;
+            
             var ctx = canvas.getContext('2d', { willReadFrequently: true });
 
             var frameIndex = 0;
@@ -353,8 +401,11 @@
                 var totalBrightness = 0;
                 var count = 0;
 
-                // 抖样计算（每16个像素抽1个，提升性能）
-                for (var i = 0; i < data.length; i += 64) {
+                // 抖样计算（步长根据尺寸动态调整，保证性能）
+                // 缩小后的图片像素已经很少，可以减小步长或不跳过
+                var step = 4; // 每次跳过一个像素（RGBA是4字节，所以+4是下一个像素）
+                
+                for (var i = 0; i < data.length; i += step) {
                     var r = data[i] / 255;
                     var g = data[i + 1] / 255;
                     var b = data[i + 2] / 255;
@@ -379,17 +430,18 @@
 
             // 分析单帧是否为双通道
             function analyzeFrame() {
-                ctx.drawImage(video, 0, 0);
+                // 将视频帧绘制到缩小后的 canvas 上
+                ctx.drawImage(video, 0, 0, analyzeWidth, analyzeHeight);
 
-                var halfWidth = Math.floor(videoWidth / 2);
+                var halfWidth = Math.floor(analyzeWidth / 2);
 
                 // 防止视频尺寸为0导致的错误
-                if (halfWidth <= 0 || videoHeight <= 0) {
+                if (halfWidth <= 0 || analyzeHeight <= 0) {
                     return false;
                 }
 
-                var leftData = ctx.getImageData(0, 0, halfWidth, videoHeight);
-                var rightData = ctx.getImageData(halfWidth, 0, halfWidth, videoHeight);
+                var leftData = ctx.getImageData(0, 0, halfWidth, analyzeHeight);
+                var rightData = ctx.getImageData(halfWidth, 0, halfWidth, analyzeHeight);
 
                 var leftMetrics = calculateMetrics(leftData);
                 var rightMetrics = calculateMetrics(rightData);
