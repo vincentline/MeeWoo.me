@@ -337,6 +337,9 @@ function initApp() {
           muted: false
         },
         isConvertingMP4: false,
+
+        // 更多侧边栏状态
+        showMoreDrawer: false,
         mp4ConvertProgress: 0,
         mp4ConvertStage: '', // 'loading' | 'extracting' | 'composing' | 'encoding' | 'done'
         mp4ConvertMessage: '',
@@ -1246,7 +1249,7 @@ function initApp() {
           setTimeout(function () {
             _this.footerTransitioning = false;
             _this.$nextTick(function () {
-              _this.initEmptyStateSvgaPlayer();
+              // _this.initEmptyStateSvgaPlayer();
             });
           }, 300);
         }, 200);
@@ -9417,7 +9420,7 @@ function initApp() {
       this.showFramesFpsDialog = false;
 
       this.initSvgaPlayer();
-      this.initEmptyStateSvgaPlayer();
+      // this.initEmptyStateSvgaPlayer();
       this.initViewportController();
 
       var savedTheme = this.configManager ? this.configManager.get('theme') : null;

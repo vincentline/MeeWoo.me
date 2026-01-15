@@ -267,6 +267,87 @@ body.dark-mode .btn-primary:hover {
 }
 ```
 
+#### 大号主要按钮（Large Primary Button）
+```html
+<button class="btn-large-primary">开始转换</button>
+```
+
+```css
+.btn-large-primary {
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  color: #333333;
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 110px;
+}
+
+.btn-large-primary:hover {
+  background: #f3f3f3;
+  border-color: #d3d3d3;
+}
+
+/* 暗黑模式 */
+body.dark-mode .btn-large-primary {
+  background: #1a1a1a;
+  border-color: #404040;
+  color: #e0e0e0;
+}
+```
+
+#### 大号次要按钮（Large Secondary Button）
+```html
+<button class="btn-large-secondary">确定</button>
+```
+
+```css
+.btn-large-secondary {
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  background: #5b5b5b;
+  border: 1px solid #5b5b5b;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 110px;
+}
+
+.btn-large-secondary:hover {
+  background: #555555;
+  border-color: #000000;
+}
+```
+
+#### 撤销按钮（Undo Button）
+```html
+<button class="btn-undo">撤销</button>
+```
+
+```css
+.btn-undo {
+  height: 44px;
+  min-width: 80px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: #ff9500; /* 橙色 */
+  color: #ffffff;
+  border: none;
+  font-size: 14px;
+}
+
+.btn-undo:hover {
+  background: #e68600;
+}
+
+.btn-undo:disabled {
+  background: rgba(255, 149, 0, 0.5);
+}
+```
+
 #### Tab 按钮（模块切换）
 ```html
 <button class="tab-btn is-active">SVGA</button>
@@ -2007,7 +2088,122 @@ body.dark-mode .minimize-btn:hover { background-position: -96px -680px; }
 
 ---
 
-## 9. 版本历史
+### 居中弹窗 (Center Modal)
+
+用于需要用户聚焦处理的任务，如设置参数、确认操作等。
+
+#### HTML 结构
+
+```html
+<div class="center-modal-overlay show">
+  <div class="center-modal-dialog">
+    <div class="center-modal-header">
+      <h3>弹窗标题</h3>
+    </div>
+    <div class="center-modal-body">
+      <!-- 弹窗内容 -->
+      <div class="svga-config-item">
+        <div class="svga-config-label">配置项：</div>
+        <!-- ... -->
+      </div>
+    </div>
+    <div class="center-modal-footer">
+      <button class="btn-large-primary">取消</button>
+      <button class="btn-large-secondary">确定</button>
+    </div>
+  </div>
+</div>
+```
+
+#### CSS 样式类
+
+- `.center-modal-overlay`: 全屏遮罩层，固定定位，背景色 `rgba(0, 0, 0, 0.3)`。
+- `.center-modal-dialog`: 弹窗主体，白色背景，圆角 `24px`，阴影 `0 10px 40px rgba(0, 0, 0, 0.2)`。
+- `.center-modal-header`: 头部，包含 `h3` 标题，下边框分隔。
+- `.center-modal-body`: 内容区域，垂直内边距 `24px`。
+- `.center-modal-footer`: 底部按钮区域，右对齐，上内边距 `16px`。
+
+### 变速时间轴编辑器 (Speed Remap Editor)
+
+用于 MP4 视频的多段变速编辑，支持添加关键帧和调整速率。
+
+#### HTML 结构
+
+```html
+<div class="speed-remap-editor">
+  <div class="speed-remap-editor-content">
+    <div class="speed-remap-timeline-wrapper">
+      <div class="speed-remap-timeline">
+        <!-- 时间轴内容: 关键帧, 预览线等 -->
+        <div class="keyframe-node">...</div>
+      </div>
+      <div class="speed-remap-timescale">
+        <!-- 时间刻度 -->
+      </div>
+    </div>
+    <div class="speed-remap-buttons">
+      <button class="btn-large-primary btn-speed-reset"></button>
+      <button class="btn-large-primary">取消</button>
+      <button class="btn-large-secondary">确定</button>
+    </div>
+  </div>
+</div>
+```
+
+#### CSS 样式类
+
+- `.speed-remap-editor`: 底部浮动面板，白色背景，圆角 `16px`，宽度 `1000px`。
+- `.speed-remap-timeline`: 时间轴主体，灰色背景 `#F3F3F3`，高度 `16px`。
+- `.keyframe-node`: 关键帧节点，包含垂直指示线和拖拽手柄。
+- `.speed-remap-segment-overlay`: 变速片段覆盖层，不同颜色表示加速/减速。
+  - `.segment-speedup`: 加速 (深蓝)
+  - `.segment-slowdown`: 减速 (浅蓝)
+
+### 素材编辑器 (Material Editor)
+
+用于编辑 SVGA 中的素材图片，支持缩放、平移和添加文案。
+
+#### HTML 结构
+
+```html
+<div class="center-modal-dialog material-editor-modal">
+  <div class="center-modal-body material-editor-body">
+    <!-- 左侧预览区 -->
+    <div class="editor-preview-area">
+      <div class="editor-preview-wrapper">
+        <div class="editor-preview-content">
+          <!-- 画布内容 -->
+        </div>
+      </div>
+      <!-- 底部控制栏 -->
+      <div class="editor-bottom-actions">
+        <div class="editor-bottom-left">
+          <button class="editor-view-btn"></button>
+          <div class="editor-scale-percentage">100%</div>
+        </div>
+        <div class="editor-bottom-right">
+          <button class="btn-large-primary">上传图片</button>
+          <button class="btn-large-primary btn-editor-recover"></button>
+        </div>
+      </div>
+    </div>
+    <!-- 右侧控制区 -->
+    <div class="editor-controls-area">
+      <!-- 控制选项 -->
+    </div>
+  </div>
+</div>
+```
+
+#### CSS 样式类
+
+- `.material-editor-modal`: 扩展自居中弹窗，宽度 `1000px`，高度 `80vh`。
+- `.material-editor-body`: Flex 布局，包含预览区和控制区。
+- `.editor-preview-area`: 左侧预览区域，包含画布和底部工具栏。
+- `.editor-controls-area`: 右侧属性控制面板，宽度 `300px`。
+- `.editor-zoom-controls`: 缩放控制按钮组。
+
+## 版本历史
 
 | 版本 | 日期 | 描述 |
 |-----|------|------|
