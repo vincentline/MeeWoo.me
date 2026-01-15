@@ -33,6 +33,7 @@
   <!-- 外部样式表（优先加载） -->
   <link rel="stylesheet" href="assets/css/sprite-generated.css" />
   <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/drawer.css" />
 
   <!-- 库加载管理器（优先加载，独立模块） -->
   <script src="assets/js/library-loader.js"></script>
@@ -96,11 +97,16 @@
   <div id="app" v-cloak>
     <!-- 顶部导航栏 -->
     <div class="header-navbar" :class="{'header-hidden': isImmersiveMode}">
-      <img class="header-logo" src="./assets/img/logo.png" alt="Logo">
+      <div class="header-left-action" @click="showMoreDrawer = true"
+        style="cursor: pointer; display: flex; align-items: center; height: 100%; padding-right: 12px;">
+        <img class="header-more-icon"
+          :src="isDarkMode ? './assets/img/home_more_dark.png' : './assets/img/home_more.png'" alt="More"
+          style="width: 24px; height: 24px;">
+      </div>
       <!-- <a href="sth_auto.html" class="nav-link">素材自助</a> -->
       <div class="header-navbar-title"
         v-if="!svga.hasFile && !yyeva.hasFile && !lottie.hasFile && !mp4.hasFile && !frames.hasFile">
-        SVGA、双通道MP4、Lottie动画在线预览
+
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
         <button class="theme-toggle tooltip" @click="toggleTheme">
@@ -126,9 +132,7 @@
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
           </svg>
         </button>
-        <a href="https://saysth.design/" target="_blank" class="avatar-link">
-          <img src="./assets/img/toux.png" alt="" class="avatar-icon">
-        </a>
+
       </div>
     </div>
 
@@ -171,11 +175,12 @@
         <!-- 空状态覆盖层 -->
         <div v-if="isEmpty" class="empty-state-overlay">
           <div class="empty-state-icon">
-            <div ref="emptyStateSvgaContainer" style="width: 300px; height: 300px;"></div>
+            <img :src="isDarkMode ? 'assets/img/logo04_dark.png' : 'assets/img/logo04.png'" alt="Logo" />
           </div>
+          <div class="empty-state-slogan">动画格式预览与转换工具...</div>
           <div class="empty-state-text">
-            <div class="empty-state-tip-line1">支持文件包括：SVGA、双通道MP4、普通MP4、Lottie的jason格式</div>
-            <div class="empty-state-tip-line2">你可以，导出GIF；SVGA素材图管理；转双通道MP4；转SVGA...</div>
+            <div class="empty-state-title">你可以转GIF；SVGA素材图替换；转双通道MP4；转SVGA；转MP4...</div>
+            <div class="empty-state-subtitle">支持文件包括：SVGA、双通道MP4、普通MP4、Lottie格式、序列帧、webp（开发中...）</div>
           </div>
         </div>
 
@@ -193,14 +198,16 @@
 
 
       <!-- 底部浮层 -->
-      <div class="footer-bar" :class="{'footer-immersive': isImmersiveMode}">
+      <div class="footer-bar" :class="{'footer-immersive': isImmersiveMode, 'is-empty': isEmpty}"
+        @click="isEmpty && triggerFileUpload()">
         <!-- 左侧广告位 -->
-        <div class="ad-slot"></div>
+        <div class="ad-slot" @click.stop></div>
 
         <!-- footer-main 容器（包含主控制区和右上角清空按钮） -->
         <div class="footer-main-wrapper" :class="{'footer-main-wrapper-immersive': isImmersiveMode}">
           <!-- 右上角按钮区域：模式名（沉浸模式居中）、恢复播放（沉浸模式不显示）、清空画布（沉浸模式不显示） -->
-          <div class="footer-top-actions" :class="{'footer-top-actions-immersive': isImmersiveMode}" v-if="!isEmpty">
+          <div class="footer-top-actions" :class="{'footer-top-actions-immersive': isImmersiveMode}" v-if="!isEmpty"
+            @click.stop>
             <div class="mode-name-box" :class="{'fade-out': isImmersiveMode && modeNameFadeOut}">
               <span class="mode-name-label">
                 <template v-if="currentModule === 'svga'">SVGA</template>
@@ -300,12 +307,13 @@
           </div>
 
           <!-- 中间主控制区 -->
-          <div class="footer-main" :class="{'footer-main-empty': isEmpty}" v-show="!isImmersiveMode">
+          <div class="footer-main" :class="{'footer-main-empty': isEmpty}" v-show="!isImmersiveMode"
+            @click="isEmpty && triggerFileUpload()">
             <!-- 空状态 -->
             <template v-if="isEmpty">
               <div class="footer-empty-tip">
                 <div class="footer-empty-tip-sub">
-                  拖入文件，或<br><span class="click-upload-text" @click="triggerFileUpload">点击上传</span>
+                  拖入文件，或<br><span class="click-upload-text">点击上传</span>
                 </div>
               </div>
             </template>
@@ -2258,6 +2266,47 @@
             {{ editor.loading ? '生成中...' : '保存' }}
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- More Drawer -->
+    <!-- Overlay removed: user wants non-blocking sidebar -->
+    <!-- <div class="more-drawer-overlay" :class="{ 'visible': showMoreDrawer }" @click="showMoreDrawer = false"></div> -->
+    <div class="more-drawer" :class="{ 'visible': showMoreDrawer }">
+      <div class="drawer-header">
+        <div class="drawer-header-left">
+          <img :src="isDarkMode ? 'assets/img/logo04_dark.png' : 'assets/img/logo04.png'" alt="Logo"
+            class="drawer-logo">
+          <div class="drawer-slogan">动画格式预览与转换工具</div>
+        </div>
+        <div class="drawer-close-btn" @click="showMoreDrawer = false">
+          <img :src="isDarkMode ? 'assets/img/home_more_dark.png' : 'assets/img/home_more.png'" alt="Close"
+            style="width: 24px; height: 24px; transform: rotate(180deg);">
+        </div>
+      </div>
+      <div class="drawer-content">
+        <a href="sth_auto.html" class="drawer-btn">
+          <span>素材自助</span>
+          <img :src="isDarkMode ? 'assets/img/go_dark.png' : 'assets/img/go.png'" class="drawer-btn-icon" alt="Go">
+        </a>
+        <a href="gadgets/fix_garbled_text.html" class="drawer-btn">
+          <span>修复中文乱码工具</span>
+          <img :src="isDarkMode ? 'assets/img/go_dark.png' : 'assets/img/go.png'" class="drawer-btn-icon" alt="Go">
+        </a>
+        <div class="drawer-btn disabled">
+          <span>名人礼物视频版</span>
+          <img :src="isDarkMode ? 'assets/img/go_dark.png' : 'assets/img/go.png'" class="drawer-btn-icon" alt="Go">
+        </div>
+
+      </div>
+      <div class="drawer-links">
+        <a href="javascript:void(0)" class="drawer-link-item">动画相关链接1</a>
+        <a href="javascript:void(0)" class="drawer-link-item">动画相关链接2</a>
+      </div>
+      <div class="drawer-footer">
+        <a href="https://saysth.design/" target="_blank" class="drawer-avatar">
+          <img src="./assets/img/toux.png" alt="Avatar">
+        </a>
       </div>
     </div>
   </div>
