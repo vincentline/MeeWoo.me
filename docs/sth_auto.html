@@ -45,12 +45,12 @@
     /* ==================== 顶部导航栏 ==================== */
     .header-navbar {
       width: 100%;
-      height: 36px;
+      height: 56px;
       background-color: #ffffff;
       border-bottom: 1px solid #e3e3e3;
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
       padding: 0 16px;
       position: relative;
       z-index: 100;
@@ -60,6 +60,26 @@
     body.dark-mode .header-navbar {
       background-color: #2a2a2a;
       border-bottom-color: #404040;
+    }
+
+    .header-logo {
+      height: 24px;
+      width: auto;
+      margin-right: 12px;
+      content: url('assets/img/logo.png');
+      transition: all 0.2s ease;
+    }
+
+    .header-logo:hover {
+      content: url('assets/img/logo_hover.png');
+    }
+
+    body.dark-mode .header-logo {
+      content: url('assets/img/logo_dark.png');
+    }
+
+    body.dark-mode .header-logo:hover {
+      content: url('assets/img/logo_hover.png');
     }
 
     .header-navbar-title {
@@ -91,8 +111,6 @@
     }
 
     .theme-toggle {
-      position: absolute;
-      right: 16px;
       width: 24px;
       height: 24px;
       border: none;
@@ -1099,8 +1117,10 @@
   <div id="app" @mousemove="onDragMove" @mouseup="onDragEnd">
     <!-- 顶部导航栏 -->
     <div class="header-navbar">
-      <a href="index.html" class="back-link">← 返回</a>
-      <div class="header-navbar-title">素材自助</div>
+      <a href="index.html" style="display:flex;align-items:center;text-decoration:none;color:inherit;">
+        <img class="header-logo" src="assets/img/logo.png" alt="Logo">
+        <div class="header-navbar-title">素材自助</div>
+      </a>
       <button class="theme-toggle" @click="toggleTheme" :title="isDarkMode ? '切换为白天模式' : '切换为暗黑模式'">
         <svg v-if="!isDarkMode" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
