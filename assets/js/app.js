@@ -1203,18 +1203,18 @@ function initApp() {
           var movieData = results[0];
 
           if (movieData && movieData.audios && movieData.audios.length > 0) {
-            console.log('loadSvgaFile: Using trusted audio config from protobuf', movieData.audios);
+
             sourceAudios = movieData.audios;
           } else if (_this.svgaMovieData && _this.svgaMovieData.audios && _this.svgaMovieData.audios.length > 0) {
             // 兜底检查
             sourceAudios = _this.svgaMovieData.audios;
           } else {
-            console.log('loadSvgaFile: Protobuf audio config not ready or empty, falling back to videoItem', videoItem.audios);
+
             sourceAudios = videoItem.audios;
           }
 
           _this.svgaAudios = sourceAudios ? JSON.parse(JSON.stringify(sourceAudios)) : [];
-          console.log('Final SVGA Audios config used:', _this.svgaAudios);
+
 
           if (videoItem.audios) {
             videoItem.audios = []; // 清空内置音频，禁用 SVGA 自带播放逻辑
@@ -1551,8 +1551,11 @@ function initApp() {
         video.muted = this.isMuted;
         video.loop = true;
         video.playsInline = true;
+        video.disableRemotePlayback = true; // 禁用远程播放，减少不必要的资源消耗
+        video.controls = false; // 禁用默认控件，减少渲染负担
+        video.autoplay = false; // 显式禁用自动播放，使用代码控制播放时机
         // 不设置 max-width/max-height，让容器的 transform scale 生效
-        video.style.cssText = 'display: block;';
+        video.style.cssText = 'display: block; width: 100%; height: 100%; object-fit: contain;';
         this.mp4Video = video;
 
         video.onloadedmetadata = function () {
@@ -1899,7 +1902,7 @@ function initApp() {
 
             // 进度日志
             if ((i + 1) % 10 === 0 || i === exportTotalFrames - 1) {
-              console.log('Processing frame ' + (i + 1) + '/' + exportTotalFrames);
+
             }
           }
 
@@ -3037,7 +3040,10 @@ function initApp() {
               var remappedPosition = 0;
               var segmentIndex = -1;
 
-              for (var i = 0; i < keyframes.length - 1; i++) {
+              // 优化：从当前区间开始搜索，提高找到匹配区间的效率
+              var startIndex = Math.max(0, currentSegmentIndex);
+              var keyframesLength = keyframes.length;
+              for (var i = startIndex; i < keyframesLength - 1; i++) {
                 var k1 = keyframes[i];
                 var k2 = keyframes[i + 1];
 
@@ -3569,7 +3575,7 @@ function initApp() {
 
                     if (Object.keys(audioData).length > 0) {
                       _this.svgaAudioData = audioData;
-                      console.log('SVGA Parser: Extracted audio data', Object.keys(audioData));
+
                     }
                   }
 
@@ -4656,7 +4662,7 @@ function initApp() {
         // 变速支持：如果MP4模式且启用变速，使用帧映射表
         var frameMap = null;
         if (this.currentModule === 'mp4' && this.speedRemapConfig.enabled && this.speedRemapConfig.keyframes && this.speedRemapConfig.keyframes.length >= 2) {
-          frameMap = this.buildFrameMap();
+          frameMap = this.buildFrameMap(fps);
           if (frameMap && frameMap.length > 0) {
             totalFrames = frameMap.length;
           }
@@ -4757,13 +4763,25 @@ function initApp() {
             if (chromaCanvas) return chromaCanvas;
           }
 
-          // 否则从视频创建新canvas
-          var canvas = document.createElement('canvas');
-          canvas.width = this.mp4.originalWidth;
-          canvas.height = this.mp4.originalHeight;
-          var ctx = canvas.getContext('2d');
-          ctx.drawImage(this.mp4Video, 0, 0);
-          return canvas;
+          // 优化：缓存canvas元素，避免频繁创建
+          var width = this.mp4.originalWidth;
+          var height = this.mp4.originalHeight;
+
+          // 检查缓存是否存在且尺寸匹配
+          if (!this._cachedMp4Canvas ||
+            this._cachedMp4Canvas.width !== width ||
+            this._cachedMp4Canvas.height !== height) {
+            // 创建新canvas并缓存
+            this._cachedMp4Canvas = document.createElement('canvas');
+            this._cachedMp4Canvas.width = width;
+            this._cachedMp4Canvas.height = height;
+            // 添加willReadFrequently: true属性，提高getImageData操作性能
+            this._cachedMp4Ctx = this._cachedMp4Canvas.getContext('2d', { willReadFrequently: true });
+          }
+
+          // 使用缓存的canvas和context
+          this._cachedMp4Ctx.drawImage(this.mp4Video, 0, 0);
+          return this._cachedMp4Canvas;
         } else if (this.currentModule === 'lottie') {
           return container.querySelector('canvas');
         } else if (this.currentModule === 'frames') {
@@ -5163,18 +5181,28 @@ function initApp() {
           container.removeChild(existingCanvas);
         }
 
-        // 创建新canvas（必须启用alpha通道以支持透明抠图）
-        var canvas = document.createElement('canvas');
-        canvas.className = 'chromakey-canvas';
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        // 不设置 max-width/max-height，让容器的 transform scale 生效
-        canvas.style.cssText = 'display: block;';
+        // 优化：缓存绿幕抠图canvas，避免频繁创建和销毁
+        if (!this._chromaKeyCanvas) {
+          this._chromaKeyCanvas = document.createElement('canvas');
+          this._chromaKeyCanvas.className = 'chromakey-canvas';
+          // 不设置 max-width/max-height，让容器的 transform scale 生效
+          this._chromaKeyCanvas.style.cssText = 'display: block;';
+        }
 
-        var ctx = canvas.getContext('2d', {
-          willReadFrequently: true,
-          alpha: true
-        });
+        // 更新canvas尺寸
+        this._chromaKeyCanvas.width = video.videoWidth;
+        this._chromaKeyCanvas.height = video.videoHeight;
+
+        // 优化：缓存context，避免频繁获取
+        if (!this._chromaKeyCtx) {
+          this._chromaKeyCtx = this._chromaKeyCanvas.getContext('2d', {
+            willReadFrequently: true,
+            alpha: true
+          });
+        }
+
+        var canvas = this._chromaKeyCanvas;
+        var ctx = this._chromaKeyCtx;
 
         // 隐藏video，显示canvas
         video.style.display = 'none';
@@ -6936,6 +6964,9 @@ function initApp() {
               quality: this.toSvgaConfig.quality
             });
           }
+
+          // 转换成功，设置isConvertingToSvga为false
+          this.isConvertingToSvga = false;
 
           // 重置状态
           setTimeout(function () {
