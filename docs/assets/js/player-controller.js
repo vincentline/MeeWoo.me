@@ -340,11 +340,15 @@
         // 检查 on 方法是否存在（防御性编程）
         if (typeof howl.on === 'function') {
           try {
-            howl.on('unload', function () {
-              _this.remove(howl);
-            });
+            // 更安全的事件绑定方式：检查 Howl 实例是否已初始化完成
+            // 避免在 Howl 实例未完全初始化时绑定事件导致的内部数组访问错误
+            if (typeof howl._events === 'object') {
+              howl.on('unload', function () {
+                _this.remove(howl);
+              });
+            }
           } catch (e) {
-            console.warn('Failed to attach unload listener to Howl instance:', e);
+            // 静默处理，不再显示控制台警告
             // [CRITICAL] 不要在这里移除！
             // 即使绑定 unload 失败（常见于 Howler 兼容性问题），我们仍需在列表中持有该实例
             // 否则后续执行 pauseAll/stopAll 时将无法控制此音频，导致“关不掉”的声音。

@@ -234,12 +234,12 @@
           </div>
 
           <div ref="svgaContainer" class="viewer-canvas"></div>
+        </div>
 
-          <!-- 加载中提示 -->
-          <div class="loading-overlay" v-if="isLoading"
-            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; background: rgba(0,0,0,0.6); padding: 8px 16px; border-radius: 4px; pointer-events: none; z-index: 100; font-size: 14px;">
-            正在加载中...
-          </div>
+        <!-- 加载中提示 - 移动到viewer-area内，确保居中显示 -->
+        <div class="loading-overlay" v-if="isLoading"
+          style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; background: rgba(0,0,0,0.6); padding: 8px 16px; border-radius: 4px; pointer-events: none; z-index: 100; font-size: 14px;">
+          正在加载中...
         </div>
 
         <!-- 空状态覆盖层 -->
@@ -1006,7 +1006,20 @@
             </div>
 
             <div v-if="editor.showText" class="editor-text-controls">
-              <div class="editor-control-label">文案内容：</div>
+              <div class="editor-control-label-with-buttons">
+                <div class="editor-control-label">文案内容：</div>
+                <div class="text-align-buttons">
+                  <button class="text-align-btn" :class="{'active': editor.textAlign === 'left'}" @click="setTextAlign('left')" title="左对齐">
+                    <img :src="isDarkMode ? './assets/img/text_left_dark.png' : './assets/img/text_left.png'" alt="左对齐">
+                  </button>
+                  <button class="text-align-btn" :class="{'active': editor.textAlign === 'center'}" @click="setTextAlign('center')" title="居中对齐">
+                    <img :src="isDarkMode ? './assets/img/text_center_dark.png' : './assets/img/text_center.png'" alt="居中对齐">
+                  </button>
+                  <button class="text-align-btn" :class="{'active': editor.textAlign === 'right'}" @click="setTextAlign('right')" title="右对齐">
+                    <img :src="isDarkMode ? './assets/img/text_right_dark.png' : './assets/img/text_right.png'" alt="右对齐">
+                  </button>
+                </div>
+              </div>
               <div class="input-wrapper input-wrapper--lg input-wrapper--textarea">
                 <textarea class="base-input textarea-input textarea-input--sm" v-model="editor.textContent"
                   placeholder="请输入文案"></textarea>

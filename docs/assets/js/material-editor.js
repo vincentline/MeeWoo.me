@@ -74,6 +74,7 @@
                     textPosX: 50,        // 文字X位置 (百分比 0-100)
                     textPosY: 50,        // 文字Y位置 (百分比 0-100)
                     textScale: 1.0,      // 文字缩放
+                    textAlign: 'left',   // 文字对齐方式: 'left' | 'center' | 'right'
                     textMouseMoved: false  // 标记是否发生了拖拽移动
                 },
 
@@ -229,6 +230,15 @@
 
         methods: {
             /**
+             * 设置文字对齐方式
+             * @param {string} align - 对齐方式: 'left' | 'center' | 'right'
+             */
+            setTextAlign: function (align) {
+                this.editor.textAlign = align;
+                this.renderEditorPreview();
+            },
+
+            /**
              * 更新恢复按钮的显示状态
              * 手动计算，避免 computed 响应式问题
              */
@@ -342,6 +352,7 @@
                     this.editor.textPosX = 50;
                     this.editor.textPosY = 50;
                     this.editor.textScale = 1.0;
+                    this.editor.textAlign = 'left'; // 重置对齐方式为左对齐
                     this.editor.imageOffsetX = 0;
                     this.editor.imageOffsetY = 0;
                     this.editor.imageScale = 1.0;
@@ -410,6 +421,7 @@
                     this.editor.textPosX = savedState.textPosX !== undefined ? savedState.textPosX : 50;
                     this.editor.textPosY = savedState.textPosY !== undefined ? savedState.textPosY : 50;
                     this.editor.textScale = savedState.textScale !== undefined ? savedState.textScale : 1.0;
+                    this.editor.textAlign = savedState.textAlign !== undefined ? savedState.textAlign : 'left';
                     this.editor.imageOffsetX = savedState.imageOffsetX !== undefined ? savedState.imageOffsetX : 0;
                     this.editor.imageOffsetY = savedState.imageOffsetY !== undefined ? savedState.imageOffsetY : 0;
                     this.editor.imageScale = savedState.imageScale !== undefined ? savedState.imageScale : 1.0;
@@ -421,6 +433,7 @@
                     this.editor.textPosX = 50;
                     this.editor.textPosY = 50;
                     this.editor.textScale = 1.0;
+                    this.editor.textAlign = 'left';
                     this.editor.imageOffsetX = 0;
                     this.editor.imageOffsetY = 0;
                     this.editor.imageScale = 1.0;
@@ -1135,6 +1148,7 @@
                     textPosX: this.editor.textPosX,
                     textPosY: this.editor.textPosY,
                     textScale: this.editor.textScale,
+                    textAlign: this.editor.textAlign,
                     imageOffsetX: this.editor.imageOffsetX,
                     imageOffsetY: this.editor.imageOffsetY,
                     imageScale: this.editor.imageScale,
@@ -1259,7 +1273,7 @@
 
                 // 1. 字体设置
                 ctx.font = fontStyle + ' ' + fontWeight + ' ' + fontSize + 'px "' + fontFamily + '"';
-                ctx.textAlign = 'center';
+                ctx.textAlign = this.editor.textAlign;
                 ctx.textBaseline = 'middle';
 
                 // 2. 解析渐变（如果有）

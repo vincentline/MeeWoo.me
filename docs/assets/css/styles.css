@@ -1,4 +1,4 @@
-﻿/* ==================== 全局重置 & 基础布局 ==================== */
+/* ==================== 全局重置 & 基础布局 ==================== */
 
 * {
   margin: 0;
@@ -6018,4 +6018,62 @@ body.dark-mode .material-btn-edit:hover {
   height: 100%;
   max-height: 100%;
   border-radius: 16px;
+}
+
+/* 文案内容标题带按钮的容器 */
+.editor-control-label-with-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* 文字对齐按钮组 */
+.text-align-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* 单个对齐按钮 */
+.text-align-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.3s;
+}
+
+.text-align-btn:hover {
+  border-color: #1890ff;
+}
+
+.text-align-btn.active {
+  background-color: #e6f7ff;
+  border-color: #1890ff;
+}
+
+.text-align-btn img {
+  width: 16px;
+  height: 16px;
+}
+
+/* 暗黑模式适配 */
+body.dark .text-align-btn {
+  background: #303030;
+  border-color: #555;
+}
+
+body.dark .text-align-btn:hover {
+  border-color: #40a9ff;
+}
+
+body.dark .text-align-btn.active {
+  background-color: #1f4287;
+  border-color: #40a9ff;
 }
