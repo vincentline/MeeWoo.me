@@ -127,7 +127,7 @@ body.dark-mode .drawer-close-btn:hover {
 }
 
 .drawer-btn.disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
   background: #f9f9f9;
 }
