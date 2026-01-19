@@ -3494,6 +3494,12 @@ function initApp() {
           // 重新居中视图，因为可用高度变了
           this.viewportController.centerView();
         }
+
+        // 由于DOM结构发生变化，需要在下一个tick重新初始化播放器控制器
+        // 以确保进度条拖拽事件监听器正确绑定
+        this.$nextTick(function () {
+          _this.initPlayerController();
+        });
       },
 
       applyCanvasBackground: function () {
