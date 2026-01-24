@@ -2,5 +2,6 @@
   "ai": {
     "language": "zh-CN",
     "enhancedChinese": true
-  }
+  },
+  "timezone": "Asia/Shanghai"
 }
