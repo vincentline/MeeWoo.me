@@ -450,7 +450,6 @@
                             container.appendChild(originalControls);
                         }
 
-                        console.error('Error generating material:', error);
                         reject(error);
                     });
                 } else {
@@ -573,7 +572,6 @@
          * @param {Object} item - 素材对象
          */
         openMaterialEditor: function (vueInstance, item) {
-            console.log('openMaterialEditor called', item);
             var material = item;
 
             // 兼容旧的索引调用方式（防御性编程）
@@ -582,17 +580,14 @@
             }
 
             if (!material) {
-                console.error('Material not found');
                 return;
             }
 
             // 加载html2canvas库
             if (vueInstance.loadLibrary) {
                 vueInstance.loadLibrary('html2canvas', true).catch(function (err) {
-                    console.error('Failed to load html2canvas', err);
+                    // 忽略加载错误，html2canvas会在需要时重新加载
                 });
-            } else {
-                console.warn('loadLibrary method missing');
             }
 
             // 初始化编辑器状态
@@ -605,7 +600,7 @@
             vueInstance.editor.offsetX = 0;
             vueInstance.editor.offsetY = 0;
 
-            console.log('Editor state set to show=true', vueInstance.editor);
+
 
             // 恢复之前的编辑状态 或 初始化默认值
             var savedState = vueInstance.materialEditStates[material.imageKey];
@@ -700,7 +695,7 @@
                 }
             };
             img.onerror = function () {
-                console.error('Failed to load image:', imgUrl);
+                // 忽略图片加载错误
             };
             // 允许跨域
             img.crossOrigin = 'Anonymous';
@@ -777,7 +772,6 @@
                             container.appendChild(originalControls);
                         }
 
-                        console.error('Error generating material:', error);
                         reject(error);
                     });
                 } else {
@@ -861,7 +855,6 @@
                     }
                 }
             }).catch(function (error) {
-                console.error('Failed to save material edit:', error);
                 vueInstance.editor.loading = false;
                 if (vueInstance.showToast) {
                     vueInstance.showToast('保存失败，请重试');

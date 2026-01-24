@@ -253,7 +253,7 @@
       try {
         callback(currentLib);
       } catch (e) {
-        console.error('进度监听器错误:', e);
+        // 忽略进度监听器错误
       }
     });
   };
@@ -340,11 +340,9 @@
             .catch(function (error) {
               _this.currentLib = null;
               _this.notifyProgress();
-              console.warn('CDN加载失败: ' + currentUrl);
               reject(error);
             });
         }).catch(function (error) {
-          console.log('尝试备用CDN (' + (urlIndex + 2) + '/' + urls.length + ')...');
           return tryLoadUrl(urlIndex + 1);
         });
       }
@@ -396,14 +394,12 @@
         script.onerror = function () {
           _this.currentLib = null;
           _this.notifyProgress();
-          console.warn('CDN加载失败: ' + currentUrl);
           reject(new Error('加载失败: ' + currentUrl));
         };
 
         document.head.appendChild(script);
       }).catch(function (error) {
         // 当前URL失败，尝试下一个
-        console.log('尝试备用CDN (' + (urlIndex + 2) + '/' + urls.length + ')...');
         return tryLoadUrl(urlIndex + 1);
       });
     };
@@ -489,7 +485,6 @@
         _this.processQueue(); // 继续处理队列
       })
       .catch(function (error) {
-        console.error('库加载失败:', error);
         task.reject(error);
         _this.loading = false;
         _this.processQueue(); // 继续处理队列
@@ -528,7 +523,7 @@
       // 逐个加载（低优先级）
       toLoad.forEach(function (libKey) {
         _this.load(libKey, false).catch(function (error) {
-          console.warn('库预加载失败:', libKey, error);
+          // 忽略预加载失败
         });
       });
     }, 1000);
