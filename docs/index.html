@@ -957,13 +957,6 @@
       @convert="handleToSvgaConvert">
     </to-svga-panel>
 
-    <!-- 统一 转双通道MP4 弹窗 (SVGA/MP4/Lottie/Frames -> Dual Channel MP4) -->
-    <dual-channel-panel :visible="activeRightPanel === 'dual-channel'" :source-info="dualChannelSourceInfo"
-      :initial-config="dualChannelConfig" :is-converting="isConvertingToDualChannel" :progress="dualChannelProgress"
-      :message="dualChannelMessage" :disabled="isGlobalTaskRunning" @close="closeRightPanel"
-      @cancel="cancelDualChannelConversion" @convert="handleDualChannelConvert">
-    </dual-channel-panel>
-
     <!-- 素材编辑器弹窗 -->
     <div class="center-modal-overlay" :class="{'show': editor.show}">
       <div class="center-modal-dialog material-editor-modal"
