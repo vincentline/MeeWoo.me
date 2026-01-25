@@ -51,24 +51,37 @@ function Get-UpdateLogDetails {
     )
     
     if (-not (Test-Path $logPath)) {
+        Write-Host "警告: UPDATE_LOG.md文件不存在" -ForegroundColor Yellow
         return @{}
     }
     
-    $logContent = Get-Content -Path $logPath -Encoding UTF8
-    $logMap = @{}
-    
-    # 匹配更新记录行：[时间戳] 【操作类型】 : 路径信息 - 更新简述
-    $logPattern = '^\[.*?\]\s+【(.*?)】\s+:\s+(.*?)\s+-\s+(.*)$'
-    
-    foreach ($line in $logContent) {
-        if ($line -match $logPattern) {
-            $filePath = $matches[2].Trim()
-            $updateDesc = $matches[3].Trim()
-            $logMap[$filePath] = $updateDesc
+    try {
+        # 使用UTF-8 with BOM编码读取文件
+        $logContent = Get-Content -Path $logPath -Encoding UTF8
+        $logMap = @{}
+        
+        # 匹配更新记录行：[时间戳] 【操作类型】 : 路径信息 - 更新简述
+        $logPattern = '^\[.*?\]\s+【[^】]+】\s+:\s+(.+?)\s+-\s+(.+)$'
+        
+        foreach ($line in $logContent) {
+            # 跳过空行和注释行
+            if ([string]::IsNullOrWhiteSpace($line) -or $line -match '^\s*#') {
+                continue
+            }
+            
+            if ($line -match $logPattern) {
+                $filePath = $matches[1].Trim()
+                $updateDesc = $matches[2].Trim()
+                $logMap[$filePath] = $updateDesc
+                Write-Host "DEBUG: 解析到记录 - 路径: $filePath, 描述: $updateDesc" -ForegroundColor Gray
+            }
         }
+        
+        return $logMap
+    } catch {
+        Write-Host "错误: 解析UPDATE_LOG.md失败 - $($_.Exception.Message)" -ForegroundColor Red
+        return @{}
     }
-    
-    return $logMap
 }
 
 # 获取变更详情（在add之前获取，确保能获取到所有变更）
@@ -76,19 +89,28 @@ $changes = git status --short 2>$null
 $changeDetails = ""
 if ($changes) {
     # 解析UPDATE_LOG.md
-    $updateLogPath = "$PSScriptRoot\UPDATE_LOG.md"
+    $updateLogPath = Join-Path -Path $PSScriptRoot -ChildPath "UPDATE_LOG.md"
+    Write-Host "DEBUG: UPDATE_LOG.md路径: $updateLogPath" -ForegroundColor Gray
     $updateLogMap = Get-UpdateLogDetails -logPath $updateLogPath
     
     # 确保变更详情使用正确的编码，并按行格式化
     $changeDetails = "`n变更详情:`n"
     $changes -split '\r?\n' | ForEach-Object {
         $changeLine = $_
+        # 跳过空行
+        if ([string]::IsNullOrWhiteSpace($changeLine)) {
+            continue
+        }
+        
         # 提取文件路径（格式：XY file/path）
-        $filePath = $changeLine -replace '^\s*[MADRCU]\s+', ''
+        $filePath = $changeLine -replace '^\s*[MADRCU?!]\s+', ''
+        Write-Host "DEBUG: 变更文件路径: $filePath" -ForegroundColor Gray
         
         # 查找对应的更新简述
         if ($updateLogMap.ContainsKey($filePath)) {
-            $changeDetails += "  $($changeLine.Trim()) - $($updateLogMap[$filePath])`n"
+            $updateDesc = $updateLogMap[$filePath]
+            $changeDetails += "  $($changeLine.Trim()) - $updateDesc`n"
+            Write-Host "DEBUG: 找到匹配的更新简述: $updateDesc" -ForegroundColor Gray
         } else {
             $changeDetails += "  $($changeLine.Trim())`n"
         }
