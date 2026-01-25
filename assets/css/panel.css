@@ -44,6 +44,10 @@
   cursor: default;
   /* 允许拖拽时使用transform定位 */
   transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  /* 确保面板可以被拖动 */
+  position: fixed !important;
+  /* 确保面板在正确的层级 */
+  z-index: 1000 !important;
 }
 
 /* 拖拽中状态：禁用过渡动画 */
@@ -53,11 +57,7 @@
   cursor: move !important;
 }
 
-/* 允许拖拽的头部区域 */
-.side-panel-header {
-  cursor: move;
-  user-select: none;
-}
+
 
 /* 4. 关闭动画样式 */
 /* 当弹窗失去show类且被拖拽过时，执行原地消失动画 */
@@ -111,6 +111,8 @@ body.dark-mode .side-panel.show .side-panel-container {
   flex-direction: column;
   align-self: stretch;
   gap: 12px;
+  cursor: move;
+  user-select: none;
 }
 
 .side-panel-title {

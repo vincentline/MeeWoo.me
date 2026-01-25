@@ -42,8 +42,12 @@
       const panels = document.querySelectorAll('.side-panel');
 
       panels.forEach(panel => {
-        // 获取弹窗头部
-        const header = panel.querySelector('.side-panel-header');
+        // 获取弹窗头部 - 支持多种头部类名
+        let header = panel.querySelector('.side-panel-header');
+        // 如果没有默认头部，检查是否是素材面板
+        if (!header && panel.classList.contains('material-panel')) {
+          header = panel.querySelector('.material-panel-stats');
+        }
         if (!header) return;
 
         // 标记为可拖拽
@@ -55,8 +59,6 @@
         let initialLeft = 0;
         let initialTop = 0;
         let initialStyle = null;
-        let offsetX = 0;
-        let offsetY = 0;
 
         // 鼠标按下事件 - 只监听左键
         header.addEventListener('mousedown', (e) => {
@@ -65,7 +67,6 @@
 
           // 防止选中文本
           e.preventDefault();
-          e.stopPropagation();
 
           isDragging = true;
           panel.classList.add('dragging');
@@ -95,12 +96,9 @@
         document.addEventListener('mousemove', (e) => {
           if (!isDragging) return;
 
-          e.preventDefault();
-          e.stopPropagation();
-
           // 计算偏移量
-          offsetX = e.clientX - startX;
-          offsetY = e.clientY - startY;
+          const offsetX = e.clientX - startX;
+          const offsetY = e.clientY - startY;
 
           // 计算新位置
           const newLeft = initialLeft + offsetX;
@@ -117,7 +115,7 @@
         });
 
         // 鼠标释放事件
-        document.addEventListener('mouseup', (e) => {
+        document.addEventListener('mouseup', () => {
           if (!isDragging) return;
 
           isDragging = false;
@@ -156,6 +154,11 @@
       panels.forEach(panel => {
         // 监听关闭动画结束事件
         panel.addEventListener('transitionend', (e) => {
+          if (e.propertyName === 'opacity') {
+            // 当关闭动画结束时，重置位置
+            this.resetPanelPosition(panel);
+          }
+
           if (e.propertyName === 'opacity' && panel.classList.contains('closing')) {
             // 原地消失动画结束后，添加fly-out类开始飞出去动画
             panel.classList.add('fly-out');
@@ -176,6 +179,11 @@
               panel.classList.remove('closing', 'fly-out');
             }, 100);
           }
+        });
+
+        // 监听动画结束事件，确保位置被重置
+        panel.addEventListener('animationend', (e) => {
+          this.resetPanelPosition(panel);
         });
       });
     },
@@ -215,10 +223,161 @@
   // 页面加载完成后初始化
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      global.MeeWoo.Service.PanelDrag.init();
+      // 延迟初始化，确保Vue组件已经渲染完成
+      setTimeout(() => {
+        global.MeeWoo.Service.PanelDrag.init();
+      }, 100);
     });
   } else {
     // DOM已经加载完成
-    global.MeeWoo.Service.PanelDrag.init();
+    // 延迟初始化，确保Vue组件已经渲染完成
+    setTimeout(() => {
+      global.MeeWoo.Service.PanelDrag.init();
+    }, 100);
+  }
+
+  // 使用MutationObserver监听DOM变化，自动初始化新添加的面板
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      // 检查是否有新节点添加
+      if (mutation.addedNodes.length > 0) {
+        mutation.addedNodes.forEach((node) => {
+          // 只处理元素节点
+          if (node.nodeType === 1) {
+            // 检查节点本身是否是面板
+            if (node.classList && node.classList.contains('side-panel')) {
+              global.MeeWoo.Service.PanelDrag.setupPanel(node);
+            }
+
+            // 检查节点的后代是否包含面板
+            const panels = node.querySelectorAll('.side-panel');
+            panels.forEach((panel) => {
+              global.MeeWoo.Service.PanelDrag.setupPanel(panel);
+            });
+          }
+        });
+      }
+    });
+  });
+
+  // 开始监听DOM变化
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  // 为动态添加的面板提供初始化方法
+  global.MeeWoo.Service.PanelDrag.setupPanel = function (panelElement) {
+    if (!panelElement) return;
+
+    // 检查是否已经初始化过
+    if (panelElement._dragInitialized) {
+      return;
+    }
+
+    // 标记为已初始化
+    panelElement._dragInitialized = true;
+
+    // 获取弹窗头部 - 支持多种头部类名
+    let header = panelElement.querySelector('.side-panel-header');
+    // 如果没有默认头部，检查是否是素材面板
+    if (!header && panelElement.classList.contains('material-panel')) {
+      header = panelElement.querySelector('.material-panel-stats');
+    }
+    if (!header) {
+      return;
+    }
+
+    // 标记为可拖拽
+    panelElement.classList.add('draggable');
+
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let initialLeft = 0;
+    let initialTop = 0;
+    let initialStyle = null;
+
+    // 鼠标按下事件 - 只监听左键
+    header.addEventListener('mousedown', (e) => {
+      // 只允许左键拖动
+      if (e.button !== 0) return;
+
+      // 防止选中文本
+      e.preventDefault();
+
+      isDragging = true;
+      panelElement.classList.add('dragging');
+
+      // 记录初始位置和鼠标位置
+      startX = e.clientX;
+      startY = e.clientY;
+
+      // 获取初始偏移量（相对于视口）
+      const rect = panelElement.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+
+      // 保存初始样式，用于恢复
+      initialStyle = {
+        left: panelElement.style.left,
+        right: panelElement.style.right,
+        top: panelElement.style.top,
+        transition: panelElement.style.transition
+      };
+
+      // 隐藏滚动条，避免拖拽时页面滚动
+      document.body.style.overflow = 'hidden';
+    });
+
+    // 鼠标移动事件
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+
+      // 计算偏移量
+      const offsetX = e.clientX - startX;
+      const offsetY = e.clientY - startY;
+
+      // 计算新位置
+      const newLeft = initialLeft + offsetX;
+      const newTop = initialTop + offsetY;
+
+      // 清除可能存在的right样式，使用left定位
+      panelElement.style.right = '';
+      // 更新弹窗位置
+      panelElement.style.left = `${newLeft}px`;
+      panelElement.style.top = `${newTop}px`;
+
+      // 禁用默认的飞行动画过渡
+      panelElement.style.transition = 'none';
+    });
+
+    // 鼠标释放事件
+    document.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+
+      isDragging = false;
+      panelElement.classList.remove('dragging');
+
+      // 恢复页面滚动
+      document.body.style.overflow = '';
+
+      // 恢复过渡动画
+      panelElement.style.transition = '';
+    });
+
+    // 鼠标离开窗口事件
+    document.addEventListener('mouseleave', () => {
+      if (!isDragging) return;
+
+      isDragging = false;
+      panelElement.classList.remove('dragging');
+
+      // 恢复页面滚动
+      document.body.style.overflow = '';
+
+      // 恢复过渡动画
+      panelElement.style.transition = '';
+    });
   }
 })(window);
