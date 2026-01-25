@@ -1,4 +1,4 @@
-﻿# 简单的Git推送脚本
+﻿﻿# 简单的Git推送脚本
 # 使用方法: PowerShell.exe -ExecutionPolicy Bypass -File git-push.ps1
 
 # 设置PowerShell输出编码为UTF-8
@@ -44,25 +44,54 @@ if (-not $status) {
 Write-Host "发现变更:" -ForegroundColor Green
 git status --short
 
-# 获取文件变更列表（用于参考）
-$fileChanges = git status --short 2>$null
-
-# 让用户输入功能变更描述
-Write-Host "\n请输入功能变更描述：" -ForegroundColor Cyan
-Write-Host "（例如：修复了侧边栏拖拽功能，优化了中文显示）" -ForegroundColor Yellow
-$featureChanges = Read-Host "变更描述"
-
-# 如果用户没有输入变更描述，使用默认描述
-if (-not $featureChanges -or $featureChanges.Trim() -eq "") {
-    $featureChanges = "自动更新"
+# 解析UPDATE_LOG.md，提取文件路径与更新简述的对应关系
+function Get-UpdateLogDetails {
+    param (
+        [string]$logPath
+    )
+    
+    if (-not (Test-Path $logPath)) {
+        return @{}
+    }
+    
+    $logContent = Get-Content -Path $logPath -Encoding UTF8
+    $logMap = @{}
+    
+    # 匹配更新记录行：[时间戳] 【操作类型】 : 路径信息 - 更新简述
+    $logPattern = '^\[.*?\]\s+【(.*?)】\s+:\s+(.*?)\s+-\s+(.*)$'
+    
+    foreach ($line in $logContent) {
+        if ($line -match $logPattern) {
+            $filePath = $matches[2].Trim()
+            $updateDesc = $matches[3].Trim()
+            $logMap[$filePath] = $updateDesc
+        }
+    }
+    
+    return $logMap
 }
 
-# 构建变更详情，包含功能变更和文件变更（用于参考）
-$changeDetails = "`n变更内容：$featureChanges"
-if ($fileChanges) {
-    $changeDetails += "`n\n变更文件：`n"
-    $fileChanges -split '\r?\n' | ForEach-Object {
-        $changeDetails += "  $_`n"
+# 获取变更详情（在add之前获取，确保能获取到所有变更）
+$changes = git status --short 2>$null
+$changeDetails = ""
+if ($changes) {
+    # 解析UPDATE_LOG.md
+    $updateLogPath = "$PSScriptRoot\UPDATE_LOG.md"
+    $updateLogMap = Get-UpdateLogDetails -logPath $updateLogPath
+    
+    # 确保变更详情使用正确的编码，并按行格式化
+    $changeDetails = "`n变更详情:`n"
+    $changes -split '\r?\n' | ForEach-Object {
+        $changeLine = $_
+        # 提取文件路径（格式：XY file/path）
+        $filePath = $changeLine -replace '^\s*[MADRCU]\s+', ''
+        
+        # 查找对应的更新简述
+        if ($updateLogMap.ContainsKey($filePath)) {
+            $changeDetails += "  $($changeLine.Trim()) - $($updateLogMap[$filePath])`n"
+        } else {
+            $changeDetails += "  $($changeLine.Trim())`n"
+        }
     }
 }
 
@@ -74,7 +103,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # 提交变更
-$commitMsg = "更新: $(Get-Date -Format 'yyyy-MM-dd HH:mm')$changeDetails"
+$commitMsg = "自动更新: $(Get-Date -Format 'yyyy-MM-dd HH:mm')$changeDetails"
 git commit -m $commitMsg 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "提交变更失败" -ForegroundColor Red
