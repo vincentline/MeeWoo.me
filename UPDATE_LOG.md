@@ -27,9 +27,22 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-01-26 01:01:21] 【新增文件】: docs/assets/css/panel.css - 创建侧边弹窗样式系统，实现从基础样式到特定面板样式的层次化设计
+[2026-01-26 01:01:21] 【修改文件】: docs/index.html - 添加panel.css样式文件引用
+[2026-01-26 01:01:21] 【修改文件】: docs/assets/css/styles.css - 删除侧边弹窗相关冗余样式
+[2026-01-26 01:01:21] 【修改文件】: docs/assets/js/components/chromakey-panel.js - 更新绿幕抠图面板，使用新的侧边弹窗样式类名
+[2026-01-26 01:01:21] 【修改文件】: docs/assets/js/components/dual-channel-panel.js - 更新双通道MP4面板，使用新的侧边弹窗样式类名
+[2026-01-26 01:01:21] 【修改文件】: docs/assets/js/components/standard-mp4-panel.js - 更新标准MP4面板，使用新的侧边弹窗样式类名
+[2026-01-26 01:01:21] 【修改文件】: docs/assets/js/components/to-svga-panel.js - 更新转SVGA面板，使用新的侧边弹窗样式类名
+[2026-01-26 01:01:21] 【修改文件】: docs/assets/css/panel.css - 添加素材面板底部按钮样式，确保按钮水平排列
+[2026-01-26 01:01:21] 【新增文件】: docs/assets/js/service/panel-drag.js - 实现侧边弹窗拖拽功能
+[2026-01-26 01:01:21] 【修改文件】: docs/index.html - 引入侧边弹窗拖拽服务
+[2026-01-26 01:01:21] 【修改文件】: docs/assets/css/panel.css - 添加拖拽相关样式和关闭动画
+[2026-01-26 01:01:21] 【修改文件】: docs/assets/css/panel.css - 修复拖拽样式，确保只有头部区域显示move光标
+[2026-01-26 01:01:21] 【修改文件】: docs/assets/js/service/panel-drag.js - 修复拖拽功能，仅允许左键拖动，修复位置计算，添加鼠标离开处理
 [2026-01-25 20:30:00] 【修改文件】: docs/assets/js/core/app.js - 修复暗黑模式切换问题：添加主题手动设置标志，用户手动切换后不再跟随浏览器主题变化
 [2026-01-25 20:18:59] 【修改文件】: docs/assets/js/core/app.js - 优化暗黑模式功能：默认随浏览器主题，允许手动切换，不本地存储偏好，实时监听浏览器主题变化
 [2026-01-25 20:04:48] 【修改文件】: docs/assets/js/service/library-loader.js - 优化最高优先级库加载逻辑，实现并行加载，最多同时5个库并行，提高首页加载速度
 [2026-01-25 19:25:40] 【修改文件】: docs/index.html - 修复首页点击footer-main footer-main-empty时重复弹出文件选择弹窗的问题，在footer-main的click事件中添加@click.stop阻止事件冒泡
 [2026-01-25 16:44:02] 【修改文件】: docs/assets/js/controllers/input-controller.js - 实现快捷键粘贴功能，支持Ctrl+V粘贴文件
-[2026-01-25 07:01:00] 【修改文件】: UPDATE_LOG.md - 新增更新日志文件，用于记录项目的每次修改
+

@@ -2,8 +2,9 @@
 1. 项目名称：MeeWoo
 
 # 项目规则
-1. 如需启动测试服务，请执行`python start_server.py`
-2. 如需提交变更到 GitHub 时，请执行`git-push`
+1. 当用户要求测试时，启动测试服务，请执行`python start_server.py`
+2. 当用户要求提交到GitHub时
+  - 执行：`PowerShell.exe -ExecutionPolicy Bypass -File git-push.ps1`
 3. 当用户要求发布网页时：
   - 如果有未提交的变更，必须先提交到 GitHub，按上面GitHub提交流程提交
   - 如果变更都提交了，把docs文件夹里的内容提交到GitHub仓库的gh-pages分支
