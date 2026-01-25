@@ -71,8 +71,9 @@ function Get-UpdateLogDetails {
             }
             
             if ($line -match $logPattern) {
-                $filePath = $matches[1].Trim()
-                $updateDesc = $matches[2].Trim()
+                # 正确的分组索引：1-时间戳, 2-操作类型, 3-文件路径, 4-描述
+                $filePath = $matches[3].Trim()
+                $updateDesc = $matches[4].Trim()
                 $logMap[$filePath] = $updateDesc
                 Write-Host "DEBUG: 解析到记录 - 路径: $filePath, 描述: $updateDesc" -ForegroundColor Gray
             }
