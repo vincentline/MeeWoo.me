@@ -48,8 +48,11 @@ git status --short
 $changes = git status --short 2>$null
 $changeDetails = ""
 if ($changes) {
-    # 确保变更详情使用正确的编码
-    $changeDetails = "`n变更详情:`n$changes"
+    # 确保变更详情使用正确的编码，并按行格式化
+    $changeDetails = "`n变更详情:`n"
+    $changes -split '\r?\n' | ForEach-Object {
+        $changeDetails += "  $_`n"
+    }
 }
 
 # 添加所有变更
