@@ -44,13 +44,24 @@ if (-not $status) {
 Write-Host "发现变更:" -ForegroundColor Green
 git status --short
 
-# 获取变更详情（在add之前获取，确保能获取到所有变更）
-$changes = git status --short 2>$null
-$changeDetails = ""
-if ($changes) {
-    # 确保变更详情使用正确的编码，并按行格式化
-    $changeDetails = "`n变更详情:`n"
-    $changes -split '\r?\n' | ForEach-Object {
+# 获取文件变更列表（用于参考）
+$fileChanges = git status --short 2>$null
+
+# 让用户输入功能变更描述
+Write-Host "\n请输入功能变更描述：" -ForegroundColor Cyan
+Write-Host "（例如：修复了侧边栏拖拽功能，优化了中文显示）" -ForegroundColor Yellow
+$featureChanges = Read-Host "变更描述"
+
+# 如果用户没有输入变更描述，使用默认描述
+if (-not $featureChanges -or $featureChanges.Trim() -eq "") {
+    $featureChanges = "自动更新"
+}
+
+# 构建变更详情，包含功能变更和文件变更（用于参考）
+$changeDetails = "`n变更内容：$featureChanges"
+if ($fileChanges) {
+    $changeDetails += "`n\n变更文件：`n"
+    $fileChanges -split '\r?\n' | ForEach-Object {
         $changeDetails += "  $_`n"
     }
 }
@@ -63,7 +74,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # 提交变更
-$commitMsg = "自动更新: $(Get-Date -Format 'yyyy-MM-dd HH:mm')$changeDetails"
+$commitMsg = "更新: $(Get-Date -Format 'yyyy-MM-dd HH:mm')$changeDetails"
 git commit -m $commitMsg 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "提交变更失败" -ForegroundColor Red
