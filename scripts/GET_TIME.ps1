@@ -1,4 +1,4 @@
-# GET_TIME.ps1 - 获取准确北京时间的PowerShell脚本
+﻿# GET_TIME.ps1 - 获取准确北京时间的PowerShell脚本
 # 功能：获取北京标准时间，输出格式为 [YYYY-MM-DD HH:MM:SS]
 # 作者：AI-HLP
 # 日期：2026-01-26
