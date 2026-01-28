@@ -137,13 +137,27 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "警告: 拉取失败，尝试直接推送..." -ForegroundColor Yellow
 }
 
-# 推送变更
-git push origin main 2>$null
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "`n成功: 变更已推送到GitHub" -ForegroundColor Green
-} else {
-    Write-Host "`n推送变更失败" -ForegroundColor Red
-    exit 1
+# 推送变更（添加重试机制）
+$retryCount = 0
+$maxRetries = 3
+$pushSuccess = $false
+
+while ($retryCount -lt $maxRetries) {
+    git push origin main 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "`n成功: 变更已推送到GitHub" -ForegroundColor Green
+        $pushSuccess = $true
+        break
+    } else {
+        $retryCount++
+        if ($retryCount -lt $maxRetries) {
+            Write-Host "`n推送变更失败，2秒后重试 ($retryCount/$maxRetries)..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 2
+        } else {
+            Write-Host "`n推送变更失败" -ForegroundColor Red
+            exit 1
+        }
+    }
 }
 
 Write-Host "=== 完成 ===" -ForegroundColor Cyan
