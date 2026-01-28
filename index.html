@@ -561,6 +561,11 @@
                           v-if="svga.hasFile" title="素材图管理">
 
                         </button>
+                        <button class="btn-large-primary btn-ai-generate tooltip"
+                          v-if="svga.hasFile" title="AI 素材生成">
+                          <i class="sprite-icon sprite-AI-img btn-icon-ai"></i>
+                          <span class="tooltip-text">功能开发中...</span>
+                        </button>
                         <button class="btn-large-primary tooltip" v-else>
                           <span class="tooltip-text">请先拖入 SVGA 文件</span>
                           素材图管理
