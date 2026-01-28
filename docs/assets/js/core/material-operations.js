@@ -809,6 +809,29 @@
          * @param {Object} vueInstance - Vue实例
          */
         saveMaterialEdit: function (vueInstance) {
+            // 检查是否有编辑状态
+            var hasEditState = false;
+            var editorState = vueInstance.editor;
+            
+            // 1. 检查底图是否变更
+            var defaultImg = editorState.defaultBaseImage;
+            if (defaultImg && editorState.baseImage !== defaultImg) hasEditState = true;
+
+            // 2. 检查显示开关
+            else if (!editorState.showImage) hasEditState = true;
+            else if (editorState.showText) hasEditState = true;
+
+            // 3. 检查底图变换
+            else if (editorState.imageOffsetX !== 0) hasEditState = true;
+            else if (editorState.imageOffsetY !== 0) hasEditState = true;
+            else if (Math.abs(editorState.imageScale - 1.0) > 0.001) hasEditState = true;
+
+            // 如果没有编辑状态，直接关闭窗口
+            if (!hasEditState) {
+                vueInstance.editor.show = false;
+                return;
+            }
+
             vueInstance.editor.loading = true;
 
             // 生成编辑后的素材图
