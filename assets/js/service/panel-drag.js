@@ -71,6 +71,9 @@
           isDragging = true;
           panel.classList.add('dragging');
 
+          // 设置弹窗不透明度为90%
+          panel.style.opacity = '0.9';
+
           // 记录初始位置和鼠标位置
           startX = e.clientX;
           startY = e.clientY;
@@ -85,7 +88,8 @@
             left: panel.style.left,
             right: panel.style.right,
             top: panel.style.top,
-            transition: panel.style.transition
+            transition: panel.style.transition,
+            opacity: panel.style.opacity
           };
 
           // 隐藏滚动条，避免拖拽时页面滚动
@@ -121,11 +125,17 @@
           isDragging = false;
           panel.classList.remove('dragging');
 
+          // 恢复弹窗不透明度为100%，使用transition: none避免动画
+          panel.style.transition = 'none';
+          panel.style.opacity = '';
+
           // 恢复页面滚动
           document.body.style.overflow = '';
 
-          // 恢复过渡动画
-          panel.style.transition = '';
+          // 强制重排
+          panel.offsetHeight;
+
+          // 保持位置固定，不恢复过渡动画
         });
 
         // 鼠标离开窗口事件
@@ -135,11 +145,17 @@
           isDragging = false;
           panel.classList.remove('dragging');
 
+          // 恢复弹窗不透明度为100%，使用transition: none避免动画
+          panel.style.transition = 'none';
+          panel.style.opacity = '';
+
           // 恢复页面滚动
           document.body.style.overflow = '';
 
-          // 恢复过渡动画
-          panel.style.transition = '';
+          // 强制重排
+          panel.offsetHeight;
+
+          // 保持位置固定，不恢复过渡动画
         });
       });
     },
@@ -309,6 +325,9 @@
       isDragging = true;
       panelElement.classList.add('dragging');
 
+      // 设置弹窗不透明度为90%
+      panelElement.style.opacity = '0.9';
+
       // 记录初始位置和鼠标位置
       startX = e.clientX;
       startY = e.clientY;
@@ -323,7 +342,8 @@
         left: panelElement.style.left,
         right: panelElement.style.right,
         top: panelElement.style.top,
-        transition: panelElement.style.transition
+        transition: panelElement.style.transition,
+        opacity: panelElement.style.opacity
       };
 
       // 隐藏滚动条，避免拖拽时页面滚动
@@ -359,11 +379,17 @@
       isDragging = false;
       panelElement.classList.remove('dragging');
 
+      // 恢复弹窗不透明度为100%，使用transition: none避免动画
+      panelElement.style.transition = 'none';
+      panelElement.style.opacity = '';
+
       // 恢复页面滚动
       document.body.style.overflow = '';
 
-      // 恢复过渡动画
-      panelElement.style.transition = '';
+      // 强制重排
+      panelElement.offsetHeight;
+
+      // 保持位置固定，不恢复过渡动画
     });
 
     // 鼠标离开窗口事件
@@ -373,11 +399,17 @@
       isDragging = false;
       panelElement.classList.remove('dragging');
 
+      // 恢复弹窗不透明度为100%，使用transition: none避免动画
+      panelElement.style.transition = 'none';
+      panelElement.style.opacity = '';
+
       // 恢复页面滚动
       document.body.style.overflow = '';
 
-      // 恢复过渡动画
-      panelElement.style.transition = '';
+      // 强制重排
+      panelElement.offsetHeight;
+
+      // 保持位置固定，不恢复过渡动画
     });
   }
 })(window);
