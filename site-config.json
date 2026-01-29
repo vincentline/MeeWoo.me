@@ -10,7 +10,7 @@
     "用户类型控制": "通过URL参数 ?type=internal 访问内部版本"
   },
   
-  "version": "1.0.12",
+  "version": "1.0.13",
   
   "features": {
     "advertisement": {
@@ -21,7 +21,7 @@
       "default": "public",
       "controls": {
         "public": {
-          "hideButtons": ["material-self-service", "celebrity-gift-video", "avatar-generator"],
+          "hideButtons": ["material-self-service", "celebrity-gift-video", "avatar-generator", "ai-generate"],
           "showAdvertisement": true
         },
         "internal": {

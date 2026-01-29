@@ -3810,6 +3810,8 @@ body.dark-mode .center-modal-dialog {
 .center-modal-header {
   padding: 0 0 16px 0;
   border-bottom: 1px solid #e6e6e6;
+  cursor: move;
+  user-select: none;
 }
 
 body.dark-mode .center-modal-header {
