@@ -89,7 +89,7 @@ ai_protocol_hub/
 ### 3. 脚本 (scripts/)
 **功能**：存放所有规则涉及的脚本
 **示例脚本**：
-- `GET_TIME.ps1` - 获取北京时间
+- `GET_TIME.py` - 获取北京时间
 - 其他功能脚本
 
 ### 4. 技能规范 (skill_specs/)
@@ -118,7 +118,7 @@ ai_protocol_hub/
 #### 时间戳生成规则
 ```markdown
 3. 时间戳生成规则：
-   - 获取方式：执行`ai_protocol_hub/scripts/GET_TIME.ps1`获取当前北京时间
+   - 获取方式：执行`python ai_protocol_hub/scripts/GET_TIME.py`获取当前北京时间
    - 格式要求：`[YYYY-MM-DD HH:MM:SS]`（北京时间）
    - 错误处理：网络不可用时可使用本地时间备选
    - 禁止手动输入时间戳
@@ -135,28 +135,8 @@ ai_protocol_hub/
 #### 指令规则
 ```markdown
 1. 用户描述中包含“【】”，为指令操作，执行指令文件`ai_protocol_hub/core_rules/INSTRUCTIONS.md`对应的操作
+2. 指令包括但不限于：【测试】、【回答】、【提交】、【收尾】、【更新索引】、【更新日志】、【同步AI协议】等指令
 ```
-
-## 工作流程
-
-### 1. 指令执行流程
-1. 用户发送指令（格式：`【指令名称 参数1 参数2 ...】`）
-2. AI识别指令并查阅 `core_rules/INSTRUCTIONS.md`
-3. 执行任务验证（查阅 `core_rules/TASK_VALIDATION_RULES.md`）
-4. 执行指令对应的操作
-5. 记录操作日志到 `UPDATE_LOG.md`
-6. 返回执行结果
-
-### 2. 代码生成流程
-1. 查阅 `core_rules/CODE_STYLE.md` 了解代码规范
-2. 执行代码生成
-3. 验证代码是否符合规范
-4. 记录操作日志到 `UPDATE_LOG.md`
-
-### 3. 问题处理流程
-1. 遇到问题时查阅相关规则文档
-2. 无法解决时向用户沟通求助
-3. 记录问题和解决方案到 `UPDATE_LOG.md`
 
 ## 优势
 
@@ -175,21 +155,6 @@ ai_protocol_hub/
 3. **定制规则文档**：根据项目需求修改核心规则
 4. **添加脚本**：根据需要添加功能脚本
 5. **拓展技能**：定义项目特定的技能规范
-
-### 可直接复用的文件
-
-以下文件具有通用性，可直接复用到其他项目中：
-
-1. **`core_rules/TASK_VALIDATION_RULES.md`** - 任务验证规则，适用于各种项目的任务验证流程
-2. **`core_rules/UI-DESIGN-SYSTEM.md`** - UI设计系统规范，提供完整的设计令牌和组件规范
-3. **`core_rules/DEVELOPMENT_FLOW.md`** - 开发流程规范，包含标准的收尾工作流程
-
-### 可修改后复用的文件
-
-以下文件在修改项目名后也可以直接复用：
-
-1. **`core_rules/CODE_STYLE.md`** - 代码规范文档，修改文档中的项目名（如 `ImgHLP`）后即可复用
-2. **`core_rules/INSTRUCTIONS.md`** - 指令规则说明，修改文档中的项目名和相关路径后即可复用
 
 ## 注意事项
 
