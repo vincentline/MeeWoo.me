@@ -197,6 +197,10 @@ def publish_to_gh_pages():
     current_branch = current_branch_result.stdout.strip()
     print_with_encoding(f"[进度] 当前分支: {current_branch}")
     
+    # 保存项目根目录路径
+    project_root = os.getcwd()
+    print_with_encoding(f"[进度] 项目根目录: {project_root}")
+    
     # 创建临时目录
     temp_dir = tempfile.mkdtemp(prefix='gh-pages-deploy-')
     print_with_encoding(f"[进度] 创建临时目录: {temp_dir}")
@@ -244,7 +248,8 @@ def publish_to_gh_pages():
         
         # 复制 main 分支的 docs 目录内容到 gh-pages 分支
         print_with_encoding("[进度] 复制 docs 目录内容到 gh-pages 分支...")
-        main_docs_path = os.path.join(os.path.dirname(temp_dir), 'docs')
+        main_docs_path = os.path.join(project_root, 'docs')
+        print_with_encoding(f"[进度] 源 docs 目录: {main_docs_path}")
         
         def copy_directory(src, dst):
             if not os.path.exists(dst):
@@ -282,7 +287,7 @@ def publish_to_gh_pages():
         print_with_encoding("[进度] 清理临时目录")
         
         # 切换回原分支
-        os.chdir(os.path.dirname(main_docs_path))
+        os.chdir(project_root)
         checkout_result = run_command(f'git checkout {current_branch}')
         if checkout_result and checkout_result.returncode != 0:
             print_with_encoding("警告：切换回原分支失败")
