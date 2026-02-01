@@ -278,7 +278,15 @@ def publish_to_gh_pages():
         # 推送到 gh-pages 分支
         print_with_encoding("[进度] 推送到 gh-pages 分支...")
         push_result = run_command('git push origin gh-pages')
-        if push_result and push_result.returncode != 0:
+        if push_result:
+            if push_result.returncode != 0:
+                print_with_encoding("错误：推送失败")
+                print_with_encoding(f"错误信息：{push_result.stderr}")
+                print_with_encoding(f"标准输出：{push_result.stdout}")
+                return False
+            else:
+                print_with_encoding("成功推送到 gh-pages 分支")
+        else:
             print_with_encoding("错误：推送失败")
             return False
         
