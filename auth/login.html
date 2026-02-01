@@ -66,9 +66,9 @@
     }
 
     .login-logo img {
-      width: 80px;
-      height: 80px;
-      margin-bottom: 16px;
+      width: 250px;
+      height: 64px;
+      margin: 8px 0 0 4px;
     }
 
     .login-logo h1 {
@@ -183,7 +183,7 @@
     <div class="login-container">
       <div class="login-card">
         <div class="login-logo">
-          <img src="HeaderLogo_White.png" alt="MeeWoo Logo" style="width: auto; height: auto; max-width: 120px; max-height: 120px;" />
+          <img src="header_logo_white.png" alt="MeeWoo Logo" />
         </div>
 
         <div v-if="errorMessage" class="error-message">
@@ -218,7 +218,6 @@
                 required
                 autocomplete="current-password"
                 class="base-input"
-                style="padding-right: 40px;"
               />
               <button 
                 type="button" 
@@ -262,12 +261,6 @@
       <div class="loading-spinner"></div>
     </div>
   </div>
-
-  <!-- COI Service Worker for SharedArrayBuffer support on GitHub Pages -->
-  <script src="../coi-serviceworker.js?v=8"></script>
-
-  <!-- 库加载管理器 -->
-  <script src="../assets/js/service/library-loader.js"></script>
 
   <!-- Vue.js -->
   <script src="../assets/js/lib/vue.min.js"></script>
