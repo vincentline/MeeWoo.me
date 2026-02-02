@@ -8,34 +8,72 @@ class AuthUtils {
 
   // 检查是否已登录
   isLoggedIn() {
-    return !!localStorage.getItem(this.tokenKey);
+    try {
+      return !!localStorage.getItem(this.tokenKey);
+    } catch (e) {
+      console.error('检查登录状态失败:', e);
+      return false;
+    }
   }
 
   // 获取Token
   getToken() {
-    return localStorage.getItem(this.tokenKey);
+    try {
+      return localStorage.getItem(this.tokenKey);
+    } catch (e) {
+      console.error('获取Token失败:', e);
+      return null;
+    }
   }
 
   // 获取用户信息
   getUserInfo() {
-    const userInfo = localStorage.getItem(this.userKey);
-    return userInfo ? JSON.parse(userInfo) : null;
+    try {
+      const userInfo = localStorage.getItem(this.userKey);
+      return userInfo ? JSON.parse(userInfo) : null;
+    } catch (e) {
+      console.error('获取用户信息失败:', e);
+      return null;
+    }
   }
 
   // 存储Token
   saveToken(token) {
-    localStorage.setItem(this.tokenKey, token);
+    try {
+      localStorage.setItem(this.tokenKey, token);
+      return true;
+    } catch (e) {
+      console.error('存储Token失败:', e);
+      return false;
+    }
   }
 
   // 存储用户信息
   saveUserInfo(userInfo) {
-    localStorage.setItem(this.userKey, JSON.stringify(userInfo));
+    try {
+      // 限制存储的数据大小
+      const limitedUserInfo = {
+        username: userInfo.username || '',
+        id: userInfo.id || ''
+      };
+      localStorage.setItem(this.userKey, JSON.stringify(limitedUserInfo));
+      return true;
+    } catch (e) {
+      console.error('存储用户信息失败:', e);
+      return false;
+    }
   }
 
   // 清除登录信息
   clearAuth() {
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem(this.userKey);
+    try {
+      localStorage.removeItem(this.tokenKey);
+      localStorage.removeItem(this.userKey);
+      return true;
+    } catch (e) {
+      console.error('清除登录信息失败:', e);
+      return false;
+    }
   }
 
   // 重定向到登录页面
@@ -47,18 +85,20 @@ class AuthUtils {
   // 处理登录回调
   handleLoginCallback() {
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const userInfo = urlParams.get('user');
+    const token = urlParams.get('authToken') || urlParams.get('token');
+    const userInfoParam = urlParams.get('userInfo') || urlParams.get('user');
     
-    if (token && userInfo) {
+    if (token && userInfoParam) {
       try {
         // 存储Token和用户信息
         this.saveToken(token);
-        this.saveUserInfo(JSON.parse(userInfo));
+        this.saveUserInfo(JSON.parse(userInfoParam));
         
         // 清理URL参数
         const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete('authToken');
         cleanUrl.searchParams.delete('token');
+        cleanUrl.searchParams.delete('userInfo');
         cleanUrl.searchParams.delete('user');
         window.history.replaceState({}, '', cleanUrl.toString());
         

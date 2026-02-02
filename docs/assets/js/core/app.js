@@ -508,18 +508,23 @@ function initApp() {
       _migrateOldData: function () {
         if (!this.configManager) return;
 
-        // 1. 迁移主题 (theme)
-        var oldTheme = localStorage.getItem('theme');
-        if (oldTheme) {
-          this.configManager.set('theme', oldTheme);
-          localStorage.removeItem('theme');
-        }
+        try {
+          // 1. 迁移主题 (theme)
+          var oldTheme = localStorage.getItem('theme');
+          if (oldTheme) {
+            this.configManager.set('theme', oldTheme);
+            localStorage.removeItem('theme');
+          }
 
-        // 2. 迁移背景色 (svga_preview_bg)
-        var oldBg = localStorage.getItem('svga_preview_bg');
-        if (oldBg) {
-          this.configManager.set('bgColorKey', oldBg);
-          localStorage.removeItem('svga_preview_bg');
+          // 2. 迁移背景色 (svga_preview_bg)
+          var oldBg = localStorage.getItem('svga_preview_bg');
+          if (oldBg) {
+            this.configManager.set('bgColorKey', oldBg);
+            localStorage.removeItem('svga_preview_bg');
+          }
+        } catch (e) {
+          console.error('迁移旧数据失败:', e);
+          // 继续执行，不阻断流程
         }
 
         // 3. 迁移 GIF 配置
@@ -567,7 +572,9 @@ function initApp() {
        */
       updateLoginStatus: function () {
         if (window.authUtils) {
-          this.isLoggedIn = window.authUtils.isLoggedIn();
+          var loggedIn = window.authUtils.isLoggedIn();
+          console.log('登录状态更新:', loggedIn);
+          this.isLoggedIn = loggedIn;
           this.userInfo = window.authUtils.getUserInfo();
         }
       },
