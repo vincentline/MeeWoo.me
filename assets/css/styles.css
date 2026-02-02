@@ -352,6 +352,20 @@ body.dark-mode .header-navbar-title {
   transition: all 0.2s ease;
 }
 
+.login-icon {
+  width: 24px;
+  height: 24px;
+  background-image: url('../img/controls-sprite.png');
+  background-size: 400px 400px;
+  background-position: 2px -358px;
+  background-repeat: no-repeat;
+  display: flex;
+}
+
+body.dark-mode .login-icon {
+  background-position: -40px -360px;
+}
+
 .login-btn:hover {
   background: #f5f5f5;
 }
@@ -481,8 +495,9 @@ body.dark-mode .theme-toggle svg {
   transition: opacity 0.2s, visibility 0.2s;
 }
 
-/* 主题切换按钮的 tooltip 在下方 */
-.theme-toggle .tooltip-text {
+/* 主题切换按钮和登录按钮的 tooltip 在下方 */
+.theme-toggle .tooltip-text,
+.login-btn .tooltip-text {
   bottom: auto;
   top: 125%;
 }
@@ -505,8 +520,9 @@ body.dark-mode .tooltip .tooltip-text {
   border-color: #ffffff transparent transparent transparent;
 }
 
-/* 主题切换按钮的箭头在上方 */
-.theme-toggle .tooltip-text::after {
+/* 主题切换按钮和登录按钮的箭头在上方 */
+.theme-toggle .tooltip-text::after,
+.login-btn .tooltip-text::after {
   top: auto;
   bottom: 100%;
   border-color: transparent transparent #ffffff transparent;
@@ -516,7 +532,8 @@ body.dark-mode .tooltip .tooltip-text::after {
   border-color: #2a2a2a transparent transparent transparent;
 }
 
-body.dark-mode .theme-toggle .tooltip-text::after {
+body.dark-mode .theme-toggle .tooltip-text::after,
+body.dark-mode .login-btn .tooltip-text::after {
   border-color: transparent transparent #2a2a2a transparent;
 }
 
@@ -572,7 +589,7 @@ body.dark-mode .library-loading-indicator .loading-text {
   background: none;
   /* 使用雪碧图 - 原始80x80，通过background-size缩小50%到40x40显示 */
   background-image: url('../img/controls-sprite.png');
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   background-position: 0px 0px;
   background-repeat: no-repeat;
   transition: opacity 0.2s;
@@ -1021,9 +1038,8 @@ body.dark-mode .mode-name-label * {
   overflow: hidden;
   /* 使用雪碧图 - close图标，原始80x80通过background-size缩小50%显示 */
   background-image: url('../img/controls-sprite.png');
-  background-size: 410px 376px;
-  background-position: -326px -166px;
-  /* -320*0.5 - 6 = -326, -320*0.5 - 6 = -166 */
+  background-size: 400px 400px;
+  background-position: -320px -160px;
   background-repeat: no-repeat;
 }
 
@@ -1042,8 +1058,7 @@ body.dark-mode .mode-name-label * {
 /* 暗黑模式 */
 body.dark-mode .clear-canvas-btn {
   background-color: #4040407d;
-  background-position: -366px -166px;
-  /* -360*0.5 - 6 = -366 */
+  background-position: -360px -160px;
 }
 
 body.dark-mode .clear-canvas-btn .sprite-close {
@@ -1052,7 +1067,7 @@ body.dark-mode .clear-canvas-btn .sprite-close {
 
 body.dark-mode .clear-canvas-btn:hover {
   background-color: #FF8888;
-  background-position: -326px -166px;
+  background-position: -320px -160px;
   /* hover时用回黑色图标（因为背景变红了） */
 }
 
@@ -1062,7 +1077,7 @@ body.dark-mode .clear-canvas-btn:hover .sprite-close {
 
 body.dark-mode .clear-canvas-btn:active {
   background-color: #FF5252;
-  background-position: -326px -166px;
+  background-position: -320px -160px;
 }
 
 body.dark-mode .clear-canvas-btn:active .sprite-close {
@@ -1472,7 +1487,7 @@ body.dark-mode .pattern-btn {
   background-color: transparent;
   /* 使用雪碧图 - 原始80x80，通过background-size缩小50%显示 */
   background-image: url('../img/controls-sprite.png');
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   background-position: -160px 0px;
   background-repeat: no-repeat;
   cursor: pointer;
@@ -1534,7 +1549,7 @@ body.dark-mode .play-btn.is-playing:active {
   background-color: transparent;
   /* 使用雪碧图 - 原始80x80，通过background-size缩小50%显示 */
   background-image: url('../img/controls-sprite.png');
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   background-position: -240px -40px;
   background-repeat: no-repeat;
   cursor: pointer;
@@ -1860,14 +1875,30 @@ body.dark-mode .btn-large-primary:disabled {
   min-width: 44px !important;
   padding: 0 !important;
   flex: none !important;
-  background-image: url('../img/open_file.png');
+  background-image: url('../img/controls-sprite.png');
   background-repeat: no-repeat;
-  background-position: center;
-  background-size: 24px 24px;
+  background-position: -71px -312px;
+  background-size: 400px 400px;
 }
 
 body.dark-mode .btn-open-file {
-  background-image: url('../img/open_file_dark.png');
+  background-position: -120px -320px;
+}
+
+/* 下载文件按钮特殊样式 */
+.btn-download-file {
+  width: 44px !important;
+  min-width: 44px !important;
+  padding: 0 !important;
+  flex: none !important;
+  background-image: url('../img/controls-sprite.png');
+  background-repeat: no-repeat;
+  background-position: -71px -352px;
+  background-size: 400px 400px;
+}
+
+body.dark-mode .btn-download-file {
+  background-position: -120px -360px;
 }
 
 /* 素材管理按钮特殊样式 */
@@ -1892,26 +1923,26 @@ body.dark-mode .btn-material-manager {
   height: 24px;
 }
 
-/* AI图标位置调整（原始640px, 560px -> 缩小到1/2 = -320px, -280px） */
+/* AI图标位置调整 */
 .sprite-AI-img.btn-icon-ai {
   background-position: -320px -280px;
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   background-repeat: no-repeat;
   width: 24px;
   height: 24px;
 }
 
-/* AI图标hover状态（原始720px, 560px -> 缩小到1/2 = -360px, -280px） */
+/* AI图标hover状态 */
 .sprite-AI-img.btn-icon-ai:hover {
   background-position: -360px -280px;
 }
 
-/* 暗黑模式下的AI图标（原始0px, 640px -> 缩小到1/2 = 0px, -320px） */
+/* 暗黑模式下的AI图标 */
 body.dark-mode .sprite-AI-img.btn-icon-ai {
   background-position: 0px -320px;
 }
 
-/* 暗黑模式hover状态（原始80px, 640px -> 缩小到1/2 = -40px, -320px） */
+/* 暗黑模式hover状态 */
 body.dark-mode .sprite-AI-img.btn-icon-ai:hover {
   background-position: -40px -320px;
 }
@@ -1938,7 +1969,7 @@ body.dark-mode .sprite-AI-img.btn-icon-ai:hover {
   background-image: url('../img/controls-sprite.png');
   background-repeat: no-repeat;
   background-position: -232px -152px;
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   width: 40px;
   height: 40px;
   transform: scale(1.4);
@@ -1988,7 +2019,7 @@ body.dark-mode .sprite-AI-img.btn-icon-ai:hover {
   background-color: transparent;
   /* 使用雪碧图 - 原始80x80，通过background-size缩小50%显示 */
   background-image: url('../img/controls-sprite.png');
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   background-repeat: no-repeat;
   cursor: pointer;
   outline: none;
@@ -2054,7 +2085,7 @@ body.dark-mode .scale-percentage {
   background-color: transparent;
   /* 使用雪碧图 - 原始80x80，通过background-size缩小50%显示 */
   background-image: url('../img/controls-sprite.png');
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   background-position: -320px -120px;
   /* one2one.png */
   background-repeat: no-repeat;
@@ -2146,7 +2177,7 @@ body.dark-mode .reset-scale-btn.is-contain:hover {
   border: none;
   background-color: transparent;
   background-image: url('../img/controls-sprite.png');
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   background-position: -80px -200px;
   /* minimize.png */
   background-repeat: no-repeat;
@@ -2201,7 +2232,7 @@ body.dark-mode .footer-mini {
   border: none;
   background-color: transparent;
   background-image: url('../img/controls-sprite.png');
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   background-position: 0px -240px;
   /* mini_play.png */
   background-repeat: no-repeat;
@@ -2252,7 +2283,7 @@ body.dark-mode .mini-play-btn.is-playing:hover {
   border: none;
   background-color: transparent;
   background-image: url('../img/controls-sprite.png');
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   background-position: -320px -240px;
   /* mini_mute.png */
   background-repeat: no-repeat;
@@ -2315,7 +2346,7 @@ body.dark-mode .mini-mute-btn.is-disabled {
   border: none;
   background-color: transparent;
   background-image: url('../img/controls-sprite.png');
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   background-position: -320px -120px;
   /* one2one.png */
   background-repeat: no-repeat;
@@ -2366,7 +2397,7 @@ body.dark-mode .mini-scale-btn.is-contain:hover {
   border: none;
   background-color: transparent;
   background-image: url('../img/controls-sprite.png');
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   background-position: -240px -200px;
   /* maximize.png */
   background-repeat: no-repeat;
@@ -3089,7 +3120,7 @@ body.dark-mode .material-btn-close:hover {
   transition: all 0.15s ease;
   /* 使用雪碧图 - recover图标，原始80x80通过background-size缩小50%显示 */
   background-image: url('../img/controls-sprite.png');
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   background-position: -238px -158px;
   /* recover.png */
   background-repeat: no-repeat;
@@ -4271,7 +4302,7 @@ body.dark-mode .editor-preview-area {
   border: none;
   background-color: transparent;
   background-image: url('../img/controls-sprite.png');
-  background-size: 400px 360px;
+  background-size: 400px 400px;
   background-position: -320px -120px;
   /* one2one.png: 原始-640px -240px -> 缩小到1/2 */
   background-repeat: no-repeat;
@@ -5377,6 +5408,84 @@ body.dark-mode .material-btn-edit:hover {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+}
+
+.text-align-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.text-align-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background-color: #f3f3f3;
+  border-radius: 8px;
+  cursor: pointer;
+  background-image: url('../img/controls-sprite.png');
+  background-size: 400px 400px;
+  background-repeat: no-repeat;
+  transition: all 0.2s ease;
+}
+
+.text-align-btn:hover {
+  background-color: #e6e6e6;
+}
+
+.text-align-btn.active {
+  background-color: #5b5b5b;
+}
+
+/* 左对齐按钮 */
+.text-align-left {
+  background-position: -160px -320px;
+}
+
+.text-align-left.active {
+  background-position: -160px -320px;
+}
+
+/* 居中对齐按钮 */
+.text-align-center {
+  background-position: -160px -360px;
+}
+
+.text-align-center.active {
+  background-position: -160px -360px;
+}
+
+/* 右对齐按钮 */
+.text-align-right {
+  background-position: -200px -360px;
+}
+
+.text-align-right.active {
+  background-position: -200px -360px;
+}
+
+/* 暗黑模式 */
+body.dark-mode .text-align-btn {
+  background-color: #3a3a3a;
+}
+
+body.dark-mode .text-align-btn:hover {
+  background-color: #454545;
+}
+
+body.dark-mode .text-align-btn.active {
+  background-color: #666666;
+}
+
+body.dark-mode .text-align-left {
+  background-position: -200px -320px;
+}
+
+body.dark-mode .text-align-center {
+  background-position: -200px -360px;
+}
+
+body.dark-mode .text-align-right {
+  background-position: -240px -360px;
 }
 
 /* 文字对齐按钮组 */

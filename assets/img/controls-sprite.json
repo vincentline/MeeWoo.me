@@ -490,5 +490,77 @@
     "y": -640,
     "width": 80,
     "height": 80
+  },
+  "open_file.png": {
+    "x": -160,
+    "y": -640,
+    "width": 80,
+    "height": 80
+  },
+  "open_file_dark.png": {
+    "x": -240,
+    "y": -640,
+    "width": 80,
+    "height": 80
+  },
+  "text_center.png": {
+    "x": -320,
+    "y": -640,
+    "width": 80,
+    "height": 80
+  },
+  "text_center_dark.png": {
+    "x": -400,
+    "y": -640,
+    "width": 80,
+    "height": 80
+  },
+  "text_left.png": {
+    "x": -480,
+    "y": -640,
+    "width": 80,
+    "height": 80
+  },
+  "text_left_dark.png": {
+    "x": -560,
+    "y": -640,
+    "width": 80,
+    "height": 80
+  },
+  "text_right.png": {
+    "x": -640,
+    "y": -640,
+    "width": 80,
+    "height": 80
+  },
+  "text_right_dark.png": {
+    "x": -720,
+    "y": -640,
+    "width": 80,
+    "height": 80
+  },
+  "user.png": {
+    "x": 0,
+    "y": -720,
+    "width": 80,
+    "height": 80
+  },
+  "user_dark.png": {
+    "x": -80,
+    "y": -720,
+    "width": 80,
+    "height": 80
+  },
+  "download.png": {
+    "x": -160,
+    "y": -720,
+    "width": 80,
+    "height": 80
+  },
+  "download_dark.png": {
+    "x": -240,
+    "y": -720,
+    "width": 80,
+    "height": 80
   }
 }

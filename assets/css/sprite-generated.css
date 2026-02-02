@@ -1,5 +1,5 @@
 /* 自动生成的雪碧图样式 - 请勿手动编辑 */
-/* 生成时间: 2026-01-10 02:55:11 */
+/* 生成时间: 2026-02-02 13:14:39 */
 
 /* 雪碧图基础样式 */
 .sprite-icon {
@@ -446,6 +446,74 @@
 }
 .sprite-AI-img-hover-dark {
   background-position: -80px -640px;
+  width: 80px;
+  height: 80px;
+}
+
+/* OPEN_FILE 图标 */
+.sprite-open-file {
+  background-position: -160px -640px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-open-file-dark {
+  background-position: -240px -640px;
+  width: 80px;
+  height: 80px;
+}
+
+/* TEXT-ALIGN-BTN 图标 */
+.sprite-text-center {
+  background-position: -320px -640px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-text-center-dark {
+  background-position: -400px -640px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-text-left {
+  background-position: -480px -640px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-text-left-dark {
+  background-position: -560px -640px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-text-right {
+  background-position: -640px -640px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-text-right-dark {
+  background-position: -720px -640px;
+  width: 80px;
+  height: 80px;
+}
+
+/* USER 图标 */
+.sprite-user {
+  background-position: 0px -720px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-user-dark {
+  background-position: -80px -720px;
+  width: 80px;
+  height: 80px;
+}
+
+/* DOWNLOAD 图标 */
+.sprite-download {
+  background-position: -160px -720px;
+  width: 80px;
+  height: 80px;
+}
+.sprite-download-dark {
+  background-position: -240px -720px;
   width: 80px;
   height: 80px;
 }

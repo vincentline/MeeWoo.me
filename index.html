@@ -210,7 +210,7 @@
       <div class="header-right-action">
         <div class="login-btn-container" :class="{ 'is-logged-in': isLoggedIn }">
           <a href="#" class="login-btn tooltip" :class="{ 'disabled': isLoggedIn }" @click.prevent="handleLogin">
-            <img :src="isDarkMode ? './assets/img/user_dark.png' : './assets/img/user.png'" alt="登录" style="width: 24px; height: 24px;" />
+            <span class="login-icon"></span>
             <span class="tooltip-text">{{ isLoggedIn ? '用户中心' : '用户登录' }}</span>
           </a>
           <!-- 登录状态下的菜单 -->
@@ -574,6 +574,10 @@
                         <button class="btn-large-primary btn-open-file" @click="triggerChangePreviewFile"
                           v-if="svga.hasFile" title="打开文件...">
                         </button>
+                        <button class="btn-large-primary btn-download-file tooltip"
+                          v-if="svga.hasFile" title="下载文件...">
+                          <span class="tooltip-text">功能开发中...</span>
+                        </button>
                         <button class="btn-large-primary btn-material-manager" @click="openMaterialPanel"
                           v-if="svga.hasFile" title="素材图管理">
 
@@ -621,6 +625,10 @@
                         <button class="btn-large-primary btn-open-file" @click="triggerChangePreviewFile"
                           title="打开文件...">
                         </button>
+                        <button class="btn-large-primary btn-download-file tooltip"
+                          title="下载文件...">
+                          <span class="tooltip-text">功能开发中...</span>
+                        </button>
                       </div>
                       <div class="footer-actions">
                         <button class="btn-large-primary tooltip">
@@ -654,6 +662,12 @@
                       <div class="footer-actions">
                         <button class="btn-large-primary btn-open-file" @click="triggerChangePreviewFile"
                           title="打开文件...">
+                        </button>
+                        <button class="btn-large-primary btn-download-file tooltip"
+                          :class="{'tooltip': !mp4.hasFile}" :disabled="!mp4.hasFile"
+                          title="下载文件...">
+                          <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
+                          <span v-else class="tooltip-text">功能开发中...</span>
                         </button>
                         <button class="btn-large-primary" :class="{'tooltip': !mp4.hasFile}" :disabled="!mp4.hasFile"
                           @click="openChromaKeyPanel">
@@ -700,6 +714,10 @@
                         <button class="btn-large-primary btn-open-file" @click="triggerChangePreviewFile"
                           title="打开文件...">
                         </button>
+                        <button class="btn-large-primary btn-download-file tooltip"
+                          title="下载文件...">
+                          <span class="tooltip-text">功能开发中...</span>
+                        </button>
                       </div>
                       <div class="footer-actions">
                         <button class="btn-large-primary tooltip">
@@ -738,6 +756,10 @@
                       <div class="footer-actions">
                         <button class="btn-large-primary btn-open-file" @click="triggerChangePreviewFile"
                           title="打开文件...">
+                        </button>
+                        <button class="btn-large-primary btn-download-file tooltip"
+                          title="下载文件...">
+                          <span class="tooltip-text">功能开发中...</span>
                         </button>
                         <button class="btn-large-primary" @click="openChangeFpsDialog">
                           改变帧率
@@ -1117,19 +1139,14 @@
               <div class="editor-control-label-with-buttons">
                 <div class="editor-control-label">文案内容：</div>
                 <div class="text-align-buttons">
-                  <button class="text-align-btn" :class="{'active': editor.textAlign === 'left'}"
+                  <button class="text-align-btn text-align-left" :class="{'active': editor.textAlign === 'left'}"
                     @click="setTextAlign('left')" title="左对齐">
-                    <img :src="isDarkMode ? './assets/img/text_left_dark.png' : './assets/img/text_left.png'" alt="左对齐">
                   </button>
-                  <button class="text-align-btn" :class="{'active': editor.textAlign === 'center'}"
+                  <button class="text-align-btn text-align-center" :class="{'active': editor.textAlign === 'center'}"
                     @click="setTextAlign('center')" title="居中对齐">
-                    <img :src="isDarkMode ? './assets/img/text_center_dark.png' : './assets/img/text_center.png'"
-                      alt="居中对齐">
                   </button>
-                  <button class="text-align-btn" :class="{'active': editor.textAlign === 'right'}"
+                  <button class="text-align-btn text-align-right" :class="{'active': editor.textAlign === 'right'}"
                     @click="setTextAlign('right')" title="右对齐">
-                    <img :src="isDarkMode ? './assets/img/text_right_dark.png' : './assets/img/text_right.png'"
-                      alt="右对齐">
                   </button>
                 </div>
               </div>
