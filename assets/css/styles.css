@@ -416,11 +416,30 @@ body.dark-mode .login-btn:hover {
   transform: translateY(0);
 }
 
-/* 确保登录菜单在登录状态下能正确显示 */
+/* 确保登录状态下菜单能显示 */
 .login-btn-container.is-logged-in:hover .login-menu {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
+}
+
+/* 确保登录菜单项在登录状态下显示 */
+.login-menu-item {
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  margin: 0;
+  background: #5b5b5b;
+  text-align: center;
+  border: none;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  opacity: 1;
+  visibility: visible;
 }
 
 /* 增加登录按钮容器的触发区域 */

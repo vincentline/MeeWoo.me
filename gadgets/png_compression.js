@@ -10,8 +10,18 @@ const app = {
     compressedCount: 0, // 已压缩完成的图片数量
     totalSizeBefore: 0, // 压缩前总大小
     totalSizeAfter: 0, // 压缩后总大小
-    theme: localStorage.getItem('theme') || 'light' // 当前主题
+    theme: 'light' // 当前主题
 };
+
+// 初始化主题
+try {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        app.theme = savedTheme;
+    }
+} catch (e) {
+    console.error('获取主题失败:', e);
+}
 
 // DOM元素
 const elements = {
@@ -555,7 +565,11 @@ function showToast(message) {
 // 设置主题
 function setTheme(theme) {
     app.theme = theme;
-    localStorage.setItem('theme', theme);
+    try {
+        localStorage.setItem('theme', theme);
+    } catch (e) {
+        console.error('存储主题失败:', e);
+    }
 
     if (theme === 'dark') {
         document.body.classList.add('dark-mode');
