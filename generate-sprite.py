@@ -129,6 +129,27 @@ ICONS = {
         'AI_img_hover.png',
         'AI_img_dark.png',
         'AI_img_hover_dark.png',
+    ],
+    'open_file': [
+        'open_file.png',
+        'open_file_dark.png',
+    ],
+    'text-align-btn': [
+        'text_center.png',
+        'text_center_dark.png',
+        'text_left.png',
+        'text_left_dark.png',
+        'text_right.png',
+        'text_right_dark.png',
+    ],
+    'user': [
+        'user.png',
+        'user_dark.png',
+    ]
+    ,
+    'download': [
+        'download.png',
+        'download_dark.png',
     ]
 }
 
