@@ -1964,6 +1964,67 @@ body.dark-mode .btn-download-file {
   background-position: -120px -360px;
 }
 
+/* 绿幕抠图按钮特殊样式 */
+.btn-green-screen-keying {
+  width: 44px !important;
+  min-width: 44px !important;
+  padding: 0 !important;
+  flex: none !important;
+  background-image: url('../img/green_screen_keying.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 24px 24px;
+}
+
+body.dark-mode .btn-green-screen-keying {
+  background-image: url('../img/green_screen_keying_dark.png');
+}
+
+/* 多段变速按钮特殊样式 */
+.btn-time-remapping {
+  width: 44px !important;
+  min-width: 44px !important;
+  padding: 0 !important;
+  flex: none !important;
+  background-image: url('../img/time_remapping.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 24px 24px;
+}
+
+body.dark-mode .btn-time-remapping {
+  background-image: url('../img/time_remapping_dark.png');
+}
+
+/* 按钮右上角的✓标记 */
+.btn-checkmark {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 确保按钮相对定位，使✓标记的绝对定位生效 */
+.btn-time-remapping,
+.btn-green-screen-keying {
+  position: relative;
+}
+
+body.dark-mode .btn-checkmark {
+  background-color: #45a049;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
 /* 素材管理按钮特殊样式 */
 .btn-material-manager {
   width: 44px !important;

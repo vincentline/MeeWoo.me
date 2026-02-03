@@ -668,16 +668,17 @@
                           <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
                           <span v-else class="tooltip-text">功能开发中...</span>
                         </button>
-                        <button class="btn-large-primary" :class="{'tooltip': !mp4.hasFile}" :disabled="!mp4.hasFile"
-                          @click="openChromaKeyPanel">
+                        <button class="btn-large-primary btn-green-screen-keying" :class="{'tooltip': !mp4.hasFile}" :disabled="!mp4.hasFile"
+                          @click="openChromaKeyPanel" title="绿幕抠图">
                           <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
-                          绿幕抠图
+                          <span v-if="chromaKeyEnabled" class="btn-checkmark">✓</span>
                         </button>
-                        <button class="btn-large-primary"
-                          :class="{'tooltip': !mp4.hasFile, 'btn-active': speedRemapConfig.enabled}"
-                          :disabled="!mp4.hasFile" @click="openSpeedRemapEditor">
+                        <button class="btn-large-primary btn-time-remapping"
+                          :class="{'tooltip': !mp4.hasFile}"
+                          :disabled="!mp4.hasFile" @click="openSpeedRemapEditor" title="多段变速">
                           <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
-                          {{ speedRemapConfig.enabled ? '多段变速✓' : '多段变速' }}
+                          
+                          <span v-if="speedRemapConfig.enabled" class="btn-checkmark">✓</span>
                         </button>
                       </div>
                       <div class="footer-actions">
