@@ -20,9 +20,9 @@ import sys
 # 全局定义排除规则
 # ==============================================
 # 要排除的文件名
-exclude_files = ['index.html', '404.html', 'png_compression.html', 'fix_garbled_text.html', 'drawer.css', 'panel.css', 'sprite-generated.css', 'style.css']
+exclude_files = ['index.html', '404.html', 'drawer.css', 'panel.css', 'sprite-generated.css', 'style.css']
 # 要排除的文件夹名
-exclude_folders = ['img']
+exclude_folders = ['gadgets', 'css']
 # ==============================================
 
 # 确保脚本使用 UTF-8 编码
