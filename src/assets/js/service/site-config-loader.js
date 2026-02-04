@@ -216,9 +216,13 @@
         /**
          * 获取当前用户类型
          * @returns {string} 用户类型 (public/internal)
+         * 
+         * 注意：忽略 URL 参数，只根据配置中的默认值
+         * 用户类型的实际判断由 user-type-controller.js 基于登录状态处理
          */
         getUserType() {
-            // 默认使用配置中的默认用户类型
+            // 默认使用配置中的默认用户类型，忽略 URL 参数
+            // 用户类型的实际判断由 user-type-controller.js 基于登录状态处理
             const userTypeConfig = this.getFeature('userType');
             return userTypeConfig ? userTypeConfig.default || 'public' : 'public';
         }
