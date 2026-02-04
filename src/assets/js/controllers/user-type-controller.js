@@ -11,7 +11,7 @@
  *   // 可能值：public（默认，面向大众）、internal（面向内部）
  * 
  * 【控制逻辑】
- * - 面向大众：隐藏指定的按钮（素材自助、名人礼物视频版、Avatar小图标生成）
+ * - 面向大众：隐藏指定的按钮（素材自助、名人礼物视频版、AI图片生成）
  * - 面向内部：显示所有按钮
  * 
  * 【按钮标记】
@@ -33,7 +33,7 @@
     /**
      * 用户类型管理器
      * 职责：
-     * - 根据用户类型控制页面元素的显示/隐藏
+     * - 根据用户登录状态和类型控制页面元素的显示/隐藏
      * - 为需要控制的元素添加 data-user-type 属性
      */
     class UserTypeController {
@@ -84,6 +84,26 @@
         }
 
         /**
+         * 获取当前用户类型
+         * 根据登录状态确定用户类型：
+         * - 未登录：public（大众）
+         * - 登录的普通用户：internal（内部）
+         * - 登录的管理员：admin（预留）
+         */
+        getUserType() {
+            // 检查用户是否登录
+            const isLoggedIn = window.authUtils && window.authUtils.isLoggedIn();
+            
+            if (!isLoggedIn) {
+                return 'public'; // 未登录用户 = 大众
+            }
+            
+            // 登录用户：先默认为普通用户（内部），管理员预留
+            // 后续可根据用户信息判断是否为管理员
+            return 'internal'; // 登录的普通用户 = 内部
+        }
+
+        /**
          * 根据用户类型应用配置
          * 
          * 逻辑：
@@ -92,7 +112,10 @@
          * - 显示其他所有按钮
          */
         applyUserTypeConfig() {
-            // 使用正确的 SiteConfig 实例路径
+            // 获取当前用户类型
+            const userType = this.getUserType();
+            
+            // 使用正确的 SiteConfig 实例路径获取配置
             let userTypeConfig = {};
             if (window.MeeWoo && window.MeeWoo.Core && window.MeeWoo.Core.SiteConfig) {
                 userTypeConfig = window.MeeWoo.Core.SiteConfig.getUserTypeConfig();

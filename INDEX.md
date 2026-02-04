@@ -7,6 +7,50 @@ MeeWoo 是一个 SVGA 动画预览与转换工具，支持多种动画格式的�
 - 查找项目所有功能模块时提供索引
 - 确保索引内容准确、及时更新
 
+## 目录结构
+
+```
+/
+├── src/                  # 源代码目录
+│   ├── assets/           # 资源文件目录
+│   │   ├── css/          # 样式文件
+│   │   ├── dar_svga/     # DAR SVGA 相关资源
+│   │   ├── img/          # 图片资源
+│   │   ├── js/           # JavaScript 代码
+│   │   │   ├── components/      # 组件模块
+│   │   │   ├── controllers/     # 控制器模块
+│   │   │   ├── core/            # 核心功能模块
+│   │   │   ├── lib/             # 库文件
+│   │   │   ├── mixins/          # 混合模块
+│   │   │   ├── service/         # 服务模块
+│   │   │   │   ├── dual-channel/    # 双通道 MP4 相关服务
+│   │   │   │   ├── ffmpeg/          # FFmpeg 相关服务
+│   │   │   │   ├── oxipng/          # OXIPNG 相关服务
+│   │   │   │   └── svga/            # SVGA 相关服务
+│   │   │   └── utils/           # 工具函数模块
+│   │   ├── mingren_gift_1photo/ # 名人礼物相关资源
+│   │   ├── png/          # PNG 图片
+│   │   ├── sth_auto_img/ # 素材自助相关图片
+│   │   │   └── mingren_gift_video/ # 名人礼物视频
+│   │   ├── svga/         # SVGA 示例文件
+│   │   └── xunzhang/     # 勋章相关资源
+│   ├── gadgets/          # 小工具集合
+│   └── index.html        # 主应用页面
+├── 归档/                 # 归档目录
+├── README.md             # 项目主 README
+├── AD-CONFIG-README.md   # 广告配置说明
+├── CODE_STYLE.md         # 代码风格规范
+├── DEVELOPMENT_FLOW.md   # 开发流程文档
+├── GET_TIME.md           # 时间戳获取方法
+├── LICENSE               # 项目许可证
+├── SECURITY.md           # 安全说明
+├── UI-DESIGN-SYSTEM.md   # UI 设计系统
+├── UPDATE_LOG.md         # 更新日志
+├── site-config.json      # 站点配置文件
+├── package.json          # 项目依赖配置
+└── 其他配置文件          # 如 .gitignore、CNAME 等
+```
+
 ## 功能索引
 
 ### 1. 主要应用页面 (src/)
@@ -70,8 +114,7 @@ MeeWoo 是一个 SVGA 动画预览与转换工具，支持多种动画格式的�
 |---------|---------|--------|
 | `src/assets/js/service/config-manager.js` | 配置管理器，管理应用配置 | 配置管理、配置加载、应用配置 |
 | `src/assets/js/service/dual-channel/` | 双通道 MP4 相关服务 | 双通道、MP4 服务、视频处理 |
-| `src/assets/js/service/dual-channel/dual-channel-composer.js` | 双通道合成器，用于合成双通道视频 | 双通道、视频合成 |
-| `src/assets/js/service/dual-channel/dual-channel-worker.js` | 双通道工作线程，用于后台处理双通道视频 | 双通道、工作线程 |
+| `src/assets/js/service/dual-channel/dual-channel-composer.js` | 双通道合成器，用于合成双通道视频（内置Worker代码） | 双通道、视频合成、内联Worker |
 | `src/assets/js/service/ffmpeg/` | FFmpeg 相关服务，用于视频转换 | FFmpeg、视频转换、服务模块 |
 | `src/assets/js/service/ffmpeg/ffmpeg-service.js` | FFmpeg 服务，提供视频转换功能 | FFmpeg、视频转换 |
 | `src/assets/js/service/gif/` | GIF 导出相关服务 | GIF 导出、服务模块、动画处理 |

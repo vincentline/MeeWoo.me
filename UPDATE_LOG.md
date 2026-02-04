@@ -18,6 +18,9 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-02-04 09:10:45] 【修改文件】 : src/assets/js/service/dual-channel/dual-channel-composer.js - 修复双通道合成器Web Worker加载问题，实现内联代码方式加载Worker，解决内存配额问题，添加分批处理机制
+[2026-02-04 03:40:21] 【新增文件】 : copy-static.py - 新增 Python 版静态资源复制和压缩脚本
+[2026-02-04 03:40:21] 【修改文件】 : package.json - 更新 copy-static 脚本为 Python 版本
 [2026-02-04 02:50:24] 【新增文件】 : vite.config.js - 新增 Vite 构建配置文件
 [2026-02-04 02:50:24] 【新增文件】 : copy-static.ps1 - 新增静态资源复制和压缩脚本
 [2026-02-04 02:50:24] 【修改文件】 : package.json - 更新构建脚本和依赖，添加 Vite 相关配置

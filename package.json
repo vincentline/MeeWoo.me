@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run copy-static",
-    "copy-static": "powershell -ExecutionPolicy Bypass -File copy-static.ps1",
+    "copy-static": "python copy-static.py",
     "preview": "vite preview"
   },
   "dependencies": {

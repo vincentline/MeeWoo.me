@@ -321,6 +321,10 @@ body.dark-mode .header-navbar-title {
   top: 16px;
 }
 
+.header-left-action:hover {
+  opacity: 0.7;
+}
+
 /* ==================== 右侧操作按钮 ==================== */
 .header-right-action {
   display: flex;
@@ -337,20 +341,18 @@ body.dark-mode .header-navbar-title {
 .login-btn-container {
   position: relative;
   display: inline-block;
-  margin-right: 8px;
-  padding: 4px;
 }
 
 /* 确保登录按钮容器在登录状态下也能正常接收悬停事件 */
 .login-btn-container.is-logged-in:hover .login-menu {
-  opacity: 1;
+  opacity: 0.8;
   visibility: visible;
   transform: translateY(0);
 }
 
 .login-btn {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -365,7 +367,7 @@ body.dark-mode .header-navbar-title {
   height: 24px;
   background-image: url('../img/controls-sprite.png');
   background-size: 400px 400px;
-  background-position: 2px -358px;
+  background-position: 0px -360px;
   background-repeat: no-repeat;
   display: flex;
 }
@@ -375,7 +377,7 @@ body.dark-mode .login-icon {
 }
 
 .login-btn:hover {
-  background: #f5f5f5;
+  opacity: 0.7;
 }
 
 .login-btn.disabled {
@@ -446,8 +448,6 @@ body.dark-mode .login-btn:hover {
 .login-btn-container {
   position: relative;
   display: inline-block;
-  margin-right: 8px;
-  padding: 8px;
   cursor: pointer;
 }
 
@@ -520,8 +520,8 @@ body.dark-mode .login-menu-item:hover {
 }
 
 .theme-toggle svg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   fill: #2c3e50;
   transition: fill 0.3s;
 }
@@ -1102,7 +1102,7 @@ body.dark-mode .mode-name-label * {
   /* 使用雪碧图 - close图标，原始80x80通过background-size缩小50%显示 */
   background-image: url('../img/controls-sprite.png');
   background-size: 400px 400px;
-  background-position: -320px -160px;
+  background-position: -318px -158px;
   background-repeat: no-repeat;
 }
 

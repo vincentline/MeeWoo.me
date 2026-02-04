@@ -65,43 +65,415 @@
      * @private
      */
     _initWorker: function() {
-      if (!this._worker) {
-        this._worker = new Worker(this.defaults.workerPath);
+        if (!this._worker) {
+            try {
+                console.log('开始初始化Web Worker');
+                
+                // 直接内联Worker代码，避免路径问题（最可靠的方法）
+                const workerCode = `
+// 分块大小配置
+const BLOCK_SIZE = 128;
+
+// 检测SIMD支持
+const hasSIMD = false;
+
+// 处理消息
+self.onmessage = function(e) {
+  var task = e.data;
+  console.log('Worker received task:', task.type, 'Task ID:', task.id);
+  
+  try {
+    switch(task.type) {
+      case 'composeFrame':
+        console.log('Processing composeFrame task');
+        handleComposeFrame(task).catch(function(error) {
+          console.error('Error in handleComposeFrame:', error);
+          self.postMessage({ id: task.id, type: 'error', error: error.message });
+        });
+        break;
+      case 'composeFrames':
+        console.log('Processing composeFrames task, frame count:', task.data.frames.length);
+        handleComposeFrames(task).catch(function(error) {
+          console.error('Error in handleComposeFrames:', error);
+          self.postMessage({ id: task.id, type: 'error', error: error.message });
+        });
+        break;
+      default:
+        throw new Error('Unknown task type: ' + task.type);
+    }
+  } catch(error) {
+    console.error('Error in message handler:', error);
+    self.postMessage({ id: task.id, type: 'error', error: error.message });
+  }
+};
+
+async function handleComposeFrame(task) {
+  console.log('Starting handleComposeFrame, frame data length:', task.frame.data.length, 'width:', task.width, 'height:', task.height);
+  
+  var frameData = task.frame.data;
+  var width = task.width;
+  var height = task.height;
+  var mode = task.mode;
+  var isColorLeftAlphaRight = mode === 'color-left-alpha-right';
+  
+  var dualWidth = width * 2;
+  var dualHeight = height;
+  var dualDataSize = dualWidth * dualHeight * 4;
+  
+  console.log('Dual channel image size:', dualWidth, 'x', dualHeight, 'data size:', dualDataSize);
+  
+  var dualData = new Uint8ClampedArray(dualDataSize);
+  var blackBgData = new Uint8ClampedArray(dualDataSize);
+  
+  console.log('Memory allocated successfully');
+  
+  var blocks = [];
+  console.log('Generating blocks...');
+  for (var y = 0; y < height; y += BLOCK_SIZE) {
+    for (var x = 0; x < width; x += BLOCK_SIZE) {
+      blocks.push({ x: x, y: y, width: Math.min(BLOCK_SIZE, width - x), height: Math.min(BLOCK_SIZE, height - y) });
+    }
+  }
+  
+  console.log('Generated', blocks.length, 'blocks');
+  
+  console.log('Starting parallel processing of blocks...');
+  try {
+    var processedBlocks = 0;
+    var totalBlocks = blocks.length;
+    
+    await Promise.all(blocks.map(async block => {
+      await processBlock(block, frameData, width, height, dualWidth, dualData, blackBgData, isColorLeftAlphaRight);
+      
+      processedBlocks++;
+      var progress = Math.round((processedBlocks / totalBlocks) * 100);
+      
+      if (progress % 5 === 0) {
+        self.postMessage({ id: task.id, type: 'progress', progress: progress });
       }
+    }));
+    console.log('Block processing completed');
+  } catch (error) {
+    console.error('Error during block processing:', error);
+    throw error;
+  }
+  
+  console.log('Posting result back to main thread');
+  self.postMessage({ id: task.id, type: 'result', result: { blackBgData: blackBgData, dualData: dualData, width: dualWidth, height: dualHeight } }, [blackBgData.buffer, dualData.buffer]);
+  console.log('Result posted successfully');
+}
+
+async function handleComposeFrames(task) {
+  console.log('Starting handleComposeFrames, frame count:', task.data.frames.length);
+  
+  var data = task.data;
+  var frames = data.frames;
+  var mode = data.mode;
+  var frameCount = frames.length;
+  
+  if (frameCount === 0) {
+    throw new Error('帧数组不能为空');
+  }
+  
+  console.log('First frame size:', frames[0].width, 'x', frames[0].height);
+  
+  var results = [];
+  var width = frames[0].width;
+  var height = frames[0].height;
+  var isColorLeftAlphaRight = mode === 'color-left-alpha-right';
+  var dualWidth = width * 2;
+  var dualDataSize = dualWidth * height * 4;
+  
+  console.log('Dual channel image size per frame:', dualWidth, 'x', height, 'data size:', dualDataSize);
+  
+  const BATCH_SIZE = 20;
+  console.log('Worker使用分批处理，每批', BATCH_SIZE, '帧');
+  
+  for (let batchStart = 0; batchStart < frameCount; batchStart += BATCH_SIZE) {
+    const batchEnd = Math.min(batchStart + BATCH_SIZE, frameCount);
+    const batchFrames = frames.slice(batchStart, batchEnd);
+    const batchSize = batchFrames.length;
+    console.log('Worker处理批次:', batchStart, '-', batchEnd, '共', batchSize, '帧');
+    
+    var framePromises = batchFrames.map(async function(frameData, index) {
+      const frameIndex = batchStart + index;
+      console.log('Processing frame', frameIndex + 1, 'of', frameCount);
+      
+      var dualData = new Uint8ClampedArray(dualDataSize);
+      var blackBgData = new Uint8ClampedArray(dualDataSize);
+      
+      console.log('Memory allocated for frame', frameIndex);
+      
+      var blocks = [];
+      for (var y = 0; y < height; y += BLOCK_SIZE) {
+        for (var x = 0; x < width; x += BLOCK_SIZE) {
+          blocks.push({ x: x, y: y, width: Math.min(BLOCK_SIZE, width - x), height: Math.min(BLOCK_SIZE, height - y) });
+        }
+      }
+      
+      console.log('Generated', blocks.length, 'blocks for frame', frameIndex);
+      
+      try {
+        await Promise.all(blocks.map(block => processBlock(block, frameData.data, width, height, dualWidth, dualData, blackBgData, isColorLeftAlphaRight)));
+        console.log('Frame', frameIndex, 'processing completed');
+      } catch (error) {
+        console.error('Error processing frame', frameIndex, ':', error);
+        return null;
+      }
+      
+      return { blackBgData: blackBgData, width: dualWidth, height: height };
+    });
+    
+    console.log('Waiting for batch frames to complete...');
+    try {
+      const batchResults = await Promise.all(framePromises);
+      
+      const validResults = batchResults.filter(result => result !== null);
+      results.push(...validResults);
+      
+      console.log('Batch processed successfully, valid results:', validResults.length);
+      
+      const processedFrames = Math.min(batchEnd, frameCount);
+      var progress = Math.round((processedFrames / frameCount) * 100);
+      
+      if (progress % 5 === 0) {
+        self.postMessage({ id: task.id, type: 'progress', progress: progress });
+      }
+      
+      console.log('Batch completed, total results so far:', results.length);
+    } catch (error) {
+      console.error('Error in batch processing:', error);
+      continue;
+    }
+  }
+  
+  var transferables = [];
+  results.forEach(result => {
+    transferables.push(result.blackBgData.buffer);
+  });
+  
+  console.log('Extracted transferable objects, count:', transferables.length);
+  
+  console.log('Posting results back to main thread');
+  self.postMessage({ id: task.id, type: 'result', result: results }, transferables);
+  
+  console.log('Results posted successfully, total frames processed:', results.length);
+}
+
+function processBlock(block, frameData, width, height, dualWidth, dualData, blackBgData, isColorLeftAlphaRight) {
+  return new Promise(function(resolve) {
+    var startX = block.x;
+    var startY = block.y;
+    var blockWidth = block.width;
+    var blockHeight = block.height;
+    
+    console.log('Processing block:', startX, ',', startY, 'size:', blockWidth, 'x', blockHeight);
+    
+    var inv255 = 1 / 255;
+    
+    try {
+      processBlockWithoutSIMD(block, frameData, width, height, dualWidth, dualData, blackBgData, isColorLeftAlphaRight, inv255);
+      
+      console.log('Block processing completed:', startX, ',', startY);
+      resolve();
+    } catch (error) {
+      console.error('Error processing block:', error, 'at position:', startX, ',', startY);
+      resolve();
+    }
+  });
+}
+
+function processBlockWithoutSIMD(block, frameData, width, height, dualWidth, dualData, blackBgData, isColorLeftAlphaRight, inv255) {
+  var startX = block.x;
+  var startY = block.y;
+  var blockWidth = block.width;
+  var blockHeight = block.height;
+  
+  console.log('Processing block without SIMD:', startX, ',', startY, 'size:', blockWidth, 'x', blockHeight);
+  
+  var pixelCount = 0;
+  for (var y = startY; y < startY + blockHeight; y++) {
+    for (var x = startX; x < startX + blockWidth; x++) {
+      try {
+        processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBgData, isColorLeftAlphaRight, inv255);
+        pixelCount++;
+      } catch (error) {
+        console.error('Error processing pixel at', x, ',', y, ':', error);
+      }
+    }
+  }
+  
+  console.log('Block processing completed, total pixels:', pixelCount);
+}
+
+function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBgData, isColorLeftAlphaRight, inv255) {
+  var pixelIndex = y * width + x;
+  var frameIdx = pixelIndex * 4;
+  
+  if (frameIdx + 3 >= frameData.length) {
+    console.error('Invalid frame index:', frameIdx, 'for frame data length:', frameData.length);
+    return;
+  }
+  
+  var r = frameData[frameIdx + 0];
+  var g = frameData[frameIdx + 1];
+  var b = frameData[frameIdx + 2];
+  var a = frameData[frameIdx + 3];
+
+  var finalR = r, finalG = g, finalB = b;
+  if (a > 0) {
+    if (a < 255) {
+      var alphaFactor = 255 * inv255;
+      finalR = Math.min(255, Math.round(r * alphaFactor));
+      finalG = Math.min(255, Math.round(g * alphaFactor));
+      finalB = Math.min(255, Math.round(b * alphaFactor));
+    }
+  } else {
+    finalR = 0; finalG = 0; finalB = 0;
+  }
+
+  var leftIdx = (y * dualWidth + x) * 4;
+  var rightIdx = (y * dualWidth + x + width) * 4;
+
+  if (leftIdx + 3 >= dualData.length || rightIdx + 3 >= dualData.length) {
+    console.error('Invalid dual data index:', leftIdx, 'or', rightIdx, 'for dual data length:', dualData.length);
+    return;
+  }
+
+  if (isColorLeftAlphaRight) {
+    dualData[leftIdx + 0] = finalR;
+    dualData[leftIdx + 1] = finalG;
+    dualData[leftIdx + 2] = finalB;
+    dualData[leftIdx + 3] = a;
+    dualData[rightIdx + 0] = a;
+    dualData[rightIdx + 1] = a;
+    dualData[rightIdx + 2] = a;
+    dualData[rightIdx + 3] = 255;
+  } else {
+    dualData[leftIdx + 0] = a;
+    dualData[leftIdx + 1] = a;
+    dualData[leftIdx + 2] = a;
+    dualData[leftIdx + 3] = 255;
+    dualData[rightIdx + 0] = finalR;
+    dualData[rightIdx + 1] = finalG;
+    dualData[rightIdx + 2] = finalB;
+    dualData[rightIdx + 3] = a;
+  }
+
+  var pixelAlphaLeft = dualData[leftIdx + 3];
+  if (pixelAlphaLeft === 255) {
+    blackBgData[leftIdx + 0] = dualData[leftIdx + 0];
+    blackBgData[leftIdx + 1] = dualData[leftIdx + 1];
+    blackBgData[leftIdx + 2] = dualData[leftIdx + 2];
+  } else if (pixelAlphaLeft === 0) {
+    blackBgData[leftIdx + 0] = 0;
+    blackBgData[leftIdx + 1] = 0;
+    blackBgData[leftIdx + 2] = 0;
+  } else {
+    var alphaFactorLeft = pixelAlphaLeft * inv255;
+    blackBgData[leftIdx + 0] = Math.round(dualData[leftIdx + 0] * alphaFactorLeft);
+    blackBgData[leftIdx + 1] = Math.round(dualData[leftIdx + 1] * alphaFactorLeft);
+    blackBgData[leftIdx + 2] = Math.round(dualData[leftIdx + 2] * alphaFactorLeft);
+  }
+  blackBgData[leftIdx + 3] = 255;
+
+  var pixelAlphaRight = dualData[rightIdx + 3];
+  if (pixelAlphaRight === 255) {
+    blackBgData[rightIdx + 0] = dualData[rightIdx + 0];
+    blackBgData[rightIdx + 1] = dualData[rightIdx + 1];
+    blackBgData[rightIdx + 2] = dualData[rightIdx + 2];
+  } else if (pixelAlphaRight === 0) {
+    blackBgData[rightIdx + 0] = 0;
+    blackBgData[rightIdx + 1] = 0;
+    blackBgData[rightIdx + 2] = 0;
+  } else {
+    var alphaFactorRight = pixelAlphaRight * inv255;
+    blackBgData[rightIdx + 0] = Math.round(dualData[rightIdx + 0] * alphaFactorRight);
+    blackBgData[rightIdx + 1] = Math.round(dualData[rightIdx + 1] * alphaFactorRight);
+    blackBgData[rightIdx + 2] = Math.round(dualData[rightIdx + 2] * alphaFactorRight);
+  }
+  blackBgData[rightIdx + 3] = 255;
+}
+                `;
+                
+                // 创建Blob URL
+                const blob = new Blob([workerCode], { type: 'application/javascript' });
+                const blobUrl = URL.createObjectURL(blob);
+                console.log('创建Worker Blob URL成功:', blobUrl);
+                
+                // 创建Worker
+                this._worker = new Worker(blobUrl);
+                console.log('Web Worker 内联代码加载成功');
+            } catch (error) {
+                console.error('Worker内联代码加载失败:', error);
+                throw new Error('无法加载Web Worker: ' + error.message);
+            }
+        }
     },
 
     /**
      * 发送任务到Web Worker
      * @param {string} type - 任务类型
      * @param {Object} data - 任务数据
+     * @param {Object} options - 选项
+     * @param {Function} options.onProgress - 进度回调函数
      * @returns {Promise<Object>} - 任务结果
      * @private
      */
-    _sendTask: function(type, data) {
-      return new Promise((resolve, reject) => {
-        this._initWorker();
+    _sendTask: function(type, data, options) {
+        options = options || {};
+        const onProgress = options.onProgress || function() {};
         
-        const taskId = ++this._taskId;
-        const message = {
-          id: taskId,
-          type: type,
-          data: data
-        };
+        return new Promise((resolve, reject) => {
+            try {
+                this._initWorker();
+                
+                const taskId = ++this._taskId;
+                const message = {
+                    id: taskId,
+                    type: type,
+                    data: data
+                };
 
-        const handleMessage = (e) => {
-          if (e.data.id === taskId) {
-            this._worker.removeEventListener('message', handleMessage);
-            if (e.data.type === 'error') {
-              reject(new Error(e.data.error));
-            } else {
-              resolve(e.data.result);
+                const handleMessage = (e) => {
+                    if (e.data.id === taskId) {
+                        if (e.data.type === 'progress') {
+                            // 处理进度消息，不移除事件监听器
+                            onProgress(e.data.progress / 100);
+                        } else {
+                            // 处理结果或错误消息，移除事件监听器
+                            this._worker.removeEventListener('message', handleMessage);
+                            this._worker.removeEventListener('error', handleError);
+                            if (e.data.type === 'error') {
+                                console.error('Worker任务错误:', e.data.error);
+                                reject(new Error(e.data.error));
+                            } else {
+                                resolve(e.data.result);
+                            }
+                        }
+                    }
+                };
+
+                const handleError = (error) => {
+                    console.error('Web Worker错误:', error);
+                    this._worker.removeEventListener('message', handleMessage);
+                    this._worker.removeEventListener('error', handleError);
+                    // 重新初始化Worker
+                    this._worker = null;
+                    reject(new Error('Web Worker执行错误: ' + (error.message || '未知错误')));
+                };
+
+                // 添加错误监听器
+                this._worker.addEventListener('error', handleError);
+                this._worker.addEventListener('message', handleMessage);
+                
+                console.log('发送任务到Worker，类型:', type, '任务ID:', taskId);
+                this._worker.postMessage(message);
+            } catch (error) {
+                console.error('发送任务失败:', error);
+                reject(new Error('发送任务到Worker失败: ' + error.message));
             }
-          }
-        };
-
-        this._worker.addEventListener('message', handleMessage);
-        this._worker.postMessage(message);
-      });
+        });
     },
 
     /**
@@ -111,6 +483,7 @@
      * @param {String} options.mode - 通道模式
      * @param {Number} options.quality - JPEG质量 0-1（可选，默认自适应）
      * @param {String} options.format - 输出格式：'jpeg' 或 'png'
+     * @param {Function} options.onProgress - 进度回调函数
      * @returns {Promise<Uint8Array>} - 合成后的图像数据
      */
     composeSingleFrame: async function(frame, options) {
@@ -118,6 +491,7 @@
       const mode = options.mode || this.defaults.mode;
       const format = options.format || this.defaults.format;
       const quality = options.quality;
+      const onProgress = options.onProgress || function() {};
 
       if (!frame || !frame.data) {
         throw new Error('无效的ImageData对象');
@@ -146,6 +520,8 @@
         mode: mode,
         width: width,
         height: height
+      }, {
+        onProgress: onProgress
       });
 
       // 转换为ImageData
@@ -224,6 +600,8 @@
       const onCancel = options.onCancel || function() { return false; };
       
       const frameCount = frames.length;
+      console.log('开始批量合成双通道图像，帧数:', frameCount, '格式:', format, '模式:', mode);
+      
       if (frameCount === 0) {
         throw new Error('帧数组不能为空');
       }
@@ -233,6 +611,7 @@
       // 获取尺寸
       const width = frames[0].width;
       const height = frames[0].height;
+      console.log('图像尺寸:', width, 'x', height, '双通道尺寸:', width * 2, 'x', height);
       
       // 计算JPEG质量（自适应）
       let jpegQuality = quality;
@@ -245,57 +624,94 @@
         } else {
           jpegQuality = 0.6;
         }
+        console.log('自适应JPEG质量:', jpegQuality);
       }
 
-      // 使用Web Worker处理多帧合成
-      const result = await this._sendTask('composeFrames', {
-        frames: frames,
-        mode: mode,
-        width: width,
-        height: height,
-        frameCount: frameCount
-      });
+      // 分批处理配置
+      const BATCH_SIZE = 50; // 每批处理50帧
+      console.log('使用分批处理，每批', BATCH_SIZE, '帧');
 
-      // 转换每一帧
-      for (let i = 0; i < frameCount; i++) {
-        // 检查是否取消
+      // 分批处理帧
+      for (let batchStart = 0; batchStart < frameCount; batchStart += BATCH_SIZE) {
         if (onCancel()) {
           throw new Error('用户取消');
         }
 
-        // 创建临时Canvas
-        const blackBgCanvas = document.createElement('canvas');
-        blackBgCanvas.width = width * 2;
-        blackBgCanvas.height = height;
-        const blackBgCtx = blackBgCanvas.getContext('2d');
-        const blackBgImageData = blackBgCtx.createImageData(width * 2, height);
-        blackBgImageData.data.set(result[i].blackBgData);
-        blackBgCtx.putImageData(blackBgImageData, 0, 0);
+        const batchEnd = Math.min(batchStart + BATCH_SIZE, frameCount);
+        const batchFrames = frames.slice(batchStart, batchEnd);
+        const batchSize = batchFrames.length;
+        console.log('处理批次:', batchStart, '-', batchEnd, '共', batchSize, '帧');
 
-        // 转换为目标格式
-        const blob = await new Promise(function(resolve) {
-          if (format === 'png') {
-            blackBgCanvas.toBlob(resolve, 'image/png');
-          } else {
-            blackBgCanvas.toBlob(resolve, 'image/jpeg', jpegQuality);
+        // 使用Web Worker处理当前批次
+        console.log('开始使用Web Worker处理批次');
+        const batchResult = await this._sendTask('composeFrames', {
+          frames: batchFrames,
+          mode: mode,
+          width: width,
+          height: height,
+          frameCount: batchSize
+        }, {
+          onProgress: function(batchProgress) {
+            const overallProgress = (batchStart + batchProgress * batchSize) / frameCount;
+            onProgress(overallProgress);
           }
         });
-        const buffer = await blob.arrayBuffer();
-        resultFrames.push(new Uint8Array(buffer));
+        console.log('Web Worker批次处理完成，返回结果数:', batchResult.length);
 
-        // 清理Canvas资源
-        blackBgCanvas.width = 0;
-        blackBgCanvas.height = 0;
+        // 转换批次中的每一帧
+        for (let i = 0; i < batchSize; i++) {
+          if (onCancel()) {
+            throw new Error('用户取消');
+          }
 
-        // 进度回调
-        onProgress((i + 1) / frameCount);
+          try {
+            // 创建临时Canvas
+            const blackBgCanvas = document.createElement('canvas');
+            blackBgCanvas.width = width * 2;
+            blackBgCanvas.height = height;
+            const blackBgCtx = blackBgCanvas.getContext('2d');
+            const blackBgImageData = blackBgCtx.createImageData(width * 2, height);
+            blackBgImageData.data.set(batchResult[i].blackBgData);
+            blackBgCtx.putImageData(blackBgImageData, 0, 0);
 
-        // 让出线程
-        if (i % 5 === 0) {
-          await new Promise(function(r) { setTimeout(r, 0); });
+            // 转换为目标格式
+            const blob = await new Promise(function(resolve) {
+              if (format === 'png') {
+                blackBgCanvas.toBlob(resolve, 'image/png');
+              } else {
+                blackBgCanvas.toBlob(resolve, 'image/jpeg', jpegQuality);
+              }
+            });
+            const buffer = await blob.arrayBuffer();
+            resultFrames.push(new Uint8Array(buffer));
+
+            // 清理Canvas资源
+            blackBgCanvas.width = 0;
+            blackBgCanvas.height = 0;
+
+            // 进度回调
+            const overallIndex = batchStart + i;
+            onProgress((overallIndex + 1) / frameCount);
+
+            // 让出线程
+            if ((overallIndex + 1) % 10 === 0) {
+              await new Promise(function(r) { setTimeout(r, 0); });
+            }
+          } catch (error) {
+            console.error('处理帧', batchStart + i, '时出错:', error);
+            // 跳过出错的帧，继续处理
+            continue;
+          }
         }
+
+        // 强制垃圾回收
+        if (typeof gc === 'function') {
+          gc();
+        }
+        console.log('批次处理完成，已处理总帧数:', resultFrames.length);
       }
 
+      console.log('批量合成双通道图像完成，生成帧数:', resultFrames.length);
       return resultFrames;
     },
 

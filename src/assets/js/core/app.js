@@ -564,6 +564,8 @@ function initApp() {
         if (window.authUtils) {
           window.authUtils.clearAuth();
           this.updateLoginStatus();
+          // 刷新页面，确保登录用户才可见的内容马上不可见
+          window.location.reload();
         }
       },
 
@@ -6535,7 +6537,9 @@ function initApp() {
           var imageData = ctx.getImageData(0, 0, config.width, config.height);
           frames.push(imageData);
 
-          this.dualChannelProgress = Math.floor((i / totalFrames) * 30);
+          // 计算进度，确保最后一帧时进度达到30%
+          var progress = Math.min(30, Math.round((i / totalFrames) * 30));
+          this.dualChannelProgress = progress;
         }
 
         // 恢复播放
@@ -6543,6 +6547,12 @@ function initApp() {
           video.play();
         }
 
+        // 确保进度达到30%，即使循环被取消
+        if (this.dualChannelProgress < 30) {
+          this.dualChannelProgress = 30;
+        }
+
+        console.log('帧提取完成，实际提取帧数:', frames.length);
         return frames;
       },
 
@@ -6873,6 +6883,11 @@ function initApp() {
           // 获取像素数据
           var imageData = ctx.getImageData(0, 0, config.width, config.height);
           frames.push(imageData);
+
+          // 每处理10帧记录一次日志
+          if (i % 10 === 0) {
+            console.log('提取帧进度:', i + 1, '/', totalFrames);
+          }
 
           this.dualChannelProgress = Math.floor((i / totalFrames) * 30);
         }
@@ -8023,10 +8038,18 @@ function initApp() {
           if (this.dualChannelCancelled) throw new Error('用户取消转换');
 
           // 2. 提取序列帧
-          this.dualChannelStage = 'extracting';
-          this.dualChannelMessage = '正在提取序列帧...';
+        this.dualChannelStage = 'extracting';
+        this.dualChannelMessage = '正在提取序列帧...';
+        try {
           var frames = await this.extractFramesForDualChannel();
           if (this.dualChannelCancelled) throw new Error('用户取消转换');
+        } catch (error) {
+          this.isConvertingToDualChannel = false;
+          this.dualChannelProgress = 0;
+          this.dualChannelMessage = '转换失败';
+          alert('提取序列帧失败: ' + error.message);
+          return;
+        }
 
           // 3. 合成双通道
           this.dualChannelStage = 'composing';
@@ -8107,6 +8130,7 @@ function initApp() {
         var images = this.framesImages;
         var totalFrames = images.length;
         var frames = [];
+        console.log('开始提取帧，总帧数:', totalFrames, '尺寸:', config.width, 'x', config.height);
 
         // 创建canvas
         var canvas = document.createElement('canvas');
@@ -8136,11 +8160,13 @@ function initApp() {
       /**
        * 合成双通道帧（序列帧用）
        */
-      composeFramesDualChannel: async function (frames) {
+      composeFramesDualChannel: async function (frames, format) {
         var _this = this;
+        console.log('开始合成双通道帧，帧数:', frames.length, '格式:', format);
 
-        return Services.DualChannelComposer.composeToJPEG(frames, {
-          mode: this.framesToDualChannelConfig.channelMode,
+        return Services.DualChannelComposer.composeFrames(frames, {
+          mode: this.dualChannelConfig.channelMode,
+          format: format || 'jpeg',
           onProgress: function (progress) {
             _this.dualChannelProgress = 30 + Math.round(progress * 30);
             _this.dualChannelMessage = '合成双通道帧 ' + Math.round(progress * frames.length) + '/' + frames.length;
@@ -8461,7 +8487,7 @@ function initApp() {
 
       /**
        * 开始 SVGA 转 MP4 转换
-       
+       */
       startMP4Conversion: async function (config) {
         var _this = this;
 
@@ -8637,7 +8663,7 @@ function initApp() {
           }
           this.isConvertingToDualChannel = false;
         }
-      },*/
+      },
 
       /**
        * 从 MP4视频提取音频数据
