@@ -578,6 +578,13 @@ function initApp() {
           console.log('登录状态更新:', loggedIn);
           this.isLoggedIn = loggedIn;
           this.userInfo = window.authUtils.getUserInfo();
+          
+          // 刷新用户类型配置，控制侧边栏按钮的显示/隐藏
+          if (window.MeeWoo && window.MeeWoo.Controllers && window.MeeWoo.Controllers.UserTypeController) {
+            setTimeout(() => {
+              window.MeeWoo.Controllers.UserTypeController.refresh();
+            }, 0);
+          }
         }
       },
 
@@ -586,7 +593,12 @@ function initApp() {
        */
       handleLoginCallback: function () {
         if (window.authUtils) {
-          return window.authUtils.handleLoginCallback();
+          var result = window.authUtils.handleLoginCallback();
+          if (result) {
+            // 登录成功，更新登录状态并刷新用户类型配置
+            this.updateLoginStatus();
+          }
+          return result;
         }
         return false;
       },
