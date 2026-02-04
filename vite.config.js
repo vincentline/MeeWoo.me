@@ -9,7 +9,7 @@ function copyStaticFiles() {
   
   try {
     // 先创建必要的目录结构
-    const docsDir = resolve(__dirname, 'docs')
+    const docsDir = resolve(process.cwd(), 'docs')
     const assetsDir = resolve(docsDir, 'assets')
     const jsDir = resolve(assetsDir, 'js')
     const libDir = resolve(assetsDir, 'lib')
@@ -40,12 +40,14 @@ function copyStaticFiles() {
     }
     
     // 复制img目录
-    const imgSource = resolve(__dirname, 'src/assets/img')
-    if (existsSync(imgSource)) {
-      cpSync(imgSource, imgDir, { recursive: true })
-      console.log('Copied img files')
-    }
-    
+    /*
+    *const imgSource = resolve(__dirname, 'src/assets/img')
+    *if (existsSync(imgSource)) {
+    *  cpSync(imgSource, imgDir, { recursive: true })
+    *  console.log('Copied img files')
+    *}
+    */
+   
     // 复制gadgets目录
     const gadgetsSource = resolve(__dirname, 'src/gadgets')
     if (existsSync(gadgetsSource)) {
@@ -67,7 +69,7 @@ export default defineConfig({
   base: '/',
   // 构建输出
   build: {
-    outDir: 'docs',         // 输出到docs目录，与现有发布脚本匹配
+    outDir: '../docs',         // 输出到docs目录，与现有发布脚本匹配
     assetsDir: 'assets',     // 静态资源目录
     minify: 'terser',        // 代码压缩
     sourcemap: false,        // 生产环境关闭sourcemap
