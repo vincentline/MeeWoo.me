@@ -21,29 +21,45 @@ def print_with_encoding(text):
 def run_command(cmd, cwd=None, shell=True):
     """运行命令并返回结果"""
     try:
-        # 对于Windows系统，先尝试使用utf-8编码
+        # 对于Windows系统，使用更健壮的编码处理
         if os.name == 'nt':
+            # 先不使用text模式，而是获取原始字节，然后手动解码
+            result = subprocess.run(
+                cmd, 
+                cwd=cwd, 
+                shell=shell, 
+                capture_output=True, 
+                text=False  # 使用字节模式
+            )
+            
+            # 手动解码stdout
             try:
-                result = subprocess.run(
-                    cmd, 
-                    cwd=cwd, 
-                    shell=shell, 
-                    capture_output=True, 
-                    text=True,
-                    encoding='utf-8'
-                )
-                return result
+                stdout = result.stdout.decode('utf-8')
             except UnicodeDecodeError:
-                # 如果utf-8失败，尝试使用gbk编码
-                result = subprocess.run(
-                    cmd, 
-                    cwd=cwd, 
-                    shell=shell, 
-                    capture_output=True, 
-                    text=True, 
-                    encoding='gbk'
-                )
-                return result
+                try:
+                    stdout = result.stdout.decode('gbk')
+                except UnicodeDecodeError:
+                    # 如果都失败，使用替换错误模式
+                    stdout = result.stdout.decode('utf-8', errors='replace')
+            
+            # 手动解码stderr
+            try:
+                stderr = result.stderr.decode('utf-8')
+            except UnicodeDecodeError:
+                try:
+                    stderr = result.stderr.decode('gbk')
+                except UnicodeDecodeError:
+                    # 如果都失败，使用替换错误模式
+                    stderr = result.stderr.decode('utf-8', errors='replace')
+            
+            # 创建一个模拟的CompletedProcess对象
+            class MockCompletedProcess:
+                def __init__(self, returncode, stdout, stderr):
+                    self.returncode = returncode
+                    self.stdout = stdout
+                    self.stderr = stderr
+            
+            return MockCompletedProcess(result.returncode, stdout, stderr)
         else:
             # 对于非Windows系统，使用UTF-8编码
             result = subprocess.run(
