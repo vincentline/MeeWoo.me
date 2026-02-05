@@ -63,35 +63,15 @@
 
     FFmpegInstance.prototype = {
         /**
-         * 获取最佳的 Core Path (CDN 测速)
+         * 获取固定的 Core Path
          * @private
          * @returns {Promise<string>}
          */
         _getBestCorePath: async function () {
-            var candidates = [
-                'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-                'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
-            ];
-
-            // 并发检测 HEAD 请求
-            try {
-                var promises = candidates.map(function (url) {
-                    return fetch(url, { method: 'HEAD', mode: 'cors' })
-                        .then(function (res) {
-                            if (res.ok) return url;
-                            throw new Error('Network response was not ok');
-                        })
-                        .catch(function () {
-                            // 忽略单个请求的失败，防止控制台报红
-                            return new Promise(function () { }); // 返回永远pending的promise
-                        });
-                });
-                // 返回最快成功的那个
-                return await Promise.any(promises);
-            } catch (e) {
-                console.warn('CDN测速失败，使用默认Core Path');
-                return candidates[0];
-            }
+            // 固定使用unpkg CDN，不使用备用方案
+            var corePath = 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js';
+            console.log('[调试] 使用固定FFmpeg Core Path:', corePath);
+            return corePath;
         },
 
         /**
@@ -259,14 +239,9 @@
             };
 
             var primary = 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
-            var backup = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
 
-            try {
-                await loadScript(primary);
-            } catch (e) {
-                console.warn('FFmpeg主线路加载失败，尝试备用线路:', e.message);
-                await loadScript(backup);
-            }
+            // 固定使用主线路，不使用备用方案
+            await loadScript(primary);
 
             // 再次确认对象是否存在
             if (typeof FFmpeg === 'undefined' || typeof FFmpeg.createFFmpeg === 'undefined') {
@@ -965,6 +940,136 @@
         },
 
         /**
+         * 从视频批量提取帧
+         * @param {Object} options - 配置项
+         * @param {File} options.videoFile - 视频文件
+         * @param {Number} options.fps - 目标帧率
+         * @param {Number} options.width - 输出宽度
+         * @param {Number} options.height - 输出高度
+         * @param {Function} options.onProgress - 进度回调 (progress: 0-1)
+         * @param {Function} options.checkCancelled - 取消检查函数
+         * @returns {Promise<Array<Uint8Array>>} - 帧数据数组
+         */
+        extractFrames: async function (options) {
+            if (!this.isLoaded || !this.ffmpeg) {
+                throw new Error('FFmpeg未初始化，请先调用init()');
+            }
+
+            var videoFile = options.videoFile;
+            var fps = options.fps || 30;
+            var width = options.width;
+            var height = options.height;
+            var onProgress = options.onProgress || function () { };
+            var checkCancelled = options.checkCancelled || function () { return false; };
+
+            if (this.isBusy) {
+                throw new Error('FFmpeg服务正忙，请稍后再试');
+            }
+            this.isBusy = true;
+            this._emit('busy', { status: true });
+
+            var ffmpeg = this.ffmpeg;
+            var inputName = 'input.mp4';
+            var outputPattern = 'frame_%d.png';
+
+            try {
+                // 1. 写入视频文件
+                onProgress(0.1);
+                if (checkCancelled()) throw new Error('用户取消');
+
+                var videoData = await videoFile.arrayBuffer();
+                ffmpeg.FS('writeFile', inputName, new Uint8Array(videoData));
+
+                // 2. 构建FFmpeg命令
+                onProgress(0.2);
+                
+                var args = [
+                    '-i', inputName,
+                    '-vf', `fps=${fps},scale=${width}:${height}`,
+                    '-f', 'image2',
+                    '-y',
+                    outputPattern
+                ];
+
+                // 3. 执行提取
+                onProgress(0.3);
+                if (checkCancelled()) throw new Error('用户取消');
+
+                var self = this;
+                ffmpeg.setProgress(function (p) {
+                    var ratio = 0;
+                    if (p.ratio !== undefined) {
+                        ratio = p.ratio;
+                    } else if (p.time && p.duration) {
+                        ratio = p.time / p.duration;
+                    }
+                    onProgress(0.3 + ratio * 0.5);
+                });
+
+                await ffmpeg.run.apply(ffmpeg, args);
+
+                // 4. 读取帧数据
+                onProgress(0.8);
+                if (checkCancelled()) throw new Error('用户取消');
+
+                var frames = [];
+                var i = 1;
+                while (true) {
+                    var frameName = `frame_${i}.png`;
+                    try {
+                        var frameData = ffmpeg.FS('readFile', frameName);
+                        frames.push(new Uint8Array(frameData.buffer || frameData));
+                        i++;
+                    } catch (e) {
+                        // 文件不存在，说明已读取完所有帧
+                        break;
+                    }
+                }
+
+                // 5. 清理文件
+                var filesToClean = [inputName];
+                for (var j = 1; j < i; j++) {
+                    filesToClean.push(`frame_${j}.png`);
+                }
+                this._cleanupFiles(filesToClean);
+
+                onProgress(1.0);
+                return frames;
+
+            } catch (error) {
+                // 清理可能的临时文件
+                this._cleanupFiles([inputName]);
+                
+                // 尝试清理已生成的帧文件
+                var i = 1;
+                while (true) {
+                    var frameName = `frame_${i}.png`;
+                    try {
+                        ffmpeg.FS('unlink', frameName);
+                        i++;
+                    } catch (e) {
+                        break;
+                    }
+                }
+
+                if (error.message === '用户取消') {
+                    this._emit('cancelled', { task: 'extractFrames' });
+                    throw error;
+                }
+                console.error('帧提取失败:', error);
+                this._emit('error', { error: error, task: 'extractFrames' });
+                throw error;
+            } finally {
+                // 清除进度回调
+                if (this.ffmpeg) {
+                    this.ffmpeg.setProgress(function () { });
+                }
+                this.isBusy = false;
+                this._emit('busy', { status: false });
+            }
+        },
+
+        /**
          * 执行自定义FFmpeg命令（底层通用接口）
          * @param {Object} options - 配置项
          * @param {Array<String>} options.args - FFmpeg参数数组
@@ -1221,6 +1326,10 @@
         
         convertFramesToMp4: function () {
             return this.getInstance().convertFramesToMp4.apply(this.getInstance(), arguments);
+        },
+        
+        extractFrames: function () {
+            return this.getInstance().extractFrames.apply(this.getInstance(), arguments);
         },
         
         runCommand: function () {

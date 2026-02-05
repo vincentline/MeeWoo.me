@@ -8274,10 +8274,10 @@ function initApp() {
           await this.loadLibrary(['protobuf', 'pako'], true);
           if (this.toSvgaCancelled) throw new Error('用户取消转换');
 
-          // 2. 提取序列帧
+          // 2. 提取序列帧（使用优化版）
           this.toSvgaStage = 'extracting';
           this.toSvgaMessage = '正在提取序列帧...';
-          var frameData = await this.extractYyevaFrames();
+          var frameData = await this.extractYyevaFramesOptimized();
           if (this.toSvgaCancelled) throw new Error('用户取消转换');
 
           // 2.5 提取音频（如果未静音）
@@ -8286,7 +8286,22 @@ function initApp() {
             this.toSvgaMessage = '正在提取音频...';
             try {
               await Services.FFmpegService.init();
-              audios = await this.extractAudioFromMp4(this.yyeva.file, frameData.frames.length, this.toSvgaConfig.fps);
+              
+              // 计算原始总帧数和帧率
+              var originalTotalFrames = this.speedRemapConfig.originalTotalFrames;
+              var originalFps = 30;
+              var video = this.yyevaVideo;
+              if (video && video.duration > 0 && originalTotalFrames) {
+                originalFps = originalTotalFrames / video.duration;
+              }
+              
+              audios = await this.extractAudioFromMp4(
+                this.yyeva.file, 
+                frameData.frames.length, 
+                this.toSvgaConfig.fps,
+                originalTotalFrames,
+                originalFps
+              );
             } catch (e) {
               console.warn('Audio extraction failed, exporting silent SVGA:', e);
               // 静默失败，将导出无音频的SVGA
@@ -8319,6 +8334,9 @@ function initApp() {
             cancelledField: 'toSvgaCancelled'
           });
 
+          console.log('[调试] FFmpeg提取帧完成，共提取:', frameData.frames.length, '帧');
+          console.log('[调试] 缩放信息 - scaledWidth:', frameData.scaledWidth, 'scaledHeight:', frameData.scaledHeight, 'scaleFactor:', frameData.scaleFactor);
+          
           if (this.toSvgaCancelled) throw new Error('用户取消转换');
 
           // 4. 下载文件
@@ -8380,16 +8398,26 @@ function initApp() {
         var halfWidth = Math.floor(videoWidth / 2);
         var alphaPosition = this.yyeva.alphaPosition;
 
-        // 创建工作画布
-        var srcCanvas = document.createElement('canvas');
-        srcCanvas.width = videoWidth;
-        srcCanvas.height = videoHeight;
+        // 创建工作画布（内存优化：使用OffscreenCanvas减少DOM开销）
+        var srcCanvas = null;
+        try {
+          srcCanvas = new OffscreenCanvas(videoWidth, videoHeight);
+        } catch (e) {
+          srcCanvas = document.createElement('canvas');
+          srcCanvas.width = videoWidth;
+          srcCanvas.height = videoHeight;
+        }
         var srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true });
 
         // 创建结果画布（缩小后的尺寸）
-        var dstCanvas = document.createElement('canvas');
-        dstCanvas.width = scaledWidth;
-        dstCanvas.height = scaledHeight;
+        var dstCanvas = null;
+        try {
+          dstCanvas = new OffscreenCanvas(scaledWidth, scaledHeight);
+        } catch (e) {
+          dstCanvas = document.createElement('canvas');
+          dstCanvas.width = scaledWidth;
+          dstCanvas.height = scaledHeight;
+        }
         var dstCtx = dstCanvas.getContext('2d', { willReadFrequently: true });
 
         var frames = [];
@@ -8473,8 +8501,13 @@ function initApp() {
           // 更新进度
           _this.toSvgaProgress = Math.round((i + 1) / totalFrames * 50); // 占50%进度
 
-          // 让出UI线程
-          await new Promise(function (resolve) { setTimeout(resolve, 0); });
+          // 批处理策略：每处理10帧让出一次UI线程，改善UI流畅度
+          if ((i + 1) % 10 === 0) {
+            await new Promise(function (resolve) { setTimeout(resolve, 16); }); // 约60fps
+          } else {
+            // 普通帧让出少量时间
+            await new Promise(function (resolve) { setTimeout(resolve, 0); });
+          }
         }
 
         // 返回帧数据和缩放信息
@@ -8486,6 +8519,209 @@ function initApp() {
           displayHeight: targetHeight,
           scaleFactor: scaleFactor
         };
+      },
+
+      // 优化版：使用FFmpeg批量提取帧
+      extractYyevaFramesOptimized: async function () {
+        console.log('[调试] 开始使用FFmpeg优化版提取帧');
+        var _this = this;
+        var fps = this.toSvgaConfig.fps;
+        var targetWidth = this.toSvgaConfig.width;
+        var targetHeight = this.toSvgaConfig.height;
+        var quality = this.toSvgaConfig.quality || 100;
+        
+        console.log('[调试] 提取帧参数 - fps:', fps, 'width:', targetWidth, 'height:', targetHeight, 'quality:', quality);
+
+        // 根据质量参数计算缩小后的尺寸
+        var scaleFactor = quality / 100;
+        var scaledWidth = Math.round(targetWidth * scaleFactor);
+        var scaledHeight = Math.round(targetHeight * scaleFactor);
+
+        // 确保尺寸至少为1
+        scaledWidth = Math.max(1, scaledWidth);
+        scaledHeight = Math.max(1, scaledHeight);
+
+        var alphaPosition = this.yyeva.alphaPosition;
+        console.log('[调试] Alpha通道位置:', alphaPosition);
+
+        // 变速支持：如果启用变速，使用帧映射表
+        var frameMap = null;
+        var video = this.yyevaVideo;
+        if (video && this.speedRemapConfig.enabled && this.speedRemapConfig.keyframes && this.speedRemapConfig.keyframes.length >= 2) {
+          frameMap = this.buildFrameMap(fps);
+          if (frameMap && frameMap.length > 0) {
+            console.log('[调试] 启用变速，构建帧映射表，总帧数:', frameMap.length);
+          }
+        }
+
+        // 使用FFmpeg批量提取帧
+        try {
+          // 初始化FFmpeg
+          console.log('[调试] 开始加载FFmpeg库');
+          await this.loadLibrary(['ffmpeg'], true);
+          console.log('[调试] FFmpeg库加载成功');
+          
+          if (this.toSvgaCancelled) throw new Error('用户取消转换');
+
+          // 获取视频文件
+          var videoFile = this.yyeva.file;
+          if (!videoFile) {
+            throw new Error('没有找到视频文件');
+          }
+          console.log('[调试] 找到视频文件:', videoFile.name, '大小:', videoFile.size, '字节');
+
+          // 使用FFmpeg提取帧
+          console.log('[调试] 开始使用FFmpeg提取帧');
+          var frames = await window.MeeWoo.Services.FFmpegService.extractFrames({
+            videoFile: videoFile,
+            fps: fps,
+            width: targetWidth * 2,
+            height: targetHeight,
+            onProgress: function (progress) {
+              _this.toSvgaProgress = Math.round(progress * 50);
+              console.log('[调试] FFmpeg提取帧进度:', Math.round(progress * 100), '%');
+            },
+            checkCancelled: function () {
+              return _this.toSvgaCancelled;
+            }
+          });
+
+          console.log('[调试] FFmpeg提取帧完成，共提取:', frames.length, '帧');
+          
+          if (this.toSvgaCancelled) throw new Error('用户取消转换');
+
+          // 变速支持：如果启用变速，使用帧映射表
+          var actualFrames = frames;
+          if (frameMap && frameMap.length > 0) {
+            console.log('[调试] 使用帧映射表处理变速');
+            var mappedFrames = [];
+            for (var i = 0; i < frameMap.length; i++) {
+              if (this.toSvgaCancelled) break;
+              var originalFrameIndex = frameMap[i];
+              // 确保帧索引在有效范围内
+              var mappedIndex = Math.min(Math.max(0, Math.round(originalFrameIndex * frames.length / this.speedRemapConfig.originalTotalFrames)), frames.length - 1);
+              mappedFrames.push(frames[mappedIndex]);
+            }
+            actualFrames = mappedFrames;
+          }
+
+          // 处理提取的帧，分离双通道
+          var processedFrames = [];
+          var totalFrames = actualFrames.length;
+          console.log('[调试] 开始处理提取的帧，分离双通道，总帧数:', totalFrames);
+
+          // 创建离屏画布用于处理帧（内存优化：使用OffscreenCanvas减少DOM开销）
+          var srcCanvas = null;
+          try {
+            srcCanvas = new OffscreenCanvas(0, 0);
+          } catch (e) {
+            srcCanvas = document.createElement('canvas');
+          }
+          var srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true });
+          var dstCanvas = null;
+          try {
+            dstCanvas = new OffscreenCanvas(scaledWidth, scaledHeight);
+          } catch (e) {
+            dstCanvas = document.createElement('canvas');
+            dstCanvas.width = scaledWidth;
+            dstCanvas.height = scaledHeight;
+          }
+          var dstCtx = dstCanvas.getContext('2d');
+
+          for (var i = 0; i < totalFrames; i++) {
+            if (this.toSvgaCancelled) break;
+
+            // 创建Blob URL
+            var frameBlob = new Blob([actualFrames[i]], { type: 'image/png' });
+            var frameUrl = URL.createObjectURL(frameBlob);
+
+            // 加载图像
+            var img = await new Promise(function (resolve, reject) {
+              var img = new Image();
+              img.onload = function () { resolve(img); };
+              img.onerror = function () { reject(new Error('加载帧失败')); };
+              img.src = frameUrl;
+            });
+
+            // 设置源画布尺寸
+            srcCanvas.width = img.width;
+            srcCanvas.height = img.height;
+            var halfWidth = Math.floor(img.width / 2);
+
+            // 绘制图像到源画布
+            srcCtx.drawImage(img, 0, 0);
+
+            // 提取左右通道数据
+            var colorX = alphaPosition === 'right' ? 0 : halfWidth;
+            var alphaX = alphaPosition === 'right' ? halfWidth : 0;
+
+            // 获取彩色和Alpha数据
+            var colorData = srcCtx.getImageData(colorX, 0, halfWidth, img.height);
+            var alphaData = srcCtx.getImageData(alphaX, 0, halfWidth, img.height);
+
+            // 合成带透明度的图像（处理预乘Alpha）
+            for (var j = 0; j < colorData.data.length; j += 4) {
+              var alpha = alphaData.data[j];
+
+              if (alpha > 0) {
+                colorData.data[j] = Math.min(255, (colorData.data[j] * 255) / alpha);
+                colorData.data[j + 1] = Math.min(255, (colorData.data[j + 1] * 255) / alpha);
+                colorData.data[j + 2] = Math.min(255, (colorData.data[j + 2] * 255) / alpha);
+              }
+
+              colorData.data[j + 3] = alpha;
+            }
+
+            // 绘制到目标尺寸画布
+            var tempCanvas = document.createElement('canvas');
+            tempCanvas.width = halfWidth;
+            tempCanvas.height = img.height;
+            var tempCtx = tempCanvas.getContext('2d');
+            tempCtx.putImageData(colorData, 0, 0);
+
+            dstCtx.clearRect(0, 0, scaledWidth, scaledHeight);
+            dstCtx.drawImage(tempCanvas, 0, 0, halfWidth, img.height, 0, 0, scaledWidth, scaledHeight);
+
+            // 转换为PNG Blob
+            var pngBlob = await new Promise(function (resolve) {
+              dstCanvas.toBlob(function (blob) {
+                resolve(blob);
+              }, 'image/png');
+            });
+
+            // 读取为ArrayBuffer
+            var arrayBuffer = await pngBlob.arrayBuffer();
+            processedFrames.push(new Uint8Array(arrayBuffer));
+
+            // 释放Blob URL
+            URL.revokeObjectURL(frameUrl);
+
+            // 更新进度
+            _this.toSvgaProgress = Math.round((i + 1) / totalFrames * 50);
+
+            // 批处理策略：每处理10帧让出一次UI线程，改善UI流畅度
+            if ((i + 1) % 10 === 0) {
+              await new Promise(function (resolve) { setTimeout(resolve, 16); }); // 约60fps
+            } else {
+              // 普通帧让出少量时间
+              await new Promise(function (resolve) { setTimeout(resolve, 0); });
+            }
+          }
+
+          // 返回帧数据和缩放信息
+          return {
+            frames: processedFrames,
+            scaledWidth: scaledWidth,
+            scaledHeight: scaledHeight,
+            displayWidth: targetWidth,
+            displayHeight: targetHeight,
+            scaleFactor: scaleFactor
+          };
+        } catch (error) {
+          console.error('FFmpeg提取帧失败:', error);
+          // 不使用备用方案，直接报错
+          throw new Error('FFmpeg加载失败或提取帧失败：' + error.message);
+        }
       },
 
       /* ==================== 格式转换：SVGA转MP4 ==================== */

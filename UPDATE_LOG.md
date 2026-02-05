@@ -18,6 +18,16 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-02-05 16:00:00] 【修改文件】 : src/assets/js/mixins/panel-mixin.js - 添加插队加载ffmpeg的逻辑，当用户打开转SVGA弹窗时立即优先加载ffmpeg库
+[2026-02-05 16:00:00] 【修改文件】 : src/assets/js/service/ffmpeg/ffmpeg-service.js - 移除备用线路的逻辑，确保固定使用主线路，不使用备用方案
+[2026-02-05 16:00:00] 【修改文件】 : src/assets/js/core/app.js - 添加extractYyevaFramesOptimized方法，使用FFmpeg批量提取帧，移除降级到原始方法的逻辑，确保FFmpeg加载失败时直接报错
+[2026-02-05 16:00:00] 【修改文件】 : src/assets/js/service/library-loader.js - 修改ffmpeg的配置，移除fallbackUrls，并修改loadSingleLibrary方法，确保当库没有fallbackUrls时，加载失败会直接报错而不是尝试其他URL
+[2026-02-05 16:00:00] 【修改文件】 : README.md - 添加性能优化的相关内容，包括双通道MP4转SVGA的性能优化措施
+[2026-02-05 16:00:00] 【修改文件】 : INDEX.md - 更新功能索引，添加extractYyevaFramesOptimized方法的索引，并更新版本信息
+[2026-02-05 17:00:00] 【修改文件】 : src/assets/js/mixins/panel-mixin.js - 添加调试日志，优化插队加载ffmpeg的逻辑
+[2026-02-05 17:00:00] 【修改文件】 : src/assets/js/service/ffmpeg/ffmpeg-service.js - 添加调试日志，确保固定使用ffmpeg的逻辑正确
+[2026-02-05 17:00:00] 【修改文件】 : src/assets/js/core/app.js - 添加调试日志，修复extractYyevaFramesOptimized方法中的变量引用错误
+[2026-02-05 17:00:00] 【修改文件】 : INDEX.md - 更新版本信息，从1.1.4更新到1.1.5
 [2026-02-04 19:42:49] 【修改文件】 : src/assets/js/service/site-config-loader.js - 修改本地开发模式配置加载逻辑，尝试加载本地 site-config.json 文件，确保未登录用户侧边栏按钮被正确隐藏
 [2026-02-04 19:17:41] 【修改文件】 : src/assets/js/controllers/user-type-controller.js - 实现响应式登录状态管理，添加观察者模式和登录状态轮询检测机制，扩展元素控制 API
 [2026-02-04 19:17:41] 【修改文件】 : src/assets/js/core/app.js - 移除手动调用 UserTypeController.refresh() 的代码，使用自动登录状态轮询检测

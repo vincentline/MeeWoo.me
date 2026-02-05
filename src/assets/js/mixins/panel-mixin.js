@@ -188,6 +188,8 @@
        * 打开转 SVGA 面板 (统一入口)
        */
       openToSvgaPanel: function () {
+        console.log('[调试] 打开转SVGA弹窗，当前模块:', this.currentModule);
+        
         var sourceInfo = {
           name: '',
           sizeWH: '',
@@ -259,6 +261,16 @@
         this.toSvgaSourceInfo = sourceInfo;
         this.toSvgaConfig = config;
         this.activeRightPanel = 'to-svga';
+        
+        // 插队加载ffmpeg
+        console.log('[调试] 插队加载ffmpeg库');
+        if (this.loadLibrary) {
+          this.loadLibrary(['ffmpeg'], true).then(function() {
+            console.log('[调试] ffmpeg加载成功');
+          }).catch(function(error) {
+            console.error('[调试] ffmpeg加载失败:', error);
+          });
+        }
       },
 
       /**

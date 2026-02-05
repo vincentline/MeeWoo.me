@@ -192,12 +192,7 @@
     },
     'ffmpeg': {
       name: 'FFmpeg',
-      url: 'assets/js/lib/ffmpeg.min.js',
-      fallbackUrls: [
-        'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js',
-        'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js',
-        'https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.11.6/ffmpeg.min.js'
-      ],
+      url: 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js',
       checkFn: function () { return typeof FFmpeg !== 'undefined'; },
       priority: 30
     },
@@ -347,7 +342,12 @@
 
           document.head.appendChild(script);
         }).catch(function (error) {
-          return tryLoadUrl(urlIndex + 1);
+          // 如果有备用URL，尝试下一个；否则直接失败
+          if (config.fallbackUrls && config.fallbackUrls.length > 0 && urlIndex < urls.length - 1) {
+            return tryLoadUrl(urlIndex + 1);
+          } else {
+            return Promise.reject(error);
+          }
         });
       }
 
@@ -403,8 +403,12 @@
 
         document.head.appendChild(script);
       }).catch(function (error) {
-        // 当前URL失败，尝试下一个
-        return tryLoadUrl(urlIndex + 1);
+        // 如果有备用URL，尝试下一个；否则直接失败
+        if (config.fallbackUrls && config.fallbackUrls.length > 0 && urlIndex < urls.length - 1) {
+          return tryLoadUrl(urlIndex + 1);
+        } else {
+          return Promise.reject(error);
+        }
       });
     };
 
