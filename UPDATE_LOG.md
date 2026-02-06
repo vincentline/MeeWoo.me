@@ -18,6 +18,7 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-02-06 02:58:58] 【新增文件】 : .trae/documents/项目文件管理规范.md - 新增项目文件管理规范文档，规范项目文件组织和命名，为AI生成文件和管理文件提供参考标准
 [2026-02-05 16:00:00] 【修改文件】 : src/assets/js/mixins/panel-mixin.js - 添加插队加载ffmpeg的逻辑，当用户打开转SVGA弹窗时立即优先加载ffmpeg库
 [2026-02-05 16:00:00] 【修改文件】 : src/assets/js/service/ffmpeg/ffmpeg-service.js - 移除备用线路的逻辑，确保固定使用主线路，不使用备用方案
 [2026-02-05 16:00:00] 【修改文件】 : src/assets/js/core/app.js - 添加extractYyevaFramesOptimized方法，使用FFmpeg批量提取帧，移除降级到原始方法的逻辑，确保FFmpeg加载失败时直接报错

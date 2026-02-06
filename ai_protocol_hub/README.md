@@ -120,27 +120,51 @@ ai_protocol_hub/
 
 在trae设置中的用户规则 `user_rules.md` 里配置以下规则：
 
-#### 时间戳生成规则
-```markdown
-- 时间戳生成规则：
-   - 获取方式：执行`python ai_protocol_hub/scripts/GET_TIME.py`获取当前北京时间
-   - 格式要求：`[YYYY-MM-DD HH:MM:SS]`
-   - 禁止手动输入时间戳
+```json
+{
+  "环境": {
+    "语言": "始终使用中文对话",
+    "系统配置": "Windows+Chrome，测试前清空缓存+硬性重新加载，默认开启VPN",
+    "时间戳规则": {
+      "获取方式": "执行python ai_protocol_hub/scripts/GET_TIME.py获取北京时间",
+      "格式要求": "[YYYY-MM-DD HH:MM:SS]",
+      "禁止操作": "禁止手动输入时间戳"
+    }
+  },
+  "任务执行规则": [
+    "接任务先查阅ai_protocol_hub/core_rules/TASK_VALIDATION_RULES.md并完成任务验证",
+    "项目结构/功能模块查阅README.md",
+    "定位文件/功能优先查阅INDEX.md，索引无结果再用其他方式搜索",
+    "生成代码前必须查阅ai_protocol_hub/core_rules/CODE_STYLE.md，符合代码规范",
+    "文件/文件夹增删改重命名/移动，必须查阅UPDATE_LOG.md并完成记录操作"
+  ],
+  "沟通规则": {
+    "表达要求": "简洁、严谨，适度有趣",
+    "问题处理机制": [
+      "遇难解/不确定问题，立即向用户沟通求助",
+      "禁止自行猜测/假设，仅基于明确信息操作",
+      "无法执行的代码/命令，不模拟执行，如实反馈现状+原因",
+      "拒绝回答不礼貌/黄暴问题，引导回归编程相关话题"
+    ],
+    "反馈机制": [
+      "操作完成后主动总结",
+      "自我验证操作是否符合所有规则，发现问题立即纠正"
+    ]
+  },
+  "指令操作": {
+    "触发条件": "用户描述包含【】为指令操作",
+    "执行动作": "执行ai_protocol_hub/core_rules/INSTRUCTIONS.md对应操作",
+    "常见指令": ["【测试】","【回答】","【提交】","【收尾】","【更新索引】","【更新日志】","【同步AI协议】"]
+  }
+}
 ```
 
-#### 任务执行规则
-```markdown
-1. 接到任务必须先查阅`ai_protocol_hub/core_rules/TASK_VALIDATION_RULES.md`并执行任务验证
-2. 项目结构和功能模块查阅`README.md`
-3. 定位文件/功能查阅`INDEX.md` ，索引文件找不到时再使用其他方式搜索
-4. 生成代码前必须查阅`ai_protocol_hub/core_rules/CODE_STYLE.md`，确保符合项目的代码规范
-5. 对文件和文件夹进行新增、删除、修改、重命名、移动的操作，必须查阅`UPDATE_LOG.md` 并执行记录操作
-```
-
-#### 指令规则
-```markdown
-1. 用户描述中包含“【】”，为指令操作，执行指令文件`ai_protocol_hub/core_rules/INSTRUCTIONS.md`对应的操作
-2. 指令包括但不限于：【测试】、【回答】、【提交】、【收尾】、【更新索引】、【更新日志】、【同步AI协议】等指令
+```json
+{
+  "技能目录": {
+  "所有skills安装在ai_protocol_hub/skills_specs/目录下"
+}
+}
 ```
 
 ## 优势
