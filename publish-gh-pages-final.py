@@ -265,6 +265,9 @@ def publish_to_gh_pages():
             run_command('git checkout --orphan gh-pages')
             run_command('git reset --hard')
             run_command('git commit --allow-empty -m "Initial commit for gh-pages"')
+            # 设置上游分支
+            print_with_encoding("[进度] 设置上游分支...")
+            run_command('git push -u origin gh-pages')
         
         # 清空 gh-pages 分支的内容
         print_with_encoding("[进度] 清空 gh-pages 分支的内容...")
