@@ -243,33 +243,11 @@ def publish_to_gh_pages():
             print_with_encoding(f"[进度] 无法获取远程仓库地址，使用备选: {fallback_url}")
             run_command(f'git remote add origin "{fallback_url}"')
         
-        # 获取远程分支信息
-        print_with_encoding("[进度] 获取远程分支信息...")
-        fetch_result = run_command('git fetch origin')
-        if fetch_result:
-            print_with_encoding(f"[进度] 获取远程分支结果: {'成功' if fetch_result.returncode == 0 else '失败'}")
-        
-        # 列出所有远程分支
-        print_with_encoding("[进度] 列出所有远程分支...")
-        remote_branches = run_command('git branch -r')
-        if remote_branches:
-            print_with_encoding(f"[进度] 远程分支信息: {remote_branches.stdout}")
-        
-        # 检查远程 gh-pages 分支是否存在
-        print_with_encoding("[进度] 检查远程 gh-pages 分支是否存在...")
-        remote_gh_pages_exists = run_command('git show-ref --verify --quiet refs/remotes/origin/gh-pages')
-        print_with_encoding(f"[进度] 远程 gh-pages 分支检查结果: {'存在' if (remote_gh_pages_exists and remote_gh_pages_exists.returncode == 0) else '不存在'}")
-        
-        if remote_gh_pages_exists and remote_gh_pages_exists.returncode == 0:
-            # 如果远程存在 gh-pages 分支，拉取最新版本
-            print_with_encoding("[进度] 远程 gh-pages 分支存在，拉取最新版本...")
-            run_command('git checkout -b gh-pages origin/gh-pages')
-        else:
-            # 如果远程不存在 gh-pages 分支，创建新分支
-            print_with_encoding("[进度] 远程 gh-pages 分支不存在，创建新分支...")
-            run_command('git checkout --orphan gh-pages')
-            run_command('git reset --hard')
-            run_command('git commit --allow-empty -m "Initial commit for gh-pages"')
+        # 直接创建gh-pages分支（不检查远程分支存在性）
+        print_with_encoding("[进度] 创建并切换到gh-pages分支...")
+        run_command('git checkout --orphan gh-pages')
+        run_command('git reset --hard')
+        run_command('git commit --allow-empty -m "Initial commit for gh-pages"')
         
         # 清空 gh-pages 分支的内容
         print_with_encoding("[进度] 清空 gh-pages 分支的内容...")
