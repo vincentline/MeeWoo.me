@@ -225,53 +225,29 @@ def publish_to_gh_pages():
     print_with_encoding(f"[进度] 创建临时目录: {temp_dir}")
     
     try:
-        # 克隆仓库到临时目录
-        print_with_encoding("[进度] 克隆仓库到临时目录...")
-        # 使用 --no-single-branch 选项克隆所有分支
-        clone_result = run_command(f'git clone --no-single-branch "file://{os.getcwd()}" "{temp_dir}"')
-        if clone_result and clone_result.returncode != 0:
-            print_with_encoding("错误：克隆仓库失败")
-            return False
-        
-        # 切换到临时目录
+        # 初始化一个新的git仓库
+        print_with_encoding("[进度] 初始化临时git仓库...")
         os.chdir(temp_dir)
-        
-        # 切换到 gh-pages 分支
-        print_with_encoding("[进度] 切换到 gh-pages 分支...")
+        run_command('git init')
+        run_command(f'git remote add origin "file://{project_root}"')
         
         # 获取远程分支信息
         print_with_encoding("[进度] 获取远程分支信息...")
         run_command('git fetch origin')
         
-        # 先检查远程 gh-pages 分支是否存在
+        # 检查远程 gh-pages 分支是否存在
         remote_gh_pages_exists = run_command('git show-ref --verify --quiet refs/remotes/origin/gh-pages')
         
-        # 再检查本地 gh-pages 分支是否存在
-        local_gh_pages_exists = run_command('git show-ref --verify --quiet refs/heads/gh-pages')
-        
-        if local_gh_pages_exists and local_gh_pages_exists.returncode == 0:
-            # 如果本地 gh-pages 分支存在，直接切换
-            print_with_encoding("[进度] 本地 gh-pages 分支存在，切换到该分支...")
-            checkout_result = run_command('git checkout gh-pages')
-            if checkout_result and checkout_result.returncode != 0:
-                print_with_encoding("错误：切换到 gh-pages 分支失败")
-                return False
-        elif remote_gh_pages_exists and remote_gh_pages_exists.returncode == 0:
-            # 如果远程 gh-pages 分支存在但本地不存在，从远程创建本地分支
-            print_with_encoding("[进度] 远程 gh-pages 分支存在，从远程创建本地分支...")
-            checkout_result = run_command('git checkout -b gh-pages origin/gh-pages')
-            if checkout_result and checkout_result.returncode != 0:
-                print_with_encoding("错误：从远程创建并切换到 gh-pages 分支失败")
-                return False
+        if remote_gh_pages_exists and remote_gh_pages_exists.returncode == 0:
+            # 如果远程存在 gh-pages 分支，拉取最新版本
+            print_with_encoding("[进度] 远程 gh-pages 分支存在，拉取最新版本...")
+            run_command('git checkout -b gh-pages origin/gh-pages')
         else:
-            # 如果 gh-pages 分支不存在，创建一个新的
-            print_with_encoding("[进度] gh-pages 分支不存在，创建新分支...")
+            # 如果远程不存在 gh-pages 分支，创建新分支
+            print_with_encoding("[进度] 远程 gh-pages 分支不存在，创建新分支...")
             run_command('git checkout --orphan gh-pages')
             run_command('git reset --hard')
             run_command('git commit --allow-empty -m "Initial commit for gh-pages"')
-            # 设置上游分支
-            print_with_encoding("[进度] 设置上游分支...")
-            run_command('git push -u origin gh-pages')
         
         # 清空 gh-pages 分支的内容
         print_with_encoding("[进度] 清空 gh-pages 分支的内容...")
@@ -286,8 +262,8 @@ def publish_to_gh_pages():
             else:
                 os.remove(item_path)
         
-        # 复制 main 分支的 docs 目录内容到 gh-pages 分支
-        print_with_encoding("[进度] 复制 docs 目录内容到 gh-pages 分支...")
+        # 从本地 main 分支复制 docs 目录内容
+        print_with_encoding("[进度] 从本地 main 分支复制 docs 目录内容...")
         main_docs_path = os.path.join(project_root, 'docs')
         print_with_encoding(f"[进度] 源 docs 目录: {main_docs_path}")
         
@@ -315,8 +291,8 @@ def publish_to_gh_pages():
         if commit_result and commit_result.returncode != 0:
             print_with_encoding("警告：没有需要提交的更改")
         
-        # 推送到 gh-pages 分支 - 使用强制推送，因为我们是重建分支内容
-        print_with_encoding("[进度] 推送到 gh-pages 分支...")
+        # 强制推送到远程 gh-pages 分支
+        print_with_encoding("[进度] 强制推送到远程 gh-pages 分支...")
         push_result = run_command('git push -f origin gh-pages')
         if push_result:
             if push_result.returncode != 0:
