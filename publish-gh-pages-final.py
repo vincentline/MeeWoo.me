@@ -118,75 +118,79 @@ def check_and_commit_git_changes():
     
     # 检查是否在 Git 仓库中
     result = run_command('git status --short')
-    if result and result.stdout:
-        if result.stdout.strip():
-            print_with_encoding("发现未提交的更改，正在提交...")
-            
-            # 检查是否存在 git-push.py 脚本
-            git_push_script = os.path.join(os.getcwd(), 'git-push.py')
-            if os.path.exists(git_push_script):
-                # 运行 git-push.py 脚本
-                try:
-                    push_result = subprocess.run(
-                        [sys.executable, git_push_script],
-                        cwd=os.getcwd(),
-                        capture_output=True,
-                        text=True
-                    )
-                except UnicodeDecodeError:
-                    # 如果编码解码失败，尝试使用gbk编码
-                    push_result = subprocess.run(
-                        [sys.executable, git_push_script],
-                        cwd=os.getcwd(),
-                        capture_output=True,
-                        text=True,
-                        encoding='gbk'
-                    )
-                if push_result.returncode == 0:
-                    print_with_encoding("成功提交更改")
-                else:
-                    print_with_encoding("错误：提交更改失败")
-                    print_with_encoding(f"错误信息：{push_result.stderr}")
-                    return False
-            else:
-                # 如果没有 git-push.py 脚本，手动提交
-                print_with_encoding("未找到 git-push.py 脚本，手动提交更改...")
+    if result is not None:
+        if result.stdout:
+            if result.stdout.strip():
+                print_with_encoding("发现未提交的更改，正在提交...")
                 
-                # 添加所有更改
-                add_result = run_command('git add .')
-                if add_result:
-                    if add_result.returncode != 0:
-                        print_with_encoding("错误：添加更改失败")
-                        print_with_encoding(f"错误信息：{add_result.stderr}")
-                        return False
-                    else:
-                        print_with_encoding("成功添加更改")
-                else:
-                    print_with_encoding("错误：添加更改失败")
-                    return False
-                
-                # 提交更改
-                commit_msg = f"Update: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                # 使用双引号包围提交消息，更适合Windows命令行
-                if os.name == 'nt':
-                    # Windows命令行使用双引号
-                    commit_result = run_command(f'git commit -m "{commit_msg}"')
-                else:
-                    # 非Windows系统使用单引号
-                    commit_result = run_command(f"git commit -m '{commit_msg}'")
-                if commit_result:
-                    if commit_result.returncode != 0:
-                        print_with_encoding("错误：提交更改失败")
-                        print_with_encoding(f"错误信息：{commit_result.stderr}")
-                        return False
-                    else:
+                # 检查是否存在 git-push.py 脚本
+                git_push_script = os.path.join(os.getcwd(), 'git-push.py')
+                if os.path.exists(git_push_script):
+                    # 运行 git-push.py 脚本
+                    try:
+                        push_result = subprocess.run(
+                            [sys.executable, git_push_script],
+                            cwd=os.getcwd(),
+                            capture_output=True,
+                            text=True
+                        )
+                    except UnicodeDecodeError:
+                        # 如果编码解码失败，尝试使用gbk编码
+                        push_result = subprocess.run(
+                            [sys.executable, git_push_script],
+                            cwd=os.getcwd(),
+                            capture_output=True,
+                            text=True,
+                            encoding='gbk'
+                        )
+                    if push_result.returncode == 0:
                         print_with_encoding("成功提交更改")
+                    else:
+                        print_with_encoding("错误：提交更改失败")
+                        print_with_encoding(f"错误信息：{push_result.stderr}")
+                        return False
                 else:
-                    print_with_encoding("错误：提交更改失败")
-                    return False
-                
-                print_with_encoding("成功提交更改")
+                    # 如果没有 git-push.py 脚本，手动提交
+                    print_with_encoding("未找到 git-push.py 脚本，手动提交更改...")
+                    
+                    # 添加所有更改
+                    add_result = run_command('git add .')
+                    if add_result:
+                        if add_result.returncode != 0:
+                            print_with_encoding("错误：添加更改失败")
+                            print_with_encoding(f"错误信息：{add_result.stderr}")
+                            return False
+                        else:
+                            print_with_encoding("成功添加更改")
+                    else:
+                        print_with_encoding("错误：添加更改失败")
+                        return False
+                    
+                    # 提交更改
+                    commit_msg = f"Update: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                    # 使用双引号包围提交消息，更适合Windows命令行
+                    if os.name == 'nt':
+                        # Windows命令行使用双引号
+                        commit_result = run_command(f'git commit -m "{commit_msg}"')
+                    else:
+                        # 非Windows系统使用单引号
+                        commit_result = run_command(f"git commit -m '{commit_msg}'")
+                    if commit_result:
+                        if commit_result.returncode != 0:
+                            print_with_encoding("错误：提交更改失败")
+                            print_with_encoding(f"错误信息：{commit_result.stderr}")
+                            return False
+                        else:
+                            print_with_encoding("成功提交更改")
+                    else:
+                        print_with_encoding("错误：提交更改失败")
+                        return False
+                    
+                    print_with_encoding("成功提交更改")
+            else:
+                print_with_encoding("没有需要提交的更改")
         else:
+            # 工作树干净，没有输出
             print_with_encoding("没有需要提交的更改")
     else:
         print_with_encoding("错误：检查 Git 状态失败")
