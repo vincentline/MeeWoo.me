@@ -355,12 +355,31 @@ def publish_to_gh_pages():
         print_with_encoding(f"错误：发布到 gh-pages 分支失败：{e}")
         return False
     finally:
+        # 确保切换回项目根目录
+        print_with_encoding("[进度] 切换回项目根目录...")
+        try:
+            os.chdir(project_root)
+            print_with_encoding("[进度] 成功切换回项目根目录")
+        except Exception as e:
+            print_with_encoding(f"[警告] 切换回项目根目录时出错: {e}")
+        
         # 确保临时目录被清理
-        if 'temp_dir' in locals() and os.path.exists(temp_dir):
-            try:
-                shutil.rmtree(temp_dir)
-            except:
-                pass
+        print_with_encoding("[进度] 清理临时目录...")
+        if 'temp_dir' in locals():
+            print_with_encoding(f"[进度] 临时目录路径: {temp_dir}")
+            if os.path.exists(temp_dir):
+                try:
+                    shutil.rmtree(temp_dir)
+                    print_with_encoding("[进度] 临时目录清理成功")
+                except Exception as e:
+                    print_with_encoding(f"[警告] 清理临时目录时出错: {e}")
+            else:
+                print_with_encoding("[进度] 临时目录不存在，无需清理")
+        else:
+            print_with_encoding("[进度] 临时目录变量不存在")
+        
+        # 确保脚本正常退出
+        print_with_encoding("[进度] 发布脚本执行完成")
 
 def main():
     """主函数"""
