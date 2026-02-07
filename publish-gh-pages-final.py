@@ -235,6 +235,10 @@ def publish_to_gh_pages():
         # 切换到 gh-pages 分支
         print_with_encoding("[进度] 切换到 gh-pages 分支...")
         
+        # 获取远程分支信息
+        print_with_encoding("[进度] 获取远程分支信息...")
+        run_command('git fetch origin')
+        
         # 先检查远程 gh-pages 分支是否存在
         remote_gh_pages_exists = run_command('git show-ref --verify --quiet refs/remotes/origin/gh-pages')
         
