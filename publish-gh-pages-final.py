@@ -229,14 +229,36 @@ def publish_to_gh_pages():
         print_with_encoding("[进度] 初始化临时git仓库...")
         os.chdir(temp_dir)
         run_command('git init')
-        run_command(f'git remote add origin "file://{project_root}"')
+        
+        # 获取真正的远程仓库地址
+        print_with_encoding("[进度] 获取真正的远程仓库地址...")
+        remote_url = run_command('git config --get remote.origin.url', cwd=project_root)
+        if remote_url and remote_url.stdout.strip():
+            real_remote_url = remote_url.stdout.strip()
+            print_with_encoding(f"[进度] 真正的远程仓库地址: {real_remote_url}")
+            run_command(f'git remote add origin "{real_remote_url}"')
+        else:
+            # 如果获取失败，使用本地文件路径作为备选
+            fallback_url = f"file://{project_root}"
+            print_with_encoding(f"[进度] 无法获取远程仓库地址，使用备选: {fallback_url}")
+            run_command(f'git remote add origin "{fallback_url}"')
         
         # 获取远程分支信息
         print_with_encoding("[进度] 获取远程分支信息...")
-        run_command('git fetch origin')
+        fetch_result = run_command('git fetch origin')
+        if fetch_result:
+            print_with_encoding(f"[进度] 获取远程分支结果: {'成功' if fetch_result.returncode == 0 else '失败'}")
+        
+        # 列出所有远程分支
+        print_with_encoding("[进度] 列出所有远程分支...")
+        remote_branches = run_command('git branch -r')
+        if remote_branches:
+            print_with_encoding(f"[进度] 远程分支信息: {remote_branches.stdout}")
         
         # 检查远程 gh-pages 分支是否存在
+        print_with_encoding("[进度] 检查远程 gh-pages 分支是否存在...")
         remote_gh_pages_exists = run_command('git show-ref --verify --quiet refs/remotes/origin/gh-pages')
+        print_with_encoding(f"[进度] 远程 gh-pages 分支检查结果: {'存在' if (remote_gh_pages_exists and remote_gh_pages_exists.returncode == 0) else '不存在'}")
         
         if remote_gh_pages_exists and remote_gh_pages_exists.returncode == 0:
             # 如果远程存在 gh-pages 分支，拉取最新版本
