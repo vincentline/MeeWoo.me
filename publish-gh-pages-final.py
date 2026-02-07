@@ -306,13 +306,37 @@ def publish_to_gh_pages():
         
         # 添加所有文件并提交
         print_with_encoding("[进度] 添加所有文件并提交...")
-        run_command('git add .')
+        
+        # 检查当前目录内容
+        print_with_encoding("[进度] 检查当前目录内容...")
+        current_files = os.listdir('.')
+        print_with_encoding(f"[进度] 当前目录包含 {len(current_files)} 个文件/目录")
+        for item in current_files:
+            if item not in ['.git']:
+                print_with_encoding(f"[进度] - {item}")
+        
+        # 添加所有文件
+        add_result = run_command('git add .')
+        if add_result:
+            print_with_encoding(f"[进度] git add 结果: {'成功' if add_result.returncode == 0 else '失败'}")
+        
+        # 检查git状态
+        status_result = run_command('git status')
+        if status_result:
+            print_with_encoding("[进度] git status 结果:")
+            print_with_encoding(status_result.stdout)
         
         commit_msg = f"Deploy docs to gh-pages: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         commit_result = run_command(f"git commit -m '{commit_msg}'")
         
         # 检查提交结果
         if commit_result:
+            print_with_encoding(f"[进度] git commit 结果: {'成功' if commit_result.returncode == 0 else '失败'}")
+            if commit_result.stdout:
+                print_with_encoding(f"[进度] 提交输出: {commit_result.stdout}")
+            if commit_result.stderr:
+                print_with_encoding(f"[进度] 提交错误: {commit_result.stderr}")
+                
             if commit_result.returncode != 0:
                 print_with_encoding("警告：没有需要提交的更改")
                 # 即使没有更改，也强制推送空内容
@@ -326,6 +350,14 @@ def publish_to_gh_pages():
         # 强制推送到远程 gh-pages 分支
         print_with_encoding("[进度] 强制推送到远程 gh-pages 分支...")
         push_result = run_command('git push -f origin gh-pages')
+        
+        # 检查推送结果
+        if push_result:
+            print_with_encoding(f"[进度] git push 结果: {'成功' if push_result.returncode == 0 else '失败'}")
+            if push_result.stdout:
+                print_with_encoding(f"[进度] 推送输出: {push_result.stdout}")
+            if push_result.stderr:
+                print_with_encoding(f"[进度] 推送错误: {push_result.stderr}")
         if push_result:
             if push_result.returncode != 0:
                 print_with_encoding("错误：推送失败")
