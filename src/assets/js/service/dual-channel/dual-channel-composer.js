@@ -368,34 +368,23 @@
                     throw new Error('当前浏览器不支持Web Worker');
                 }
                 
-                console.log('开始初始化Web Worker');
-                
                 // 尝试使用传统路径创建Worker
                 try {
                     // 直接使用默认的workerPath，它是相对于HTML文件的路径
                     const workerPath = this.defaults.workerPath;
-                    console.log('尝试加载外部Worker文件:', workerPath);
                     
                     // 创建Worker
                     this._worker = new Worker(workerPath);
-                    console.log('Web Worker 外部文件加载成功');
                 } catch (error) {
-                    console.warn('Worker加载失败，尝试使用相对路径:', error.message);
-                    
                     // 回退到相对路径
                     const workerPath = './dual-channel-worker.js';
-                    console.log('尝试加载外部Worker文件（相对路径）:', workerPath);
                     
                     // 创建Worker
                     this._worker = new Worker(workerPath);
-                    console.log('Web Worker 外部文件（相对路径）加载成功');
                 }
             } catch (error) {
-                console.error('Worker外部文件加载失败:', error);
-                
                 // 回退到内联Worker代码
                 try {
-                    console.log('回退到内联Worker代码');
                     const workerCode = `
 // 分块大小配置
 const BLOCK_SIZE = 128;
@@ -406,21 +395,16 @@ const hasSIMD = false;
 // 处理消息
 self.onmessage = function(e) {
   var task = e.data;
-  console.log('Worker received task:', task.type, 'Task ID:', task.id);
   
   try {
     switch(task.type) {
       case 'composeFrame':
-        console.log('Processing composeFrame task');
         handleComposeFrame(task).catch(function(error) {
-          console.error('Error in handleComposeFrame:', error);
           self.postMessage({ id: task.id, type: 'error', error: error.message });
         });
         break;
       case 'composeFrames':
-        console.log('Processing composeFrames task, frame count:', task.frames ? task.frames.length : (task.data ? task.data.frames.length : 0));
         handleComposeFrames(task).catch(function(error) {
-          console.error('Error in handleComposeFrames:', error);
           self.postMessage({ id: task.id, type: 'error', error: error.message });
         });
         break;
@@ -428,7 +412,6 @@ self.onmessage = function(e) {
         throw new Error('Unknown task type: ' + task.type);
     }
   } catch(error) {
-    console.error('Error in message handler:', error);
     self.postMessage({ id: task.id, type: 'error', error: error.message });
   }
 };
@@ -475,7 +458,6 @@ async function handleComposeFrame(task) {
       }
     }));
   } catch (error) {
-    console.error('Error during block processing:', error);
     throw error;
   }
   
@@ -526,7 +508,6 @@ async function handleComposeFrames(task) {
       try {
         await Promise.all(blocks.map(block => processBlock(block, frameData.data, width, height, dualWidth, dualData, blackBgData, isColorLeftAlphaRight)));
       } catch (error) {
-        console.error('Error processing frame', frameIndex, ':', error);
         return null;
       }
       
@@ -546,7 +527,6 @@ async function handleComposeFrames(task) {
         self.postMessage({ id: task.id, type: 'progress', progress: progress });
       }
     } catch (error) {
-      console.error('Error in batch processing:', error);
       continue;
     }
   }
@@ -572,7 +552,6 @@ function processBlock(block, frameData, width, height, dualWidth, dualData, blac
       processBlockWithoutSIMD(block, frameData, width, height, dualWidth, dualData, blackBgData, isColorLeftAlphaRight, inv255);
       resolve();
     } catch (error) {
-      console.error('Error processing block:', error, 'at position:', startX, ',', startY);
       resolve();
     }
   });
@@ -589,7 +568,6 @@ function processBlockWithoutSIMD(block, frameData, width, height, dualWidth, dua
       try {
         processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBgData, isColorLeftAlphaRight, inv255);
       } catch (error) {
-        console.error('Error processing pixel at', x, ',', y, ':', error);
       }
     }
   }
@@ -600,7 +578,6 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
   var frameIdx = pixelIndex * 4;
   
   if (frameIdx + 3 >= frameData.length) {
-    console.error('Invalid frame index:', frameIdx, 'for frame data length:', frameData.length);
     return;
   }
   
@@ -625,7 +602,6 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
   var rightIdx = (y * dualWidth + x + width) * 4;
 
   if (leftIdx + 3 >= dualData.length || rightIdx + 3 >= dualData.length) {
-    console.error('Invalid dual data index:', leftIdx, 'or', rightIdx, 'for dual data length:', dualData.length);
     return;
   }
 
@@ -691,9 +667,7 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
                     
                     // 创建Worker
                     this._worker = new Worker(blobUrl);
-                    console.log('Web Worker 内联代码加载成功');
                 } catch (inlineError) {
-                    console.error('Worker内联代码加载失败:', inlineError);
                     throw new Error('无法加载Web Worker: ' + inlineError.message);
                 }
             }
@@ -707,7 +681,6 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
     _initMemoryPool: function() {
         if (this.defaults.memoryPool.enabled && window.MeeWoo && window.MeeWoo.Services && window.MeeWoo.Services.MemoryPool) {
             this._memoryPool = window.MeeWoo.Services.MemoryPool;
-            console.log('内存池初始化成功');
         }
     },
 
@@ -735,9 +708,7 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
         if (this._memoryPool) {
             try {
                 this._memoryPool.clear();
-                console.log('内存池清理完成');
             } catch (error) {
-                console.error('内存池清理失败:', error);
             }
         }
     },
@@ -749,7 +720,6 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
     _initWorkerPool: function() {
         if (this.defaults.workerPool.enabled && window.MeeWoo && window.MeeWoo.Services && window.MeeWoo.Services.WorkerPool) {
             this._workerPool = window.MeeWoo.Services.WorkerPool;
-            console.log('Worker池初始化成功');
         }
     },
 
@@ -763,13 +733,10 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
             if (this._wasmLoader.getIsSupported()) {
                 try {
                     await this._wasmLoader.load(this.defaults.wasm.modulePath);
-                    console.log('WebAssembly初始化成功');
                 } catch (error) {
-                    console.warn('WebAssembly加载失败，回退到JavaScript:', error.message);
                     this._wasmLoader = null;
                 }
             } else {
-                console.warn('当前浏览器不支持WebAssembly，回退到JavaScript');
                 this._wasmLoader = null;
             }
         }
@@ -946,8 +913,6 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
         options = options || {};
         const onProgress = options.onProgress || function() {};
         
-        console.log('Worker失败，在主线程处理任务，类型:', type);
-        
         try {
             // 模拟进度
             onProgress(0.25);
@@ -985,7 +950,6 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
             
             return { success: true };
         } catch (error) {
-            console.error('主线程处理任务失败:', error);
             throw new Error('处理任务失败: ' + error.message);
         }
     },
@@ -1003,7 +967,6 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
             try {
                 // 这里需要根据任务类型实现不同的处理逻辑
                 // 由于WebAssembly模块需要编译，这里只是一个示例
-                console.log('WebAssembly处理任务:', type);
                 
                 // 模拟处理过程
                 setTimeout(() => {
@@ -1014,7 +977,6 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
                     }, 500);
                 }, 500);
             } catch (error) {
-                console.error('WebAssembly处理失败:', error);
                 reject(new Error('WebAssembly处理失败: ' + error.message));
             }
         });

@@ -6884,10 +6884,8 @@ function initApp() {
         }
 
         // 使用统一的右侧弹窗管理
-        console.log('打开双通道MP4面板');
         var _this = this;
         Vue.nextTick(function () {
-          console.log('调用openDualChannelPanel方法');
           _this.openDualChannelPanel();
         });
 
@@ -6957,7 +6955,6 @@ function initApp() {
         }
 
         // 调用统一的openDualChannelPanel方法
-        console.log('调用openDualChannelPanel方法');
         this.openDualChannelPanel();
 
         // 预加载FFmpeg (高优先级插队)
