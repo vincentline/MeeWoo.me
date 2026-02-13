@@ -416,296 +416,19 @@
                     this._debugLog('info', 'Worker创建成功（使用相对路径）');
                 }
             } catch (error) {
-                this._debugLog('warn', '使用外部文件创建Worker失败，尝试内联Worker', { error: error.message });
-                // 回退到内联Worker代码
-                try {
-                    const workerCode = `
-// 分块大小配置
-const BLOCK_SIZE = 128;
-
-// 检测SIMD支持
-const hasSIMD = false;
-
-// 处理消息
-self.onmessage = function(e) {
-  var task = e.data;
-  
-  try {
-    switch(task.type) {
-      case 'composeFrame':
-        handleComposeFrame(task).catch(function(error) {
-          self.postMessage({ id: task.id, type: 'error', error: error.message });
-        });
-        break;
-      case 'composeFrames':
-        handleComposeFrames(task).catch(function(error) {
-          self.postMessage({ id: task.id, type: 'error', error: error.message });
-        });
-        break;
-      default:
-        throw new Error('Unknown task type: ' + task.type);
-    }
-  } catch(error) {
-    self.postMessage({ id: task.id, type: 'error', error: error.message });
-  }
-};
-
-async function handleComposeFrame(task) {
-  // 兼容两种数据结构：直接的属性或嵌套的data属性
-  var frame = task.frame || (task.data ? task.data.frame : undefined);
-  var width = task.width || (task.data ? task.data.width : undefined);
-  var height = task.height || (task.data ? task.data.height : undefined);
-  var mode = task.mode || (task.data ? task.data.mode : undefined);
-  
-  if (!frame || !frame.data) {
-    throw new Error('缺少frame数据');
-  }
-  
-  var frameData = frame.data;
-  var isColorLeftAlphaRight = mode === 'color-left-alpha-right';
-  var dualWidth = width * 2;
-  var dualHeight = height;
-  var dualDataSize = dualWidth * dualHeight * 4;
-  
-  var dualData = new Uint8ClampedArray(dualDataSize);
-  var blackBgData = new Uint8ClampedArray(dualDataSize);
-  
-  var blocks = [];
-  for (var y = 0; y < height; y += BLOCK_SIZE) {
-    for (var x = 0; x < width; x += BLOCK_SIZE) {
-      blocks.push({ x: x, y: y, width: Math.min(BLOCK_SIZE, width - x), height: Math.min(BLOCK_SIZE, height - y) });
-    }
-  }
-  
-  try {
-    var processedBlocks = 0;
-    var totalBlocks = blocks.length;
-    
-    await Promise.all(blocks.map(async block => {
-      await processBlock(block, frameData, width, height, dualWidth, dualData, blackBgData, isColorLeftAlphaRight);
-      
-      processedBlocks++;
-      var progress = Math.round((processedBlocks / totalBlocks) * 100);
-      
-      if (progress % 5 === 0) {
-        self.postMessage({ id: task.id, type: 'progress', progress: progress });
-      }
-    }));
-  } catch (error) {
-    throw error;
-  }
-  
-  self.postMessage({ id: task.id, type: 'result', result: { blackBgData: blackBgData, dualData: dualData, width: dualWidth, height: dualHeight } }, [blackBgData.buffer, dualData.buffer]);
-}
-
-async function handleComposeFrames(task) {
-  // 兼容两种数据结构：直接的frames属性或嵌套的data.frames
-  var frames = task.frames || (task.data ? task.data.frames : undefined);
-  var mode = task.mode || (task.data ? task.data.mode : undefined);
-  
-  if (!frames) {
-    throw new Error('缺少frames数据');
-  }
-  
-  var frameCount = frames.length;
-  if (frameCount === 0) {
-    throw new Error('帧数组不能为空');
-  }
-  
-  var results = [];
-  var width = frames[0].width;
-  var height = frames[0].height;
-  var isColorLeftAlphaRight = mode === 'color-left-alpha-right';
-  var dualWidth = width * 2;
-  var dualDataSize = dualWidth * height * 4;
-  
-  const BATCH_SIZE = 20;
-  
-  for (let batchStart = 0; batchStart < frameCount; batchStart += BATCH_SIZE) {
-    const batchEnd = Math.min(batchStart + BATCH_SIZE, frameCount);
-    const batchFrames = frames.slice(batchStart, batchEnd);
-    const batchSize = batchFrames.length;
-    
-    var framePromises = batchFrames.map(async function(frameData, index) {
-      const frameIndex = batchStart + index;
-      
-      var dualData = new Uint8ClampedArray(dualDataSize);
-      var blackBgData = new Uint8ClampedArray(dualDataSize);
-      
-      var blocks = [];
-      for (var y = 0; y < height; y += BLOCK_SIZE) {
-        for (var x = 0; x < width; x += BLOCK_SIZE) {
-          blocks.push({ x: x, y: y, width: Math.min(BLOCK_SIZE, width - x), height: Math.min(BLOCK_SIZE, height - y) });
-        }
-      }
-      
-      try {
-        await Promise.all(blocks.map(block => processBlock(block, frameData.data, width, height, dualWidth, dualData, blackBgData, isColorLeftAlphaRight)));
-      } catch (error) {
-        return null;
-      }
-      
-      return { blackBgData: blackBgData, width: dualWidth, height: height };
-    });
-    
-    try {
-      const batchResults = await Promise.all(framePromises);
-      
-      const validResults = batchResults.filter(result => result !== null);
-      results.push(...validResults);
-      
-      const processedFrames = Math.min(batchEnd, frameCount);
-      var progress = Math.round((processedFrames / frameCount) * 100);
-      
-      if (progress % 5 === 0) {
-        self.postMessage({ id: task.id, type: 'progress', progress: progress });
-      }
-    } catch (error) {
-      continue;
-    }
-  }
-  
-  var transferables = [];
-  results.forEach(result => {
-    transferables.push(result.blackBgData.buffer);
-  });
-  
-  self.postMessage({ id: task.id, type: 'result', result: results }, transferables);
-}
-
-function processBlock(block, frameData, width, height, dualWidth, dualData, blackBgData, isColorLeftAlphaRight) {
-  return new Promise(function(resolve) {
-    var startX = block.x;
-    var startY = block.y;
-    var blockWidth = block.width;
-    var blockHeight = block.height;
-    
-    var inv255 = 1 / 255;
-    
-    try {
-      processBlockWithoutSIMD(block, frameData, width, height, dualWidth, dualData, blackBgData, isColorLeftAlphaRight, inv255);
-      resolve();
-    } catch (error) {
-      resolve();
-    }
-  });
-}
-
-function processBlockWithoutSIMD(block, frameData, width, height, dualWidth, dualData, blackBgData, isColorLeftAlphaRight, inv255) {
-  var startX = block.x;
-  var startY = block.y;
-  var blockWidth = block.width;
-  var blockHeight = block.height;
-  
-  for (var y = startY; y < startY + blockHeight; y++) {
-    for (var x = startX; x < startX + blockWidth; x++) {
-      try {
-        processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBgData, isColorLeftAlphaRight, inv255);
-      } catch (error) {
-      }
-    }
-  }
-}
-
-function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBgData, isColorLeftAlphaRight, inv255) {
-  var pixelIndex = y * width + x;
-  var frameIdx = pixelIndex * 4;
-  
-  if (frameIdx + 3 >= frameData.length) {
-    return;
-  }
-  
-  var r = frameData[frameIdx + 0];
-  var g = frameData[frameIdx + 1];
-  var b = frameData[frameIdx + 2];
-  var a = frameData[frameIdx + 3];
-
-  var finalR = r, finalG = g, finalB = b;
-  if (a > 0) {
-    if (a < 255) {
-      var alphaFactor = 255 * inv255;
-      finalR = Math.min(255, Math.round(r * alphaFactor));
-      finalG = Math.min(255, Math.round(g * alphaFactor));
-      finalB = Math.min(255, Math.round(b * alphaFactor));
-    }
-  } else {
-    finalR = 0; finalG = 0; finalB = 0;
-  }
-
-  var leftIdx = (y * dualWidth + x) * 4;
-  var rightIdx = (y * dualWidth + x + width) * 4;
-
-  if (leftIdx + 3 >= dualData.length || rightIdx + 3 >= dualData.length) {
-    return;
-  }
-
-  if (isColorLeftAlphaRight) {
-    dualData[leftIdx + 0] = finalR;
-    dualData[leftIdx + 1] = finalG;
-    dualData[leftIdx + 2] = finalB;
-    dualData[leftIdx + 3] = a;
-    dualData[rightIdx + 0] = a;
-    dualData[rightIdx + 1] = a;
-    dualData[rightIdx + 2] = a;
-    dualData[rightIdx + 3] = 255;
-  } else {
-    dualData[leftIdx + 0] = a;
-    dualData[leftIdx + 1] = a;
-    dualData[leftIdx + 2] = a;
-    dualData[leftIdx + 3] = 255;
-    dualData[rightIdx + 0] = finalR;
-    dualData[rightIdx + 1] = finalG;
-    dualData[rightIdx + 2] = finalB;
-    dualData[rightIdx + 3] = a;
-  }
-
-  var pixelAlphaLeft = dualData[leftIdx + 3];
-  if (pixelAlphaLeft === 255) {
-    blackBgData[leftIdx + 0] = dualData[leftIdx + 0];
-    blackBgData[leftIdx + 1] = dualData[leftIdx + 1];
-    blackBgData[leftIdx + 2] = dualData[leftIdx + 2];
-  } else if (pixelAlphaLeft === 0) {
-    blackBgData[leftIdx + 0] = 0;
-    blackBgData[leftIdx + 1] = 0;
-    blackBgData[leftIdx + 2] = 0;
-  } else {
-    var alphaFactorLeft = pixelAlphaLeft * inv255;
-    blackBgData[leftIdx + 0] = Math.round(dualData[leftIdx + 0] * alphaFactorLeft);
-    blackBgData[leftIdx + 1] = Math.round(dualData[leftIdx + 1] * alphaFactorLeft);
-    blackBgData[leftIdx + 2] = Math.round(dualData[leftIdx + 2] * alphaFactorLeft);
-  }
-  blackBgData[leftIdx + 3] = 255;
-
-  var pixelAlphaRight = dualData[rightIdx + 3];
-  if (pixelAlphaRight === 255) {
-    blackBgData[rightIdx + 0] = dualData[rightIdx + 0];
-    blackBgData[rightIdx + 1] = dualData[rightIdx + 1];
-    blackBgData[rightIdx + 2] = dualData[rightIdx + 2];
-  } else if (pixelAlphaRight === 0) {
-    blackBgData[rightIdx + 0] = 0;
-    blackBgData[rightIdx + 1] = 0;
-    blackBgData[rightIdx + 2] = 0;
-  } else {
-    var alphaFactorRight = pixelAlphaRight * inv255;
-    blackBgData[rightIdx + 0] = Math.round(dualData[rightIdx + 0] * alphaFactorRight);
-    blackBgData[rightIdx + 1] = Math.round(dualData[rightIdx + 1] * alphaFactorRight);
-    blackBgData[rightIdx + 2] = Math.round(dualData[rightIdx + 2] * alphaFactorRight);
-  }
-  blackBgData[rightIdx + 3] = 255;
-}
-                    `;
-                    
-                    // 创建Blob URL
-                    const blob = new Blob([workerCode], { type: 'application/javascript' });
-                    const blobUrl = URL.createObjectURL(blob);
-                    
-                    // 创建Worker
-                    this._worker = new Worker(blobUrl);
-                    this._debugLog('info', 'Worker创建成功（使用内联代码）');
-                } catch (inlineError) {
-                    this._debugLog('error', '创建Worker完全失败', { error: inlineError.message });
-                    throw new Error('无法加载Web Worker: ' + inlineError.message);
-                }
+                this._debugLog('error', '使用外部文件创建Worker失败', { error: error.message });
+                // 注释掉内联Worker代码，统一使用外部 dual-channel-worker.js 文件
+                // 如果外部Worker加载失败，将在 _sendTask 中自动回退到主线程处理
+                /* 内联Worker代码已注释 - 2025-02-13
+                 * 原因：
+                 * 1. 避免维护两份worker实现代码，防止逻辑不一致
+                 * 2. 外部worker文件功能更完整（有内存池、详细日志等）
+                 * 3. 调试和维护更方便
+                 * 4. Worker加载失败时会自动回退到主线程处理（_processInMainThread）
+                 * 
+                 * 如需恢复内联Worker，请参考git历史记录
+                 */
+                throw new Error('无法加载外部Web Worker文件: ' + error.message);
             }
             
             // 添加Worker错误监听
@@ -804,13 +527,34 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
         const onProgress = options.onProgress || function() {};
         
         // 验证数据大小，避免传输过大的数据
+        let estimatedSize = 0;
+        let frameCount = 0;
+        
         if (data && data.frames && Array.isArray(data.frames)) {
-            const frameCount = data.frames.length;
-            const estimatedSize = frameCount * (data.width || 300) * (data.height || 300) * 4;
-            this._debugLog('info', '任务数据大小估算', {
-                frameCount: frameCount,
-                estimatedSize: (estimatedSize / 1024 / 1024).toFixed(2) + 'MB'
+            frameCount = data.frames.length;
+            estimatedSize = frameCount * (data.width || 300) * (data.height || 300) * 4;
+        } else if (data && data.data && data.data.frames && Array.isArray(data.data.frames)) {
+            frameCount = data.data.frames.length;
+            estimatedSize = frameCount * (data.data.width || 300) * (data.data.height || 300) * 4;
+        }
+        
+        this._debugLog('info', '任务数据大小估算', {
+            frameCount: frameCount,
+            estimatedSize: (estimatedSize / 1024 / 1024).toFixed(2) + 'MB',
+            type: type
+        });
+        
+        // 数据完整性验证
+        this._validateTaskData(data, type);
+        
+        // 检查数据大小限制（50MB）
+        const MAX_DATA_SIZE = 50 * 1024 * 1024;
+        if (estimatedSize > MAX_DATA_SIZE) {
+            this._debugLog('warn', '任务数据过大，回退到主线程处理', {
+                estimatedSize: (estimatedSize / 1024 / 1024).toFixed(2) + 'MB',
+                maxSize: (MAX_DATA_SIZE / 1024 / 1024).toFixed(2) + 'MB'
             });
+            return this._processInMainThread(type, data, options);
         }
         
         // 开始性能计时（使try-catch确保不会阻塞主流程）
@@ -895,8 +639,63 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
                                 case 'progress':
                                     onProgress(message.progress / 100);
                                     break;
+
+                                    // 【测试代码】处理第30帧测试数据并触发下载
+                                    this._debugLog('info', '收到第30帧测试数据', message.data);
+                                    console.log('========== 主线程收到第30帧测试数据 ==========');
+                                    console.log('测试信息:', message.data.testInfo);
+                                    console.log('测试结果:', message.data.testResult);
+                                    console.log('状态:', message.data.status);
+                                    console.log('消息:', message.data.message);
+                                    
+                                    // 如果有图像数据，触发下载
+                                    if (message.data.imageData && message.data.imageData.data) {
+                                        try {
+                                            const imageData = message.data.imageData;
+                                            console.log('准备下载第30帧，尺寸:', imageData.width, 'x', imageData.height);
+                                            
+                                            // 创建Canvas并绘制图像
+                                            const canvas = document.createElement('canvas');
+                                            canvas.width = imageData.width;
+                                            canvas.height = imageData.height;
+                                            const ctx = canvas.getContext('2d');
+                                            
+                                            // 创建ImageData对象
+                                            const imgData = new ImageData(
+                                                new Uint8ClampedArray(imageData.data),
+                                                imageData.width,
+                                                imageData.height
+                                            );
+                                            
+                                            // 绘制到Canvas
+                                            ctx.putImageData(imgData, 0, 0);
+                                            
+                                            // 转换为Blob并下载
+                                            canvas.toBlob(function(blob) {
+                                                const url = URL.createObjectURL(blob);
+                                                const a = document.createElement('a');
+                                                a.href = url;
+                                                a.download = 'frame30_dual_channel_test.png';
+                                                document.body.appendChild(a);
+                                                a.click();
+                                                document.body.removeChild(a);
+                                                URL.revokeObjectURL(url);
+                                                console.log('第30帧下载完成: frame30_dual_channel_test.png');
+                                            }, 'image/png');
+                                            
+                                        } catch (downloadError) {
+                                            console.error('下载第30帧失败:', downloadError);
+                                        }
+                                    }
+                                    console.log('========== 第30帧测试数据处理完成 ==========');
+                                    // 注意：不break，继续等待正常的result消息
+                                    break;
                                 case 'error':
-                                    this._debugLog('error', 'Web Worker任务错误', { error: message.error, taskId: taskId });
+                                    this._debugLog('error', 'Web Worker任务错误', { 
+                                        error: message.error, 
+                                        taskId: taskId,
+                                        details: message.details 
+                                    });
                                     this._worker.removeEventListener('message', handleMessage);
                                     this._worker.removeEventListener('error', handleError);
                                     this._endPerformanceTimer(timer, false, 'worker');
@@ -973,6 +772,7 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
         
         try {
             // 查找并添加可转移对象
+            // 直接检查顶层frame和frames
             if (data.frame && data.frame.data && data.frame.data.buffer) {
                 transferables.push(data.frame.data.buffer);
             }
@@ -985,6 +785,21 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
                 });
             }
             
+            // 检查嵌套在data属性中的frame和frames（针对taskData结构）
+            if (data.data) {
+                if (data.data.frame && data.data.frame.data && data.data.frame.data.buffer) {
+                    transferables.push(data.data.frame.data.buffer);
+                }
+                
+                if (data.data.frames && Array.isArray(data.data.frames)) {
+                    data.data.frames.forEach(frame => {
+                        if (frame && frame.data && frame.data.buffer) {
+                            transferables.push(frame.data.buffer);
+                        }
+                    });
+                }
+            }
+            
             this._debugLog('info', '提取Transferable对象', { count: transferables.length });
         } catch (error) {
             this._debugLog('warn', '提取Transferable对象失败', { error: error.message });
@@ -995,6 +810,98 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
         return transferables;
     },
     
+    /**
+     * 验证任务数据的完整性
+     * @param {Object} data - 任务数据
+     * @param {string} type - 任务类型
+     * @returns {boolean} - 验证是否通过
+     * @private
+     */
+    _validateTaskData: function(data, type) {
+        this._debugLog('info', '开始验证任务数据完整性', { type: type });
+        
+        try {
+            switch (type) {
+                case 'composeFrames':
+                    // 验证frames数组
+                    let frames = null;
+                    if (data && data.frames && Array.isArray(data.frames)) {
+                        frames = data.frames;
+                    } else if (data && data.data && data.data.frames && Array.isArray(data.data.frames)) {
+                        frames = data.data.frames;
+                    }
+                    
+                    if (!frames) {
+                        const errorMsg = 'Missing frames array for composeFrames task';
+                        this._debugLog('error', errorMsg, { dataStructure: data ? Object.keys(data) : [] });
+                        throw new Error(errorMsg);
+                    }
+                    
+                    if (frames.length === 0) {
+                        const errorMsg = 'Empty frames array for composeFrames task';
+                        this._debugLog('error', errorMsg);
+                        throw new Error(errorMsg);
+                    }
+                    
+                    // 验证前几个帧的完整性
+                    const sampleSize = Math.min(5, frames.length);
+                    for (let i = 0; i < sampleSize; i++) {
+                        const frame = frames[i];
+                        if (!frame || !frame.data || !ArrayBuffer.isView(frame.data)) {
+                            const errorMsg = `Invalid frame at index ${i}: missing data or data is not a TypedArray`;
+                            this._debugLog('error', errorMsg, { frameIndex: i, frameStructure: frame ? Object.keys(frame) : [] });
+                            throw new Error(errorMsg);
+                        }
+                        
+                        if (!frame.width || !frame.height) {
+                            const errorMsg = `Invalid frame at index ${i}: missing width or height`;
+                            this._debugLog('error', errorMsg, { frameIndex: i, frame: { width: frame.width, height: frame.height } });
+                            throw new Error(errorMsg);
+                        }
+                    }
+                    
+                    this._debugLog('info', 'Frames validation passed', { frameCount: frames.length, sampleValidated: sampleSize });
+                    break;
+                    
+                case 'composeFrame':
+                    // 验证单个frame
+                    let frame = null;
+                    if (data && data.frame) {
+                        frame = data.frame;
+                    } else if (data && data.data && data.data.frame) {
+                        frame = data.data.frame;
+                    }
+                    
+                    if (!frame) {
+                        const errorMsg = 'Missing frame object for composeFrame task';
+                        this._debugLog('error', errorMsg, { dataStructure: data ? Object.keys(data) : [] });
+                        throw new Error(errorMsg);
+                    }
+                    
+                    if (!frame.data || !ArrayBuffer.isView(frame.data)) {
+                        const errorMsg = 'Invalid frame data: not a TypedArray';
+                        this._debugLog('error', errorMsg, { frameStructure: Object.keys(frame) });
+                        throw new Error(errorMsg);
+                    }
+                    
+                    if (!frame.width || !frame.height) {
+                        const errorMsg = 'Invalid frame: missing width or height';
+                        this._debugLog('error', errorMsg, { frame: { width: frame.width, height: frame.height } });
+                        throw new Error(errorMsg);
+                    }
+                    
+                    this._debugLog('info', 'Single frame validation passed');
+                    break;
+            }
+            
+            this._debugLog('info', 'Task data validation completed successfully', { type: type });
+            return true;
+        } catch (error) {
+            this._debugLog('error', 'Task data validation failed', { error: error.message, type: type });
+            throw error;
+        }
+    },
+
     /**
      * 在主线程处理任务（Worker失败时的回退方案）
      * @param {string} type - 任务类型

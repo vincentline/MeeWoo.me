@@ -127,8 +127,18 @@ self.onmessage = function(e) {
     hasData: !!task.data,
     hasFrames: !!(task.frames || (task.data && task.data.frames)),
     hasDirectFrames: !!task.frames,
-    hasNestedFrames: !!(task.data && task.data.frames)
+    hasNestedFrames: !!(task.data && task.data.frames),
+    dataSize: task.data ? JSON.stringify(task.data).length / 1024 / 1024 : 0
   });
+  
+  // 内存使用监控
+  if (performance && performance.memory) {
+    console.log('Worker memory usage:', {
+      usedJSHeapSize: (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(2) + 'MB',
+      totalJSHeapSize: (performance.memory.totalJSHeapSize / 1024 / 1024).toFixed(2) + 'MB',
+      jsHeapSizeLimit: (performance.memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2) + 'MB'
+    });
+  }
   
   try {
     // 验证任务数据结构
@@ -139,7 +149,11 @@ self.onmessage = function(e) {
       self.postMessage({
         id: task ? task.id : null,
         type: 'error',
-        error: errorMsg
+        error: errorMsg,
+        details: {
+          taskStructure: task ? Object.keys(task) : [],
+          timestamp: Date.now()
+        }
       });
       return;
     }
@@ -149,10 +163,15 @@ self.onmessage = function(e) {
         console.log('Processing composeFrame task');
         handleComposeFrame(task).catch(function(error) {
           console.error('Error in handleComposeFrame:', error);
+          console.error('Error stack:', error.stack);
           self.postMessage({
             id: task.id,
             type: 'error',
-            error: error.message
+            error: error.message,
+            details: {
+              stack: error.stack,
+              timestamp: Date.now()
+            }
           });
         });
         break;
@@ -160,10 +179,15 @@ self.onmessage = function(e) {
         console.log('Processing composeFrames task');
         handleComposeFrames(task).catch(function(error) {
           console.error('Error in handleComposeFrames:', error);
+          console.error('Error stack:', error.stack);
           self.postMessage({
             id: task.id,
             type: 'error',
-            error: error.message
+            error: error.message,
+            details: {
+              stack: error.stack,
+              timestamp: Date.now()
+            }
           });
         });
         break;
@@ -172,18 +196,39 @@ self.onmessage = function(e) {
         memoryPool.clear();
         self.postMessage({
           id: task.id,
-          type: 'success'
+          type: 'success',
+          details: {
+            timestamp: Date.now()
+          }
         });
         break;
       default:
-        throw new Error('Unknown task type: ' + task.type);
+        var unknownTypeError = new Error('Unknown task type: ' + task.type);
+        console.error('Unknown task type:', task.type);
+        console.error('Error stack:', unknownTypeError.stack);
+        self.postMessage({
+          id: task.id,
+          type: 'error',
+          error: unknownTypeError.message,
+          details: {
+            stack: unknownTypeError.stack,
+            timestamp: Date.now()
+          }
+        });
+        break;
     }
   } catch(error) {
     console.error('Error in message handler:', error);
+    console.error('Error stack:', error.stack);
     self.postMessage({
       id: task ? task.id : null,
       type: 'error',
-      error: error.message
+      error: error.message,
+      details: {
+        stack: error.stack,
+        taskStructure: task ? Object.keys(task) : [],
+        timestamp: Date.now()
+      }
     });
   }
 };

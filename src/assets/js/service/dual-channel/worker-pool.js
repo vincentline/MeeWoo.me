@@ -679,8 +679,8 @@
           var finalR = r, finalG = g, finalB = b;
           if (a > 0) {
             if (a < 255) {
-              // 算法优化：使用乘法代替除法
-              var alphaFactor = 255 * inv255;
+              // 正确的反预乘计算：颜色值除以alpha值
+              var alphaFactor = 255 / a;
               finalR = Math.min(255, Math.round(r * alphaFactor));
               finalG = Math.min(255, Math.round(g * alphaFactor));
               finalB = Math.min(255, Math.round(b * alphaFactor));
