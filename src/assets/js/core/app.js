@@ -1872,11 +1872,14 @@ function initApp() {
           fps = parseInt(info.fps) || 30;
         }
 
-        // 设置源信息
+        // 设置源信息（必须包含width/height用于宽高联动计算）
         this.standardMp4SourceInfo = {
           sizeWH: info.sizeWH || (width + ' × ' + height),
           duration: info.duration || '',
-          typeLabel: type === 'svga' ? 'SVGA' : type === 'yyeva' ? 'MP4' : 'Lottie'
+          typeLabel: type === 'svga' ? 'SVGA' : type === 'yyeva' ? 'MP4' : 'Lottie',
+          width: width,
+          height: height,
+          fps: fps
         };
 
         this.standardMp4Config = {

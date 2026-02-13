@@ -18,6 +18,9 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-02-14 13:00:00] 【修改文件】 : src/assets/js/core/app.js - 修复SVGA转MP4弹窗宽高联动失效问题：standardMp4SourceInfo补充width/height/fps字段
+[2026-02-14 12:45:00] 【修改文件】 : src/assets/js/components/standard-mp4-panel.js - 修复SVGA转MP4弹窗组件：添加quality/muted配置、添加start/cancel方法
+[2026-02-14 12:30:00] 【修改文件】 : src/assets/js/components/standard-mp4-panel.js - 修复SVGA转MP4弹窗输入控件bug：宽高范围从0-3000改为1-3000，帧率范围从1-60改为1-120
 [2026-02-11 20:30:00] 【修改文件】 : src/assets/js/controllers/player-controller.js - 清理调试代码，移除所有不必要的console.log语句，保留错误处理信息
 [2026-02-10 16:48:29] 【修改文件】 : src/assets/js/components/dual-channel-panel.js - 清理调试日志，保留必要的错误信息
 [2026-02-10 16:48:29] 【修改文件】 : src/assets/js/mixins/panel-mixin.js - 清理调试日志，移除所有不必要的控制台输出

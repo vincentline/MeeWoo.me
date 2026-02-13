@@ -54,7 +54,7 @@
             <div class="mp4-size-container">
               <div class="input-wrapper input-wrapper--lg mp4-size-input-wrapper">
                 <input type="number" class="base-input" v-model.number="config.width" @input="onWidthChange"
-                  :disabled="isConverting" min="0" max="3000" />
+                  :disabled="isConverting" min="1" max="3000" />
               </div>
               <div class="mp4-size-lock">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -65,7 +65,7 @@
               </div>
               <div class="input-wrapper input-wrapper--lg mp4-size-input-wrapper">
                 <input type="number" class="base-input" v-model.number="config.height" @input="onHeightChange"
-                  :disabled="isConverting" min="0" max="3000" />
+                  :disabled="isConverting" min="1" max="3000" />
               </div>
             </div>
           </div>
@@ -76,7 +76,7 @@
             <div class="mp4-value-container">
               <div class="input-wrapper input-wrapper--lg mp4-value-input-wrapper">
                 <input type="number" class="base-input" v-model.number="config.fps" @input="onFpsChange"
-                  :disabled="isConverting" min="1" max="60" />
+                  :disabled="isConverting" min="1" max="120" />
               </div>
               <div class="input-unit">FPS</div>
             </div>
@@ -154,7 +154,9 @@
         config: {
           width: 300,
           height: 300,
-          fps: 30
+          fps: 30,
+          quality: 80,
+          muted: false
         }
       };
     },
@@ -185,11 +187,25 @@
           this.config.height = source.height || 300;
         }
 
-        // 2. 帧率初始化
+        // 2. 帧率初始化（范围1-120）
         if (this.initialConfig && this.initialConfig.fps) {
-          this.config.fps = this.initialConfig.fps;
+          this.config.fps = Math.min(120, Math.max(1, this.initialConfig.fps));
         } else {
-          this.config.fps = Math.min(60, Math.max(1, source.fps || 30));
+          this.config.fps = Math.min(120, Math.max(1, source.fps || 30));
+        }
+
+        // 3. 压缩质量初始化（范围1-100）
+        if (this.initialConfig && this.initialConfig.quality) {
+          this.config.quality = Math.min(100, Math.max(1, this.initialConfig.quality));
+        } else {
+          this.config.quality = 80;
+        }
+
+        // 4. 静音初始化
+        if (this.initialConfig) {
+          this.config.muted = this.initialConfig.muted || false;
+        } else {
+          this.config.muted = false;
         }
       },
 
@@ -237,11 +253,11 @@
       },
 
       /**
-       * 帧率变化处理
+       * 帧率变化处理（范围1-120）
        */
       onFpsChange: function () {
-        // 限制帧率范围 1-60
-        var newFps = Math.max(1, Math.min(60, parseInt(this.config.fps) || 1));
+        // 限制帧率范围 1-120
+        var newFps = Math.max(1, Math.min(120, parseInt(this.config.fps) || 1));
         this.config.fps = newFps;
       },
 
