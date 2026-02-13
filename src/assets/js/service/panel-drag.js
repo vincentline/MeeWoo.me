@@ -235,7 +235,8 @@
         // 强制重排
         panelElement.offsetHeight;
 
-        // 保持位置固定，不恢复过渡动画
+        // 恢复过渡动画，以便下次打开时有动画效果
+        panelElement.style.transition = '';
       });
 
       // 鼠标离开窗口事件
@@ -257,7 +258,8 @@
         // 强制重排
         panelElement.offsetHeight;
 
-        // 保持位置固定，不恢复过渡动画
+        // 恢复过渡动画，以便下次打开时有动画效果
+        panelElement.style.transition = '';
       });
     }
   };

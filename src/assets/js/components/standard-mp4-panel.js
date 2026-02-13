@@ -30,6 +30,93 @@
 (function (global) {
   'use strict';
 
+  // 模板字符串（与 to-svga-panel.js 保持一致的方式，避免依赖运行时模板编译器）
+  var template = `
+    <div class="side-panel side-panel--right standard-mp4-panel" :class="{'show': visible}">
+      <div class="side-panel-container">
+        <!-- 标题区 -->
+        <div class="side-panel-header">
+          <h3 class="side-panel-title">转换为标准MP4格式</h3>
+          <div class="side-panel-divider"></div>
+        </div>
+
+        <!-- 信息区 -->
+        <div class="mp4-info-section">
+          <div class="mp4-info-row">{{ sourceInfo.typeLabel }}尺寸：{{ sourceInfo.sizeWH }} 时长：{{ sourceInfo.duration }}</div>
+          <div class="mp4-compress-hint">注意：第一次转换需要加载FFmpeg（25M），请耐心等待<br>压缩质量调越低，文件就越小，画面越糊。</div>
+        </div>
+
+        <!-- 配置区域 -->
+        <div class="mp4-config-section" :class="{disabled: isConverting}">
+          <!-- 尺寸 -->
+          <div class="mp4-config-item">
+            <div class="mp4-config-label">尺寸：</div>
+            <div class="mp4-size-container">
+              <div class="input-wrapper input-wrapper--lg mp4-size-input-wrapper">
+                <input type="number" class="base-input" v-model.number="config.width" @input="onWidthChange"
+                  :disabled="isConverting" min="0" max="3000" />
+              </div>
+              <div class="mp4-size-lock">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M4.66667 7.33333V5.33333C4.66667 3.86057 5.86057 2.66667 7.33333 2.66667H8.66667C10.1394 2.66667 11.3333 3.86057 11.3333 5.33333V7.33333M5.33333 7.33333H10.6667C11.403 7.33333 12 7.93029 12 8.66667V12C12 12.7364 11.403 13.3333 10.6667 13.3333H5.33333C4.59695 13.3333 4 12.7364 4 12V8.66667C4 7.93029 4.59695 7.33333 5.33333 7.33333Z"
+                    stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </div>
+              <div class="input-wrapper input-wrapper--lg mp4-size-input-wrapper">
+                <input type="number" class="base-input" v-model.number="config.height" @input="onHeightChange"
+                  :disabled="isConverting" min="0" max="3000" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 帧率修改 -->
+          <div class="mp4-config-item">
+            <div class="mp4-config-label">帧率修改：</div>
+            <div class="mp4-value-container">
+              <div class="input-wrapper input-wrapper--lg mp4-value-input-wrapper">
+                <input type="number" class="base-input" v-model.number="config.fps" @input="onFpsChange"
+                  :disabled="isConverting" min="1" max="60" />
+              </div>
+              <div class="input-unit">FPS</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部按钮 -->
+        <div class="side-panel-footer">
+          <!-- 返回按钮（转换中变为取消按钮） -->
+          <button v-if="!isConverting" class="material-btn-back" @click="close" title="返回">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M12 16L6 10L12 4" stroke="#333333" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+            <span>取消</span>
+          </button>
+          <button v-else class="material-btn-back mp4-btn-cancel" @click="close" title="取消转换">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M5 5L15 15M15 5L5 15" stroke="#ff4444" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+            <span>取消</span>
+          </button>
+
+          <!-- 转换按钮 -->
+          <button class="btn-large-secondary" :class="{'mp4-btn-converting': isConverting}"
+            :data-progress="progress" :disabled="disabled" @click="startConvert">
+            <template v-if="isConverting">
+              <span class="mp4-progress-text">{{ progress }}%</span>
+              <span class="mp4-stage-text">{{ message }}</span>
+            </template>
+            <template v-else>
+              开始转换标准MP4
+            </template>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
   // 按照项目规范，使用 MeeWoo 作为项目级命名空间
   global.MeeWoo = global.MeeWoo || {};
   global.MeeWoo.Components = global.MeeWoo.Components || {};
@@ -39,7 +126,7 @@
    */
   global.MeeWoo.Components.StandardMp4Panel = {
     name: 'StandardMp4Panel',
-    template: '#tpl-standard-mp4-panel',
+    template: template,
     props: {
       // 面板可见性
       visible: { type: Boolean, default: false },
@@ -60,12 +147,6 @@
     },
     mounted: function () {
       console.log('StandardMp4Panel组件已挂载', this.visible);
-    },
-    watch: {
-      // 面板打开时初始化参数
-      visible: function (newVal) {
-        console.log('StandardMp4Panel visible变化:', newVal);
-      }
     },
     data: function () {
       return {
@@ -153,6 +234,15 @@
 
         this.config.width = newWidth;
         this.config.height = newHeight;
+      },
+
+      /**
+       * 帧率变化处理
+       */
+      onFpsChange: function () {
+        // 限制帧率范围 1-60
+        var newFps = Math.max(1, Math.min(60, parseInt(this.config.fps) || 1));
+        this.config.fps = newFps;
       },
 
       /**

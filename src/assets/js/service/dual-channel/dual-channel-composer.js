@@ -78,9 +78,9 @@
         fallbackToJS: true,             // 不支持WebAssembly时是否回退到JavaScript
         useSIMD: true                   // 是否使用SIMD指令
       },
-      debug: {
+     debug: {
         enabled: false,                 // 是否启用调试模式
-        performanceMonitoring: true,    // 是否启用性能监控
+        performanceMonitoring: true,    // 是否启用性能监控（如遇到"Invalid string length"错误可改为false）
         detailedLogging: false,         // 是否启用详细日志
         memoryProfiling: false,         // 是否启用内存分析
         benchmarking: false             // 是否启用基准测试
@@ -190,11 +190,38 @@
         const startTime = performance.now();
         const memorySnapshot = this._getMemoryUsage();
 
+        // 提取任务元数据，避免深拷贝大型数据（如ImageData数组）
+        let taskMetadata = {};
+        try {
+            if (taskData) {
+                // 只记录元数据，不复制实际的帧数据
+                if (taskData.frames && Array.isArray(taskData.frames)) {
+                    taskMetadata.frameCount = taskData.frames.length;
+                    if (taskData.frames.length > 0) {
+                        const firstFrame = taskData.frames[0];
+                        taskMetadata.frameWidth = firstFrame.width;
+                        taskMetadata.frameHeight = firstFrame.height;
+                        taskMetadata.frameDataSize = firstFrame.data ? firstFrame.data.length : 0;
+                    }
+                }
+                // 复制其他简单属性
+                if (taskData.mode) taskMetadata.mode = taskData.mode;
+                if (taskData.width) taskMetadata.width = taskData.width;
+                if (taskData.height) taskMetadata.height = taskData.height;
+                if (taskData.frameCount) taskMetadata.frameCount = taskData.frameCount;
+                if (taskData.format) taskMetadata.format = taskData.format;
+                if (taskData.quality !== undefined) taskMetadata.quality = taskData.quality;
+            }
+        } catch (error) {
+            // 如果提取元数据失败，记录错误但不影响主流程
+            taskMetadata.error = 'Failed to extract metadata: ' + error.message;
+        }
+
         return {
             taskType: taskType,
             startTime: startTime,
             startMemory: memorySnapshot,
-            taskData: JSON.parse(JSON.stringify(taskData)),
+            taskData: taskMetadata,
             timestamp: new Date().toISOString()
         };
     },
@@ -368,21 +395,28 @@
                     throw new Error('当前浏览器不支持Web Worker');
                 }
                 
+                this._debugLog('info', '开始初始化Web Worker');
+                
                 // 尝试使用传统路径创建Worker
                 try {
                     // 直接使用默认的workerPath，它是相对于HTML文件的路径
                     const workerPath = this.defaults.workerPath;
+                    this._debugLog('info', '尝试使用配置路径创建Worker', { path: workerPath });
                     
                     // 创建Worker
                     this._worker = new Worker(workerPath);
+                    this._debugLog('info', 'Worker创建成功（使用配置路径）');
                 } catch (error) {
+                    this._debugLog('warn', '使用配置路径失败，尝试相对路径', { error: error.message });
                     // 回退到相对路径
                     const workerPath = './dual-channel-worker.js';
                     
                     // 创建Worker
                     this._worker = new Worker(workerPath);
+                    this._debugLog('info', 'Worker创建成功（使用相对路径）');
                 }
             } catch (error) {
+                this._debugLog('warn', '使用外部文件创建Worker失败，尝试内联Worker', { error: error.message });
                 // 回退到内联Worker代码
                 try {
                     const workerCode = `
@@ -667,9 +701,23 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
                     
                     // 创建Worker
                     this._worker = new Worker(blobUrl);
+                    this._debugLog('info', 'Worker创建成功（使用内联代码）');
                 } catch (inlineError) {
+                    this._debugLog('error', '创建Worker完全失败', { error: inlineError.message });
                     throw new Error('无法加载Web Worker: ' + inlineError.message);
                 }
+            }
+            
+            // 添加Worker错误监听
+            if (this._worker) {
+                this._worker.onerror = (error) => {
+                    this._debugLog('error', 'Worker全局错误', {
+                        message: error.message,
+                        filename: error.filename,
+                        lineno: error.lineno
+                    });
+                };
+                this._debugLog('info', 'Worker初始化完成');
             }
         }
     },
@@ -755,8 +803,24 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
         options = options || {};
         const onProgress = options.onProgress || function() {};
         
-        // 开始性能计时
-        const timer = this._startPerformanceTimer(type, data);
+        // 验证数据大小，避免传输过大的数据
+        if (data && data.frames && Array.isArray(data.frames)) {
+            const frameCount = data.frames.length;
+            const estimatedSize = frameCount * (data.width || 300) * (data.height || 300) * 4;
+            this._debugLog('info', '任务数据大小估算', {
+                frameCount: frameCount,
+                estimatedSize: (estimatedSize / 1024 / 1024).toFixed(2) + 'MB'
+            });
+        }
+        
+        // 开始性能计时（使try-catch确保不会阻塞主流程）
+        let timer = null;
+        try {
+            timer = this._startPerformanceTimer(type, data);
+        } catch (error) {
+            this._debugLog('warn', '性能计时失败', { error: error.message });
+            // 继续执行，不影响主流程
+        }
         
         return new Promise((resolve, reject) => {
             try {
@@ -808,11 +872,11 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
                     // 生成任务ID
                     const taskId = ++this._taskId;
                     
-                    // 准备任务数据
+                    // 准备任务数据（注意：不要使用展开运算符，保持data结构）
                     const taskData = {
                         id: taskId,
                         type: type,
-                        ...data
+                        data: data  // 保持data作为嵌套属性，以便 Worker 可以访问 task.data.frames
                     };
                     
                     // 处理Worker消息
@@ -842,23 +906,45 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
                         }
                     };
                     
-                    // 处理Worker错误
+                    // 处理Worker错误（Worker的onerror事件）
                     const handleError = (error) => {
-                        this._debugLog('error', 'Web Worker错误', { error: error.message });
+                        // ErrorEvent对象的结构：{ message, filename, lineno, colno, error }
+                        const errorMsg = error.message || error.error?.message || 'Unknown worker error';
+                        this._debugLog('error', 'Web Worker错误', { 
+                            message: errorMsg,
+                            filename: error.filename,
+                            lineno: error.lineno
+                        });
                         this._worker.removeEventListener('message', handleMessage);
                         this._worker.removeEventListener('error', handleError);
                         this._endPerformanceTimer(timer, false, 'worker');
-                        reject(new Error('Worker执行错误: ' + error.message));
+                        reject(new Error('Worker执行错误: ' + errorMsg));
                     };
                     
                     // 添加事件监听器
                     this._worker.addEventListener('message', handleMessage);
                     this._worker.addEventListener('error', handleError);
                     
-                    // 发送任务到Worker
-                    this._debugLog('info', '发送任务数据到Worker', { taskId: taskId, dataSize: JSON.stringify(data).length });
-                    this._worker.postMessage(taskData, this._getTransferables(taskData));
-                    this._debugLog('info', '任务发送成功', { taskId: taskId });
+                    // 发送任务到Worker（使try-catch包裹避免序列化失败）
+                    try {
+                        // 计算估计数据大小（不使用JSON.stringify）
+                        let estimatedSize = 0;
+                        if (data && data.frames && Array.isArray(data.frames)) {
+                            estimatedSize = data.frames.length * (data.width || 300) * (data.height || 300) * 4;
+                        }
+                        this._debugLog('info', '发送任务数据到Worker', { 
+                            taskId: taskId, 
+                            type: type,
+                            estimatedSize: (estimatedSize / 1024 / 1024).toFixed(2) + 'MB'
+                        });
+                        this._worker.postMessage(taskData, this._getTransferables(taskData));
+                        this._debugLog('info', '任务发送成功', { taskId: taskId });
+                    } catch (postError) {
+                        this._debugLog('error', '发送消息到Worker失败', { error: postError.message });
+                        this._worker.removeEventListener('message', handleMessage);
+                        this._worker.removeEventListener('error', handleError);
+                        throw postError;
+                    }
                 }
             } catch (error) {
                 this._debugLog('error', '发送任务到Worker失败', { error: error.message });
@@ -885,17 +971,25 @@ function processSinglePixel(x, y, frameData, width, dualWidth, dualData, blackBg
     _getTransferables: function(data) {
         const transferables = [];
         
-        // 查找并添加可转移对象
-        if (data.frame && data.frame.data) {
-            transferables.push(data.frame.data.buffer);
-        }
-        
-        if (data.frames) {
-            data.frames.forEach(frame => {
-                if (frame.data) {
-                    transferables.push(frame.data.buffer);
-                }
-            });
+        try {
+            // 查找并添加可转移对象
+            if (data.frame && data.frame.data && data.frame.data.buffer) {
+                transferables.push(data.frame.data.buffer);
+            }
+            
+            if (data.frames && Array.isArray(data.frames)) {
+                data.frames.forEach(frame => {
+                    if (frame && frame.data && frame.data.buffer) {
+                        transferables.push(frame.data.buffer);
+                    }
+                });
+            }
+            
+            this._debugLog('info', '提取Transferable对象', { count: transferables.length });
+        } catch (error) {
+            this._debugLog('warn', '提取Transferable对象失败', { error: error.message });
+            // 返回空数组，不使用转移机制
+            return [];
         }
         
         return transferables;

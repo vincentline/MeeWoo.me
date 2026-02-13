@@ -124,22 +124,6 @@
         // 关闭所有类型的右侧面板
         this.activeRightPanel = null;
         this.showStandardMp4Panel = false;
-        
-        /*
-        // 移除手动创建的双通道面板元素
-        setTimeout(function() {
-          var panelElements = document.querySelectorAll('.dual-channel-panel, .dual-channel-panel-root');
-          panelElements.forEach(function(element) {
-            element.classList.remove('show');
-            // 300ms后完全移除元素
-            setTimeout(function() {
-              if (element.parentNode) {
-                element.parentNode.removeChild(element);
-              }
-            }, 300);
-          });
-        }, 0);
-        */
       },
 
       /**
@@ -344,7 +328,19 @@
        * 打开转双通道面板 (统一入口) - 最终修复版
        */
       openDualChannelPanel: function () {
-        console.log('=== 打开双通道MP4面板：开始 ===');
+        // 切换逻辑：如果当前已经是双通道面板，则关闭它
+        if (this.activeRightPanel === 'dual-channel') {
+          // 如果正在转换，需要确认
+          if (this.isConvertingToDualChannel) {
+            if (!confirm('正在转换中，确定要取消吗？')) return;
+            this.cancelDualChannelConversion();
+          }
+          // 关闭面板
+          this.activeRightPanel = null;
+          this.showStandardMp4Panel = false;
+          return;
+        }
+
         var sourceInfo = {
           name: '',
           sizeWH: '',
@@ -443,119 +439,27 @@
         config.muted = config.muted || false;
         config.aspectRatio = config.aspectRatio || 1;
 
-        console.log('设置双通道MP4源信息和配置:', sourceInfo, config);
         this.dualChannelSourceInfo = sourceInfo;
         this.dualChannelConfig = config;
         
-        // 关闭其他面板
-        console.log('关闭其他面板并打开双通道MP4面板');
+        // 关闭其他面板并打开双通道面板
         this.showStandardMp4Panel = false;
-        
-        // 核心修复：直接设置activeRightPanel
-        console.log('直接设置activeRightPanel为dual-channel，当前值:', this.activeRightPanel);
         this.activeRightPanel = 'dual-channel';
-        console.log('设置后activeRightPanel:', this.activeRightPanel);
 
-        // 加载ffmpeg（和转SVGA面板保持一致）
-        console.log('加载ffmpeg库');
+        // 加载ffmpeg
         if (this.loadLibrary) {
           this.loadLibrary(['ffmpeg'], true).catch(function(error) {
             console.error('ffmpeg加载失败:', error);
           });
         }
         
-        // 增强版：确保面板渲染完成并强制更新
+        // 强制Vue更新
         var self = this;
-        
-        /*
-        // 直接在DOM中查找并操作面板元素（不依赖Vue更新）
-        function findAndShowPanel() {
-          // 尝试多种选择器查找面板元素
-          var selectors = [
-            'dual-channel-panel',
-            '.dual-channel-panel',
-            '.dual-channel-panel-root',
-            'body > .dual-channel-panel',
-            'body > .dual-channel-panel-root'
-          ];
-          
-          var panelElement = null;
-          for (var i = 0; i < selectors.length; i++) {
-            var selector = selectors[i];
-            panelElement = document.querySelector(selector);
-            if (panelElement && panelElement.nodeType !== 8) {
-              console.log('找到双通道MP4面板元素（使用选择器）:', selector, panelElement);
-              break;
-            }
-          }
-          
-          if (panelElement) {
-            // 确保show类被添加
-            if (panelElement.classList && !panelElement.classList.contains('show')) {
-              panelElement.classList.add('show');
-              console.log('添加show类到双通道MP4面板元素');
-            }
-            
-            // 移除内联样式，使用CSS定义的样式
-            try {
-              if (panelElement.style) {
-                panelElement.style.cssText = '';
-                console.log('移除内联样式，使用CSS定义的样式');
-              }
-            } catch (error) {
-              console.error('移除内联样式时出错:', error);
-            }
-          } else {
-            console.error('未找到双通道MP4面板元素');
-          }
-        }
-        
-        // 立即尝试显示面板
-        findAndShowPanel();
-        */
-        
-        // 第一次nextTick：确保Vue响应状态变化
-        console.log('Vue.nextTick执行，强制更新组件');
         this.$nextTick(function() {
-          // 强制Vue更新
           if (self.$forceUpdate) {
-            console.log('调用$forceUpdate强制更新组件');
             self.$forceUpdate();
           }
-          
-          /*
-          // 再次尝试显示面板
-          findAndShowPanel();
-          
-          // 第二次nextTick：确保DOM更新完成
-          self.$nextTick(function() {
-            // 等待300ms让模板渲染
-            console.log('再次执行Vue.nextTick，等待300ms让模板渲染');
-            setTimeout(() => {
-              // 最后尝试显示面板
-              findAndShowPanel();
-              
-              // 新增：如果Vue渲染失败，使用全局方法手动创建和显示面板
-              setTimeout(() => {
-                var panelElement = document.querySelector('.dual-channel-panel') || 
-                                  document.querySelector('.dual-channel-panel-root');
-                if (!panelElement || panelElement.style.display === 'none' || panelElement.style.visibility === 'hidden') {
-                  console.error('Vue渲染失败，尝试使用全局方法手动创建和显示面板');
-                  // 使用全局方法手动显示面板
-                  if (window.MeeWoo && window.MeeWoo.Utils && window.MeeWoo.Utils.showDualChannelPanel) {
-                    console.log('使用全局方法手动显示面板');
-                    window.MeeWoo.Utils.showDualChannelPanel(self.dualChannelSourceInfo, self.dualChannelConfig);
-                  }
-                } else {
-                  console.log('Vue渲染成功，双通道MP4面板已显示');
-                }
-              }, 500);
-            }, 300);
-          });
-          */
         });
-        
-        console.log('=== 打开双通道MP4面板：完成 ===');
       },
 
       /**

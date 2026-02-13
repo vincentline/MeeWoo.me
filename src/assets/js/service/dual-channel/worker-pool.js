@@ -307,9 +307,28 @@
          * 处理多个帧的合成
          */
         async function handleComposeFrames(task) {
-          console.log('Starting handleComposeFrames, frame count:', task.data.frames.length);
+          console.log('Worker Pool: handleComposeFrames START, Task ID:', task.id);
+          console.log('Task structure:', {
+            hasData: !!task.data,
+            hasFrames: !!task.frames,
+            hasDataFrames: !!(task.data && task.data.frames),
+            dataKeys: task.data ? Object.keys(task.data).join(',') : 'none',
+            taskKeys: Object.keys(task).join(',')
+          });
           
-          var data = task.data;
+          // 统一数据结构：先尝试 task.data，再尝试直接属性
+          var taskData = task.data || task;
+          
+          if (!taskData.frames) {
+            var errorMsg = 'Worker Pool: Missing frames. Task keys: ' + Object.keys(task).join(',') + 
+              ', Data keys: ' + (task.data ? Object.keys(task.data).join(',') : 'none');
+            console.error(errorMsg);
+            throw new Error(errorMsg);
+          }
+          
+          console.log('Frame count:', taskData.frames.length);
+          
+          var data = taskData;
           var frames = data.frames;
           var mode = data.mode;
           var frameCount = frames.length;
@@ -881,10 +900,11 @@
       });
 
       try {
+        // 发送任务数据（保持data结构，与独立Worker保持一致）
         worker.worker.postMessage({
           id: taskId,
           type: task.type,
-          ...task.data
+          data: task.data  // 保持嵌套结构，Worker内部会访问 task.data.frames
         });
       } catch (error) {
         console.error(`Error sending task to worker ${worker.id}:`, error);

@@ -121,11 +121,27 @@ self.onmessage = function(e) {
   var task = e.data;
   
   console.log('Worker received task:', task.type, 'Task ID:', task.id);
+  console.log('Task data structure:', {
+    hasId: !!task.id,
+    hasType: !!task.type,
+    hasData: !!task.data,
+    hasFrames: !!(task.frames || (task.data && task.data.frames)),
+    hasDirectFrames: !!task.frames,
+    hasNestedFrames: !!(task.data && task.data.frames)
+  });
   
   try {
     // 验证任务数据结构
     if (!task || !task.id || !task.type) {
-      throw new Error('Invalid task structure: missing id or type');
+      var errorMsg = 'Invalid task structure: missing ' + 
+        (!task ? 'task object' : !task.id ? 'id' : 'type');
+      console.error(errorMsg);
+      self.postMessage({
+        id: task ? task.id : null,
+        type: 'error',
+        error: errorMsg
+      });
+      return;
     }
     
     switch(task.type) {
@@ -177,20 +193,33 @@ self.onmessage = function(e) {
  */
 async function handleComposeFrame(task) {
   try {
-    // 统一数据结构：兼容直接属性和嵌套的data属性
-    var frame = task.frame || (task.data ? task.data.frame : undefined);
-    var width = task.width || (task.data ? task.data.width : undefined);
-    var height = task.height || (task.data ? task.data.height : undefined);
-    var mode = task.mode || (task.data ? task.data.mode : undefined);
+    // 统一数据结构：先尝试 task.data，再尝试直接属性
+    var taskData = task.data || task;
+    var frame = taskData.frame;
+    var width = taskData.width;
+    var height = taskData.height;
+    var mode = taskData.mode;
     
     // 验证数据
     if (!frame || !frame.data) {
+      console.error('Missing frame data. Task structure:', {
+        hasData: !!task.data,
+        hasFrame: !!task.frame,
+        hasDataFrame: !!(task.data && task.data.frame),
+        taskKeys: Object.keys(task)
+      });
       throw new Error('Missing frame data');
     }
     if (!width || !height) {
+      console.error('Missing width or height:', { width, height });
       throw new Error('Missing width or height');
     }
     if (!mode) {
+      console.error('Missing mode. Task structure:', {
+        hasData: !!task.data,
+        hasMode: !!task.mode,
+        hasDataMode: !!(task.data && task.data.mode)
+      });
       throw new Error('Missing mode');
     }
     
@@ -278,16 +307,57 @@ async function handleComposeFrame(task) {
  */
 async function handleComposeFrames(task) {
   try {
-    // 统一数据结构：兼容直接属性和嵌套的data属性
-    var frames = task.frames || (task.data ? task.data.frames : undefined);
-    var mode = task.mode || (task.data ? task.data.mode : undefined);
+    console.log('=== handleComposeFrames START ===');
+    console.log('Task ID:', task.id);
+    console.log('Task type:', task.type);
+    console.log('Task structure:', {
+      hasData: !!task.data,
+      hasFrames: !!task.frames,
+      hasDataFrames: !!(task.data && task.data.frames),
+      dataKeys: task.data ? Object.keys(task.data) : [],
+      taskKeys: Object.keys(task)
+    });
+    
+    // 统一数据结构：先尝试 task.data，再尝试直接属性
+    var taskData = task.data || task;
+    var frames = taskData.frames;
+    var mode = taskData.mode;
+    
+    console.log('Extracted data:', {
+      framesType: typeof frames,
+      framesIsArray: Array.isArray(frames),
+      framesLength: frames ? frames.length : 0,
+      mode: mode
+    });
     
     // 验证数据
     if (!frames) {
-      throw new Error('Missing frames data');
+      var errorDetails = {
+        hasData: !!task.data,
+        hasFrames: !!task.frames,
+        hasDataFrames: !!(task.data && task.data.frames),
+        taskKeys: Object.keys(task),
+        dataKeys: task.data ? Object.keys(task.data) : []
+      };
+      console.error('Missing frames data. Task structure:', errorDetails);
+      var errorMsg = 'Missing frames data. Structure: ' + JSON.stringify(errorDetails);
+      throw new Error(errorMsg);
+    }
+    if (!Array.isArray(frames)) {
+      var errorMsg = 'Frames is not an array, type: ' + typeof frames;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
     }
     if (!mode) {
-      throw new Error('Missing mode');
+      var errorDetails = {
+        hasData: !!task.data,
+        hasMode: !!task.mode,
+        hasDataMode: !!(task.data && task.data.mode),
+        dataKeys: task.data ? Object.keys(task.data) : []
+      };
+      console.error('Missing mode. Task structure:', errorDetails);
+      var errorMsg = 'Missing mode. Structure: ' + JSON.stringify(errorDetails);
+      throw new Error(errorMsg);
     }
     
     var frameCount = frames.length;
