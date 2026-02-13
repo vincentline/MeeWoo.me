@@ -999,18 +999,6 @@
             }
           });
           
-          console.log('[DualChannel] 批次结果:', batchResult ? batchResult.length : 'null', '期望:', batchSize);
-          if (batchResult && batchResult[0]) {
-            console.log('[DualChannel] 第0帧数据:', {
-              hasBlackBgData: !!batchResult[0].blackBgData,
-              dataLength: batchResult[0].blackBgData ? batchResult[0].blackBgData.length : 0,
-              dataType: batchResult[0].blackBgData ? batchResult[0].blackBgData.constructor.name : 'none',
-              expectedLength: width * 2 * height * 4,
-              returnedWidth: batchResult[0].width,
-              returnedHeight: batchResult[0].height
-            });
-          }
-          
           this._debugLog('info', 'Web Worker批次处理完成', {
             returnedResults: batchResult.length
           });
@@ -1019,16 +1007,6 @@
           for (let i = 0; i < batchSize; i++) {
             if (onCancel()) {
               throw new Error('用户取消');
-            }
-            
-            // 检查数据是否存在
-            if (!batchResult[i]) {
-              console.error('[DualChannel] 帧' + (batchStart + i) + '数据缺失');
-              continue;
-            }
-            if (!batchResult[i].blackBgData) {
-              console.error('[DualChannel] 帧' + (batchStart + i) + '缺blackBgData');
-              continue;
             }
 
             try {
@@ -1065,7 +1043,10 @@
                 await new Promise(function(r) { setTimeout(r, 0); });
               }
             } catch (error) {
-              console.error('[DualChannel] 帧' + (batchStart + i) + '处理失败:', error.message);
+              this._debugLog('error', '处理帧时出错', {
+                frameIndex: batchStart + i,
+                error: error.message
+              });
               continue;
             }
           }
