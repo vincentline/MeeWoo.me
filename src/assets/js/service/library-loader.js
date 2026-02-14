@@ -215,6 +215,15 @@
       ],
       checkFn: function () { return typeof Konva !== 'undefined'; },
       priority: 10
+    },
+    'webpxmux': {
+      name: 'WebPXMux',
+      url: 'assets/js/lib/webpxmux/webpxmux.min.js',
+      fallbackUrls: [
+        'https://cdn.jsdelivr.net/npm/webpxmux@0.0.2/dist/webpxmux.min.js'
+      ],
+      checkFn: function () { return typeof WebPXMux !== 'undefined'; },
+      priority: 20
     }
   };
 

@@ -31,7 +31,8 @@
   - 显示导出进度，支持取消
   - 支持背景色处理，避免黑底
 - **导出 WebP**：
-  - 基于 Canvas API，在浏览器端完成编码
+  - 基于 `webpxmux.js` 编码动画 WebP
+  - 支持透明背景
   - 显示导出进度，支持取消
   - 支持自定义尺寸和帧率设置
 - **转换为双通道 MP4**：
@@ -119,6 +120,7 @@
   - `lottie-web`：Lottie 动画渲染
   - `konva`：Canvas 操作和图形处理
   - `gif.js`：GIF 编码
+  - `webpxmux.js`：WebP 动画编码/解码
   - `@ffmpeg/ffmpeg`：浏览器端视频编码
   - `jszip`：ZIP 文件处理
   - `pako`：压缩库
@@ -143,6 +145,7 @@
 - **核心依赖**：
   - `svgaplayerweb`：SVGA 动画解析与播放
   - `gif.js`：GIF 编码（配合 `gif.worker.js` Web Worker）
+  - `webpxmux.js`：WebP 动画编码/解码（无损 WebP）
   - `@ffmpeg/ffmpeg`（ffmpeg.wasm）：在浏览器中进行 MP4 编码
   - `lottie-web`：Lottie 动画渲染
   - `konva`：Canvas 操作和图形处理

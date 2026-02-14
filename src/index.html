@@ -607,7 +607,7 @@
                         <button class="btn-large-primary" :class="{'tooltip': !svga.hasFile}" :disabled="!svga.hasFile"
                           @click="openWebpPanel">
                           <span v-if="!svga.hasFile" class="tooltip-text">请先拖入 SVGA 文件</span>
-                          {{ isExportingWebp ? '导出中 ' + webpExportProgress + '%' : '转webp' }}
+                          {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
                         </button>
                         <button class="btn-large-secondary" :class="{'tooltip': !svga.hasFile}"
                           :disabled="!svga.hasFile" @click="openStandardMp4Panel('svga')">
@@ -647,7 +647,7 @@
                         <button class="btn-large-primary" :class="{'tooltip': !yyeva.hasFile}" :disabled="!yyeva.hasFile"
                           @click="openWebpPanel">
                           <span v-if="!yyeva.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
-                          {{ isExportingWebp ? '导出中 ' + webpExportProgress + '%' : '转webp' }}
+                          {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
                         </button>
                         <button class="btn-large-secondary" :class="{'tooltip': !yyeva.hasFile}"
                           :disabled="!yyeva.hasFile" @click="openStandardMp4Panel('yyeva')">
@@ -701,7 +701,7 @@
                         <button class="btn-large-primary" :class="{'tooltip': !mp4.hasFile}" :disabled="!mp4.hasFile"
                           @click="openWebpPanel">
                           <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
-                          {{ isExportingWebp ? '导出中 ' + webpExportProgress + '%' : '转webp' }}
+                          {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
                         </button>
                         <button class="btn-large-primary" :class="{'tooltip': !mp4.hasFile}" :disabled="!mp4.hasFile"
                           @click="openMp4ToSvgaPanel">
@@ -741,7 +741,7 @@
                         <button class="btn-large-primary" :class="{'tooltip': !lottie.hasFile}" :disabled="!lottie.hasFile"
                           @click="openWebpPanel">
                           <span v-if="!lottie.hasFile" class="tooltip-text">请先拖入 Lottie 文件</span>
-                          {{ isExportingWebp ? '导出中 ' + webpExportProgress + '%' : '转webp' }}
+                          {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
                         </button>
                         <button class="btn-large-secondary" :class="{'tooltip': !lottie.hasFile}"
                           :disabled="!lottie.hasFile" @click="openLottieToSvgaPanel">
@@ -1580,20 +1580,6 @@
           </div>
         </div>
 
-        <!-- 导出进度 -->
-        <div class="export-progress" v-if="isExporting">
-          <div class="progress-info">
-            <span class="progress-status">
-              <span class="spinner" v-if="exportStage !== 'done'"></span>
-              {{ exportMessage }}
-            </span>
-            <span class="progress-percent">{{ Math.round(exportProgress * 100) }}%</span>
-          </div>
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill" :style="{ width: (exportProgress * 100) + '%' }"></div>
-          </div>
-        </div>
-
         <!-- 底部按钮 -->
         <div class="side-panel-footer">
           <button v-if="!isExporting" class="material-btn-back" @click="close" title="返回">
@@ -1614,7 +1600,7 @@
           <button class="btn-large-secondary" :class="{'svga-btn-converting': isExporting}"
             :disabled="isExporting || disabled" @click="startExport">
             <template v-if="isExporting">
-              <span class="svga-progress-text">{{ exportProgress }}%</span>
+              <span class="svga-progress-text">{{ Math.round(exportProgress * 100) }}%</span>
               <span class="svga-stage-text">{{ exportMessage }}</span>
             </template>
             <template v-else>

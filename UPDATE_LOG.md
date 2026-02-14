@@ -18,6 +18,14 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-02-14 23:30:00] 【修改文件】 : src/index.html - WebP面板：修复按钮进度数字显示（乘100转百分比），移除重复的export-progress区域
+[2026-02-14 23:15:00] 【新增文件】 : src/assets/js/service/webp/index.js - WebP服务索引文件
+[2026-02-14 23:15:00] 【修改文件】 : README.md - 添加webpxmux.js到技术栈列表，更新WebP导出功能说明
+[2026-02-14 22:10:00] 【新增文件夹】 : src/assets/js/lib/webpxmux/ - 新增webpxmux库目录
+[2026-02-14 22:10:00] 【新增文件】 : src/assets/js/lib/webpxmux/webpxmux.min.js - webpxmux JS库文件
+[2026-02-14 22:10:00] 【新增文件】 : src/assets/js/lib/webpxmux/webpxmux.wasm - webpxmux WASM文件
+[2026-02-14 22:10:00] 【修改文件】 : src/assets/js/service/library-loader.js - 添加webpxmux库配置
+[2026-02-14 22:10:00] 【修改文件】 : src/assets/js/service/webp/webp-exporter.js - 重写WebP导出器，从FFmpeg切换到webpxmux.js，修复帧叠加问题，支持透明背景
 [2026-02-14 22:30:00] 【修改文件】 : src/assets/js/service/webp/webp-exporter.js - 重写WebP导出器，使用FFmpeg WASM编码动画WebP（修复只导出第一帧的bug）
 [2026-02-14 22:30:00] 【修改文件】 : src/assets/js/components/webp-panel.js - 添加预估文件大小计算功能（computed属性estimatedInfo、formatBytes方法）
 [2026-02-14 22:30:00] 【修改文件】 : src/index.html - 更新WebP面板模板，显示预估帧数和预估文件大小

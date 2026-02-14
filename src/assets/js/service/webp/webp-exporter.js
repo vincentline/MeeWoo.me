@@ -1,6 +1,6 @@
 /**
  * WebP导出器模块
- * 使用 FFmpeg WASM 编码动画 WebP
+ * 使用 webpxmux.js 编码动画 WebP（支持透明背景，序列帧动画）
  * 
  * 使用方式：
  * WebPExporter.export({
@@ -21,9 +21,70 @@
     window.MeeWoo = window.MeeWoo || {};
     window.MeeWoo.Exporters = window.MeeWoo.Exporters || {};
 
+    // webpxmux 实例缓存
+    var xMuxInstance = null;
+    var xMuxReady = false;
+
     var WebPExporter = {
         /**
-         * 导出动画WebP（使用FFmpeg编码）
+         * 初始化 webpxmux
+         * @returns {Promise} webpxmux实例
+         */
+        initWebPXMux: async function () {
+            // 如果已初始化，直接返回
+            if (xMuxInstance && xMuxReady) {
+                return xMuxInstance;
+            }
+
+            // 检查webpxmux是否已加载
+            if (typeof WebPXMux === 'undefined') {
+                // 使用library-loader加载
+                var libraryLoader = window.MeeWoo.Core.libraryLoader;
+                if (libraryLoader) {
+                    await libraryLoader.load(['webpxmux'], true);
+                }
+                
+                // 再次检查
+                if (typeof WebPXMux === 'undefined') {
+                    throw new Error('WebPXMux 库加载失败');
+                }
+            }
+
+            // 初始化webpxmux，传入wasm文件路径
+            xMuxInstance = WebPXMux('assets/js/lib/webpxmux/webpxmux.wasm');
+            
+            // 等待运行时就绪
+            await xMuxInstance.waitRuntime();
+            xMuxReady = true;
+            
+            console.log('[WebP导出] webpxmux 初始化完成');
+            return xMuxInstance;
+        },
+
+        /**
+         * 将Canvas ImageData转换为Uint32Array (0xRRGGBBAA格式)
+         * @param {ImageData} imageData Canvas ImageData
+         * @returns {Uint32Array} RGBA数据
+         */
+        imageDataToRGBA: function (imageData) {
+            var data = imageData.data;
+            var pixelCount = imageData.width * imageData.height;
+            var rgba = new Uint32Array(pixelCount);
+            
+            for (var i = 0; i < pixelCount; i++) {
+                var r = data[i * 4];
+                var g = data[i * 4 + 1];
+                var b = data[i * 4 + 2];
+                var a = data[i * 4 + 3];
+                // webpxmux使用0xRRGGBBAA格式
+                rgba[i] = (r << 24) | (g << 16) | (b << 8) | a;
+            }
+            
+            return rgba;
+        },
+
+        /**
+         * 导出动画WebP（使用webpxmux编码）
          * @param {Object} config 配置对象
          * @param {Number} config.width 宽度
          * @param {Number} config.height 高度
@@ -47,34 +108,20 @@
             var height = config.height || 300;
             var fps = config.fps || 30;
             var totalFrames = config.totalFrames;
-            var quality = config.quality || 80; // WebP质量 1-100
 
             // 回调函数
             var onProgress = config.onProgress || function () { };
             var onError = config.onError || function () { };
             var shouldCancel = config.shouldCancel || function () { return false; };
 
-            // 获取FFmpeg服务
-            var FFmpegService = window.MeeWoo.Services.FFmpegService;
-            if (!FFmpegService) {
-                throw new Error('FFmpegService 未加载');
-            }
-
             try {
+                // 1. 初始化webpxmux
                 onProgress(0, 'init', '初始化编码器...');
-
-                // 1. 确保FFmpeg已初始化
-                if (!FFmpegService.getInstance().isLoaded) {
-                    await FFmpegService.init();
-                }
+                var xMux = await this.initWebPXMux();
 
                 if (shouldCancel()) throw new Error('导出已取消');
 
-                // 2. 逐帧捕获并转为JPEG数据
-                onProgress(0.05, 'capturing', '捕获帧数据...');
-                var frameDataArray = [];
-
-                // 创建临时canvas用于缩放
+                // 2. 创建临时canvas用于缩放
                 var tempCanvas = document.createElement('canvas');
                 tempCanvas.width = width;
                 tempCanvas.height = height;
@@ -82,6 +129,11 @@
                     willReadFrequently: true,
                     alpha: true
                 });
+
+                // 3. 逐帧捕获并转换为RGBA数据
+                onProgress(0.05, 'capturing', '捕获帧数据...');
+                var framesArray = [];
+                var frameDuration = Math.round(1000 / fps); // 每帧时长（毫秒）
 
                 for (var i = 0; i < totalFrames; i++) {
                     if (shouldCancel()) throw new Error('导出已取消');
@@ -93,87 +145,57 @@
                         continue;
                     }
 
-                    // 绘制到临时canvas（缩放）
+                    // 清空canvas（透明背景）
                     tempCtx.clearRect(0, 0, width, height);
+                    // 绘制到临时canvas（缩放，保留透明通道）
                     tempCtx.drawImage(frameCanvas, 0, 0, width, height);
 
-                    // 转换为JPEG数据（WebP编码输入）
-                    var dataUrl = tempCanvas.toDataURL('image/jpeg', 0.92);
-                    var base64Data = dataUrl.split(',')[1];
-                    var binaryString = atob(base64Data);
-                    var bytes = new Uint8Array(binaryString.length);
-                    for (var j = 0; j < binaryString.length; j++) {
-                        bytes[j] = binaryString.charCodeAt(j);
-                    }
-                    frameDataArray.push(bytes);
+                    // 获取ImageData并转换为RGBA
+                    var imageData = tempCtx.getImageData(0, 0, width, height);
+                    var rgba = _this.imageDataToRGBA(imageData);
 
-                    // 更新进度：捕获阶段 5%-50%
-                    var captureProgress = 0.05 + (i / totalFrames) * 0.45;
+                    // 添加帧数据
+                    framesArray.push({
+                        duration: frameDuration,
+                        isKeyframe: i === 0, // 第一帧为关键帧
+                        rgba: rgba
+                    });
+
+                    // 更新进度：捕获阶段 5%-60%
+                    var captureProgress = 0.05 + (i / totalFrames) * 0.55;
                     onProgress(captureProgress, 'capturing', '捕获帧 ' + (i + 1) + '/' + totalFrames);
                 }
 
-                if (frameDataArray.length === 0) {
+                if (framesArray.length === 0) {
                     throw new Error('没有捕获到任何帧');
                 }
 
-                console.log('[WebP导出] 捕获完成，共 ' + frameDataArray.length + ' 帧');
+                console.log('[WebP导出] 捕获完成，共 ' + framesArray.length + ' 帧');
 
-                // 3. 使用FFmpeg编码动画WebP
-                onProgress(0.5, 'encoding', '编码WebP动画...');
-
-                // 准备输入文件
-                var inputFiles = [];
-                for (var i = 0; i < frameDataArray.length; i++) {
-                    var frameName = 'frame_' + String(i).padStart(6, '0') + '.jpg';
-                    inputFiles.push({
-                        name: frameName,
-                        data: frameDataArray[i]
-                    });
-                }
-
-                // FFmpeg命令参数
-                // -framerate: 输入帧率
-                // -i: 输入序列
-                // -c:v libwebp: 使用WebP编码器
-                // -lossless 0: 有损压缩（文件更小）
-                // -loop 0: 无限循环
-                // -q:v: 质量 (0-100)
-                // -preset default: 编码预设
-                var ffmpegArgs = [
-                    '-framerate', String(fps),
-                    '-i', 'frame_%06d.jpg',
-                    '-c:v', 'libwebp',
-                    '-lossless', '0',
-                    '-loop', '0',
-                    '-q:v', String(quality),
-                    '-preset', 'default',
-                    '-y',
-                    'output.webp'
-                ];
-
-                // 执行FFmpeg命令
-                var result = await FFmpegService.runCommand({
-                    args: ffmpegArgs,
-                    inputFiles: inputFiles,
-                    outputFiles: ['output.webp'],
-                    onProgress: function (p) {
-                        // 编码阶段 50%-90%
-                        var encodeProgress = 0.5 + p * 0.4;
-                        onProgress(encodeProgress, 'encoding', '编码中...');
-                    }
-                });
+                // 4. 构建Frames对象
+                onProgress(0.6, 'encoding', '编码WebP动画...');
+                var frames = {
+                    frameCount: framesArray.length,
+                    width: width,
+                    height: height,
+                    loopCount: 0,           // 0 = 无限循环
+                    bgColor: 0x00000000,    // 透明背景 (0xRRGGBBAA)
+                    frames: framesArray
+                };
 
                 if (shouldCancel()) throw new Error('导出已取消');
 
-                // 4. 获取输出文件并下载
-                onProgress(0.9, 'downloading', '生成下载文件...');
+                // 5. 使用webpxmux编码动画WebP
+                onProgress(0.7, 'encoding', '正在编码...');
+                var webpData = await xMux.encodeFrames(frames);
 
-                var outputData = result['output.webp'];
-                if (!outputData || outputData.length === 0) {
-                    throw new Error('FFmpeg编码失败，未生成输出文件');
+                if (!webpData || webpData.length === 0) {
+                    throw new Error('webpxmux编码失败，未生成输出数据');
                 }
 
-                var blob = new Blob([outputData], { type: 'image/webp' });
+                // 6. 创建Blob并下载
+                onProgress(0.9, 'downloading', '生成下载文件...');
+                var blob = new Blob([webpData], { type: 'image/webp' });
                 console.log('[WebP导出] 输出文件大小:', _this.formatBytes(blob.size));
 
                 // 下载文件
