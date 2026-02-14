@@ -5044,57 +5044,99 @@ function initApp() {
       },
 
       /**
-       * 开始webp导出
+       * 开始webp导出（使用FFmpeg编码动画WebP）
        */
       startWebpExport: async function () {
         var _this = this;
+        var config = this.webpConfig;
+        var sourceInfo = this.getWebpSourceInfo();
+        var duration = sourceInfo.duration || 0;
+        var totalFrames = sourceInfo.totalFrames || Math.ceil(duration * config.fps);
+
+        // 检查帧数是否有效
+        if (!totalFrames || totalFrames <= 0) {
+          alert('WebP导出失败：无法获取动画帧数\n\n请确保已加载有效的动画文件。');
+          return;
+        }
+
+        // === 限制检查：时长>20秒 或 预估>10MB 弹窗警告 ===
+        var bytesPerFrame = config.width * config.height * 0.05; // WebP压缩系数
+        var estimatedBytes = bytesPerFrame * totalFrames;
+        var warnings = [];
+
+        if (duration > 20) {
+          warnings.push('动画时长超过20秒（' + duration.toFixed(1) + '秒）');
+        }
+        if (estimatedBytes > 10 * 1024 * 1024) {
+          warnings.push('预估文件大小超过10MB（' + this.utils.formatBytes(estimatedBytes) + '）');
+        }
+        if (warnings.length > 0) {
+          var msg = '注意（导出WebP）：\n\n' + warnings.join('\n') + '\n\nWebP动画适合短动画，继续导出可能耗时较长。\n\n确定要继续吗？';
+          if (!confirm(msg)) {
+            return;
+          }
+        }
+
+        // 检查是否有其他正在进行的任务
+        if (!this.confirmIfHasOngoingTasks('导出WebP', 'task')) {
+          return;
+        }
 
         // 重置状态
         this.isExportingWebp = true;
         this.webpExportProgress = 0;
-        this.webpExportMessage = '准备导出...';
+        this.webpExportMessage = '初始化FFmpeg...';
         this.webpExportCancelled = false;
 
-        // 执行导出
-        var config = this.webpConfig;
-        var sourceInfo = this.getWebpSourceInfo();
         var wasPlaying = this.isPlaying;
 
-        // 暂停播放
-        await this.pauseForExport();
+        try {
+          // 初始化FFmpeg（高优先级）
+          await Services.FFmpegService.init({ highPriority: true });
 
-        // 使用WebPExporter模块
-        MeeWoo.Exporters.WebPExporter.export({
-          width: config.width,
-          height: config.height,
-          fps: config.fps,
-          getFrame: async function(frameIndex) {
-            // 跳转到对应帧
-            var targetFrameIndex = Math.floor(frameIndex * config.fps / config.fps);
-            await _this.seekToFrame(targetFrameIndex, config.fps, sourceInfo);
-            
-            // 添加延迟，确保帧渲染完成
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            var canvas = _this.getCurrentFrameCanvas();
-            if (!canvas) {
-              throw new Error('无法获取帧画布');
-            }
-            return canvas;
-          },
-          onProgress: function(progress, stage, message) {
-            _this.webpExportProgress = progress;
-            _this.webpExportMessage = message;
-          },
-          onError: function(error) {
-            console.error('WebP导出错误:', error);
-            _this.webpExportMessage = '导出失败: ' + (error.message || '未知错误');
-          },
-          shouldCancel: function() {
-            return _this.webpExportCancelled;
+          if (this.webpExportCancelled) {
+            throw new Error('用户取消');
           }
-        }).then(function() {
-          // 延迟关闭
+
+          // 暂停播放
+          await this.pauseForExport();
+
+          this.webpExportMessage = '捕获帧数据...';
+
+          // 使用WebPExporter模块（已重写为FFmpeg编码）
+          await MeeWoo.Exporters.WebPExporter.export({
+            width: config.width,
+            height: config.height,
+            fps: config.fps,
+            totalFrames: totalFrames,  // 传递总帧数
+            quality: 80,  // WebP质量
+            getFrame: async function(frameIndex) {
+              // 跳转到对应帧
+              await _this.seekToFrame(frameIndex, config.fps, sourceInfo);
+              
+              // 添加延迟，确保帧渲染完成
+              await new Promise(function(resolve) { setTimeout(resolve, 50); });
+              
+              var canvas = _this.getCurrentFrameCanvas();
+              if (!canvas) {
+                throw new Error('无法获取帧画布');
+              }
+              return canvas;
+            },
+            onProgress: function(progress, stage, message) {
+              _this.webpExportProgress = progress;
+              _this.webpExportMessage = message;
+            },
+            onError: function(error) {
+              console.error('[WebP导出] 错误:', error);
+              _this.webpExportMessage = '导出失败: ' + (error.message || '未知错误');
+            },
+            shouldCancel: function() {
+              return _this.webpExportCancelled;
+            }
+          });
+
+          // 导出成功，延迟关闭
           setTimeout(function () {
             _this.isExportingWebp = false;
             _this.activeRightPanel = null;
@@ -5103,15 +5145,18 @@ function initApp() {
               _this.resumeAfterExport();
             }
           }, 1000);
-        }).catch(function (error) {
-          console.error('WebP导出失败:', error);
-          _this.webpExportMessage = '导出失败: ' + (error.message || '未知错误');
-          _this.isExportingWebp = false;
+
+        } catch (error) {
+          console.error('[WebP导出] 失败:', error);
+          if (error.message !== '用户取消') {
+            this.webpExportMessage = '导出失败: ' + (error.message || '未知错误');
+          }
+          this.isExportingWebp = false;
           // 恢复播放状态
           if (wasPlaying) {
-            _this.resumeAfterExport();
+            this.resumeAfterExport();
           }
-        });
+        }
       },
 
       /**

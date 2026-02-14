@@ -18,6 +18,10 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-02-14 22:30:00] 【修改文件】 : src/assets/js/service/webp/webp-exporter.js - 重写WebP导出器，使用FFmpeg WASM编码动画WebP（修复只导出第一帧的bug）
+[2026-02-14 22:30:00] 【修改文件】 : src/assets/js/components/webp-panel.js - 添加预估文件大小计算功能（computed属性estimatedInfo、formatBytes方法）
+[2026-02-14 22:30:00] 【修改文件】 : src/index.html - 更新WebP面板模板，显示预估帧数和预估文件大小
+[2026-02-14 22:30:00] 【修改文件】 : src/assets/js/core/app.js - WebP导出添加限制检查（时长>20秒或预估>10MB弹窗警告），初始化FFmpeg，传递totalFrames参数
 [2026-02-14 18:00:00] 【修改文件】 : src/assets/js/service/gif/gif-exporter.js - 清理冗余调试日志，关闭debug模式
 [2026-02-14 18:00:00] 【修改文件】 : src/assets/js/core/app.js - 清理双通道MP4转换流程的调试日志
 [2026-02-14 18:00:00] 【修改文件】 : src/assets/js/service/dual-channel/dual-channel-composer.js - 清理Worker初始化调试日志

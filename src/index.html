@@ -1538,7 +1538,9 @@
         <div class="svga-info-section">
           <div class="svga-info-row">当前尺寸：{{ sourceInfo.sizeWH }} 帧率：{{ sourceInfo.fps }}FPS 时长：{{
             (sourceInfo.duration || 0).toFixed(2) }}s</div>
-          <div class="svga-compress-hint">注意：webp格式支持动画，建议控制尺寸和帧率以减少文件体积。</div>
+          <!-- 预估信息 -->
+          <div class="svga-info-row">预估帧数：{{ estimatedInfo.totalFrames }}帧 预估大小：{{ estimatedInfo.fileSizeText }}</div>
+          <div class="svga-compress-hint">提示：WebP动画适合短小动画（表情包、加载动画等），建议时长≤20秒。</div>
         </div>
 
         <!-- 配置区域 -->
