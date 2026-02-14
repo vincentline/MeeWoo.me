@@ -346,8 +346,6 @@
                     throw new Error('当前浏览器不支持Web Worker');
                 }
                 
-                console.log('[DualChannelComposer] 初始化Worker');
-                
                 // 构建Worker路径
                 let workerPath = '/' + this.defaults.workerPath;
                 
@@ -365,7 +363,6 @@
                 const blobUrl = URL.createObjectURL(blob);
                 
                 this._worker = new Worker(blobUrl);
-                console.log('[DualChannelComposer] Worker创建成功 (Blob URL模式)');
                 
                 this._worker.onerror = (error) => {
                     console.error('[DualChannelComposer] Worker全局错误:', {
@@ -376,7 +373,6 @@
                     });
                 };
                 
-            console.log('[DualChannelComposer] Worker初始化完成');
                 return true;
             } catch (error) {
                 console.error('[DualChannelComposer] Worker初始化失败:', error.message);

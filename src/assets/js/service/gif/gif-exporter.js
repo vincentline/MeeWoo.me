@@ -96,7 +96,6 @@
       // 支持Web Worker：使用多线程编码
       var availableCores = navigator.hardwareConcurrency || 2;
       var workerCount = Math.max(1, Math.min(Math.floor(availableCores / 2), 4));
-      console.log('[GIF Exporter] 检测到', availableCores, '个CPU核心，将使用', workerCount, '个Worker');
       
       var workerScriptPath = '/assets/js/service/gif/gif.worker.js';
       
@@ -107,8 +106,7 @@
         width: width,
         height: height,
         repeat: 0,
-        background: '#ffffff',
-        debug: true  // 启用调试日志
+        background: '#ffffff'
       };
 
       if (transparent) {
@@ -124,16 +122,12 @@
 
       // 编码完成Promise
       var encodingPromise = new Promise(function (resolve, reject) {
-        console.log('[GIF Exporter] 注册事件监听器...');
-        
         gif.on('progress', function (p) {
-          console.log('[GIF Exporter] 编码进度:', p);
           // 编码阶段：50%-100%
           onProgress(50 + Math.floor(p * 50), 'encoding', '编码中...');
         });
 
         gif.on('finished', function (blob) {
-          console.log('[GIF Exporter] 编码完成，blob:', blob);
           if (!blob || typeof blob !== 'object' || !blob.size) {
             reject(new Error('GIF编码器生成的blob无效'));
           } else {
@@ -142,7 +136,6 @@
         });
 
         gif.on('abort', function () {
-          console.log('[GIF Exporter] 编码被取消');
           reject(new Error('用户取消'));
         });
 
@@ -224,9 +217,7 @@
         onProgress(50, 'encoding', '编码中...');
         
         try {
-          console.log('[GIF Exporter] 开始编码...');
           gif.render();
-          console.log('[GIF Exporter] 编码启动成功');
         } catch (renderError) {
           console.error('[GIF Exporter] 编码启动失败:', renderError);
           throw new Error('编码启动失败: ' + renderError.message);
@@ -235,7 +226,6 @@
         // 添加超时机制，避免编码过程无限卡住
         var timeoutPromise = new Promise(function (resolve, reject) {
           setTimeout(function () {
-            console.error('[GIF Exporter] 编码超时，尝试取消...');
             // 尝试取消编码
             if (gif) {
               try {

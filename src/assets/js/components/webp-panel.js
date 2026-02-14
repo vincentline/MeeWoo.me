@@ -57,7 +57,6 @@
     },
     watch: {
       visible(newVal) {
-        console.log('[调试] webp-panel visible属性变化:', newVal);
         if (newVal) {
           this.initConfig()
         }
@@ -125,8 +124,6 @@
       }
     },
     mounted() {
-      console.log('[调试] webp-panel 组件已挂载，初始visible:', this.visible);
-      console.log('[调试] webp-panel 组件DOM元素:', this.$el);
       if (this.visible) {
         this.initConfig()
       }

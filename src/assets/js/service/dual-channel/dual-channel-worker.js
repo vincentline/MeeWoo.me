@@ -2,9 +2,6 @@
  * Dual Channel Worker - 双通道图像合成器 工作线程
  */
 
-// Worker启动确认
-console.log('[DualChannelWorker] 已加载');
-
 // 全局错误捕获
 self.onerror = function(message, source, lineno, colno, error) {
   console.error('🟡 [DualChannelWorker] 全局错误:', {

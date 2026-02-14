@@ -18,6 +18,14 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-02-14 18:00:00] 【修改文件】 : src/assets/js/service/gif/gif-exporter.js - 清理冗余调试日志，关闭debug模式
+[2026-02-14 18:00:00] 【修改文件】 : src/assets/js/core/app.js - 清理双通道MP4转换流程的调试日志
+[2026-02-14 18:00:00] 【修改文件】 : src/assets/js/service/dual-channel/dual-channel-composer.js - 清理Worker初始化调试日志
+[2026-02-14 18:00:00] 【修改文件】 : src/assets/js/service/dual-channel/dual-channel-worker.js - 清理Worker启动确认日志
+[2026-02-14 18:00:00] 【修改文件】 : src/assets/js/components/standard-mp4-panel.js - 清理组件挂载调试日志
+[2026-02-14 18:00:00] 【修改文件】 : src/assets/js/components/webp-panel.js - 清理组件调试日志
+[2026-02-14 18:00:00] 【修改文件】 : src/assets/js/service/webp/webp-exporter.js - 清理帧数据调试日志
+[2026-02-14 18:00:00] 【删除文件】 : src/assets/js/mixins/panel-mixin copy.js - 删除冗余备份文件
 [2026-02-14 17:30:00] 【修改文件】 : vite.config.js - 修复Vite开发模式Worker加载问题：添加中间件插件为Worker脚本添加CORS响应头
 [2026-02-14 17:30:00] 【修改文件】 : src/assets/js/service/gif/gif-exporter.js - 启用gif.js的debug模式以获取完整Worker日志
 [2026-02-14 17:30:00] 【修改文件】 : src/assets/js/lib/gif.js - 恢复原版0.2.0版本（带版本注释和sourcemap引用）

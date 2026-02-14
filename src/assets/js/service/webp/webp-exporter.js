@@ -92,12 +92,6 @@
                 if (currentFrame.width === 0 || currentFrame.height === 0) {
                     throw new Error('获取的帧画布尺寸无效');
                 }
-                
-                console.log('[WebP导出] 获取到帧数据:', {
-                    width: currentFrame.width,
-                    height: currentFrame.height,
-                    type: currentFrame.constructor.name
-                });
 
                 // 检查是否取消
                 if (shouldCancel()) {

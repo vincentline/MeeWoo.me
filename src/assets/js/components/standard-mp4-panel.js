@@ -146,7 +146,6 @@
       currentModule: { type: String, default: 'mp4' }
     },
     mounted: function () {
-      console.log('StandardMp4Panel组件已挂载', this.visible);
     },
     data: function () {
       return {

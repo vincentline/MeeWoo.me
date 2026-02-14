@@ -8988,7 +8988,6 @@ function initApp() {
        */
       composeFramesDualChannel: async function (frames, format) {
         var _this = this;
-        console.log('开始合成双通道帧，帧数:', frames.length, '格式:', format);
 
         return Services.DualChannelComposer.composeFrames(frames, {
           mode: this.dualChannelConfig.channelMode,
@@ -9553,8 +9552,6 @@ function initApp() {
       startMP4Conversion: async function (config) {
         var _this = this;
 
-        console.log('[双通道] 开始转换');
-
         // 如果传入了配置（来自组件），则更新本地配置
         if (config) {
           this.dualChannelConfig = Object.assign({}, this.dualChannelConfig, config);
@@ -9626,28 +9623,22 @@ function initApp() {
 
         try {
           // 1. 加载 FFmpeg (使用统一服务)
-          console.log('[双通道] 加载FFmpeg...');
           await Services.FFmpegService.init();
           if (this.dualChannelCancelled) throw new Error('用户取消转换');
 
           // 2. 提取序列帧
-          console.log('[双通道] 提取序列帧...');
           this.dualChannelStage = 'extracting';
           this.dualChannelMessage = '正在提取序列帧...';
           var frames = await this.extractFrames();
-          console.log('[双通道] 提取', frames.length, '帧');
           if (this.dualChannelCancelled) throw new Error('用户取消转换');
 
           // 3. 合成双通道
-          console.log('[双通道] 合成...');
           this.dualChannelStage = 'composing';
           this.dualChannelMessage = '正在合成双通道...';
           var dualFrames = await this.composeDualChannelFrames(frames);
-          console.log('[双通道] 合成', dualFrames.length, '帧');
           if (this.dualChannelCancelled) throw new Error('用户取消转换');
 
           // 4. 编码为 MP4 (使用统一服务)
-          console.log('[双通道] 编码MP4...');
           this.dualChannelStage = 'encoding';
           this.dualChannelMessage = '正在编码为MP4...';
 
