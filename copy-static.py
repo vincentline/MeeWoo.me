@@ -23,6 +23,8 @@ import sys
 exclude_files = ['index.html', '404.html', 'drawer.css', 'panel.css', 'sprite-generated.css', 'style.css']
 # 要排除的文件夹名
 exclude_folders = ['gadgets', 'css']
+# 要排除的JS文件（已压缩的第三方库，避免二次压缩）
+exclude_js_files = ['gif.js', 'gif.worker.js']
 # ==============================================
 
 # 确保脚本使用 UTF-8 编码
@@ -117,7 +119,7 @@ def compress_js_files(directory):
         js_files = []
         for root, _, files in os.walk(directory):
             for file in files:
-                if file.endswith('.js') and not file.endswith('.min.js'):
+                if file.endswith('.js') and not file.endswith('.min.js') and file not in exclude_js_files:
                     js_files.append(os.path.join(root, file))
         
         if js_files:
