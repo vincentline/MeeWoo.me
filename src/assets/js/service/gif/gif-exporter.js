@@ -145,10 +145,13 @@
       var encodingPromise = new Promise(function (resolve, reject) {
         gif.on('progress', function (p) {
           // 编码阶段：50%-100%
-          onProgress(50 + Math.floor(p * 50), 'encoding', '编码中...');
+          var progress = 50 + Math.floor(p * 50);
+          onProgress(progress, 'encoding', '编码中...');
+          console.log('[GIF Exporter] Encoding progress:', progress + '%');
         });
 
         gif.on('finished', function (blob) {
+          console.log('[GIF Exporter] Encoding finished, blob size:', blob ? blob.size : 'null');
           if (!blob || typeof blob !== 'object' || !blob.size) {
             reject(new Error('GIF编码器生成的blob无效'));
           } else {
@@ -157,21 +160,58 @@
         });
 
         gif.on('abort', function () {
+          console.log('[GIF Exporter] Encoding aborted');
           reject(new Error('用户取消'));
         });
 
         gif.on('error', function (error) {
           console.error('[GIF Exporter] 编码错误:', error);
+          console.error('[GIF Exporter] Error stack:', error.stack);
           // 检查是否是Worker相关的错误
           if (error.message && (error.message.includes('Worker') || error.message.includes('worker'))) {
-            console.warn('[GIF Exporter] Worker相关错误，建议禁用Worker重试');
-            // 直接拒绝，让调用者知道需要禁用Worker
-            reject(new Error('Worker相关错误: ' + (error.message || error) + '，请尝试禁用Worker重试'));
+            console.warn('[GIF Exporter] Worker相关错误，切换到主线程编码');
+            // 尝试使用主线程编码
+            try {
+              console.log('[GIF Exporter] Creating new GIF instance without worker');
+              var mainThreadGif = createGifInstance(false);
+              // 重新添加帧
+              console.log('[GIF Exporter] Re-adding frames to main thread GIF');
+              for (var i = 0; i < totalFrames; i++) {
+                var frameOptions = { delay: frameDelay };
+                if (transparent) {
+                  frameOptions.transparent = true;
+                }
+                mainThreadGif.addFrame(processedFrames[i], frameOptions);
+              }
+              // 重新开始编码
+              console.log('[GIF Exporter] Starting main thread encoding');
+              mainThreadGif.render();
+              // 监听新的GIF实例的事件
+              mainThreadGif.on('progress', function (p) {
+                var progress = 50 + Math.floor(p * 50);
+                onProgress(progress, 'encoding', '编码中...');
+                console.log('[GIF Exporter] Main thread encoding progress:', progress + '%');
+              });
+              mainThreadGif.on('finished', function (blob) {
+                console.log('[GIF Exporter] Main thread encoding finished');
+                resolve(blob);
+              });
+              mainThreadGif.on('error', function (error) {
+                console.error('[GIF Exporter] Main thread encoding error:', error);
+                reject(new Error('主线程编码失败: ' + (error.message || error)));
+              });
+            } catch (retryError) {
+              console.error('[GIF Exporter] Failed to retry with main thread:', retryError);
+              reject(new Error('Worker相关错误: ' + (error.message || error) + '，主线程重试也失败'));
+            }
           } else {
             reject(new Error('GIF编码失败: ' + (error.message || error)));
           }
         });
       });
+      
+      // 存储处理后的帧，用于worker失败时的重试
+      var processedFrames = [];
 
       try {
         // 帧捕获阶段
@@ -228,10 +268,14 @@
             frameOptions.transparent = true;
           }
           gif.addFrame(processedImageData, frameOptions);
+          
+          // 存储处理后的帧，用于worker失败时的重试
+          processedFrames.push(processedImageData);
 
           // 更新进度：捕获阶段0%-50%
           var progress = Math.floor((i / totalFrames) * 50);
           onProgress(progress, 'capturing', '捕获帧 ' + (i + 1) + '/' + totalFrames);
+          console.log('[GIF Exporter] Captured frame', i + 1, 'of', totalFrames);
         }
 
         // 开始编码
