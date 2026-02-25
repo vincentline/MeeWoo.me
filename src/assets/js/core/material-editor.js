@@ -729,15 +729,6 @@
                         _this.updateTransformer();
                     }
                 });
-
-                this.stageInstance.on('wheel', function (e) {
-                    e.evt.preventDefault();
-                    
-                    var delta = e.evt.deltaY > 0 ? -0.02 : 0.02;
-                    var newScale = _this.editor.scale + delta;
-                    newScale = Math.max(0.1, Math.min(5.0, newScale));
-                    _this.editor.scale = parseFloat(newScale.toFixed(2));
-                });
             },
 
             updateKonvaBaseImage: function () {
