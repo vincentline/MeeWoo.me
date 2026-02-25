@@ -26,6 +26,13 @@
   - 展示所有图片素材缩略图与 imageKey
   - 支持搜索、复制名称、单个素材替换
   - 替换后可实时预览并导出新的 SVGA 文件
+- **素材编辑器**：
+  - 基于 Konva.js 的可视化编辑器
+  - 支持底图和文案的选中、拖拽、缩放操作
+  - Transformer 手柄支持比例缩放
+  - 显示区域与导出区域分离，提供更大操作空间
+  - 蓝色虚线参考线标识导出边界
+  - 文案支持动态尺寸、对齐方式切换
 - **导出 GIF**：
   - 基于 `gif.js` 与 Web Worker，在浏览器端完成编码
   - 显示导出进度，支持取消
@@ -118,7 +125,7 @@
 - **核心库**：
   - `svgaplayerweb`：SVGA 动画解析与播放
   - `lottie-web`：Lottie 动画渲染
-  - `konva`：Canvas 操作和图形处理
+  - `konva`：Canvas 操作和图形处理，用于素材编辑器（Transformer、拖拽缩放、图层管理）
   - `gif.js`：GIF 编码
   - `webpxmux.js`：WebP 动画编码/解码
   - `@ffmpeg/ffmpeg`：浏览器端视频编码

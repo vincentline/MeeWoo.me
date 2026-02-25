@@ -18,8 +18,15 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
-[2026-02-25 10:23:00] 【修改文件】 : src/assets/js/core/material-editor.js - 实现文案canvas动态尺寸：根据文案实际尺寸自动调整canvas区域，支持对齐方式变化时正确偏移
-[2026-02-25 10:23:00] 【修改文件】 : src/assets/js/core/material-editor.js - 实现底图和文案的选中状态：添加Konva Transformer手柄支持比例缩放，选中后才可移动
+[2026-02-25 13:28:00] 【修改文件】 : src/assets/js/core/material-editor.js - 实现显示区域与导出区域分离：Stage尺寸改为容器尺寸，添加蓝色虚线参考线标识导出区域，导出时创建临时Stage
+[2026-02-25 13:28:00] 【修改文件】 : src/assets/js/core/material-editor.js - 实现文案canvas动态尺寸：根据文案实际尺寸自动调整canvas区域，支持对齐方式变化时正确偏移
+[2026-02-25 13:28:00] 【修改文件】 : src/assets/js/core/material-editor.js - 实现底图和文案的选中状态：添加Konva Transformer手柄支持比例缩放，选中后才可移动
+[2026-02-25 13:28:00] 【修改文件】 : src/assets/js/core/material-state.js - 新增exportAreaX/Y状态，记录导出区域在画布中的位置
+[2026-02-25 13:28:00] 【修改文件】 : src/index.html - 素材编辑器容器改为100%尺寸，移除固定尺寸和transform缩放
+[2026-02-25 13:28:00] 【新增文件】 : .trae/skills/konva/references/experience.md - 新增Konva开发经验总结文档，包含6条实际开发经验
+[2026-02-25 13:28:00] 【修改文件】 : .trae/skills/konva/SKILL.md - 添加经验文档引用
+[2026-02-25 13:28:00] 【新增文件】 : .trae/skills/webapp-testing/examples/konva_editor_testing.py - 新增Konva素材编辑器测试模板
+[2026-02-25 13:28:00] 【修改文件】 : .trae/skills/webapp-testing/SKILL.md - 添加konva_editor_testing.py测试模板引用
 [2026-02-25 10:23:00] 【修改文件】 : src/assets/js/core/material-operations.js - 修复素材编辑器重新打开时不渲染的问题：打开编辑器前重置baseImage为null确保Vue $watch触发
 [2026-02-15 02:10:00] 【修改文件】 : src/assets/js/core/app.js - 新增 resetExportPanelSizes 方法；在 clearAll、restorePlayback、handleFile、handleFiles 中调用，实现文件状态重置时清空尺寸配置
 [2026-02-15 02:10:00] 【修改文件】 : src/assets/js/components/gif-panel.js - 修改尺寸初始化逻辑：优先使用用户上次修改的尺寸，仅在配置无效时才使用原始尺寸

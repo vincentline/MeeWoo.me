@@ -69,7 +69,7 @@ MeeWoo 是一个 SVGA 动画预览与转换工具，支持多种动画格式的�
 | 文件路径 | 功能描述 | 关键词 |
 |---------|---------|--------|
 | `src/assets/js/core/app.js` | 应用核心逻辑，包含 SVGA 播放器初始化和管理 | 应用核心、SVGA 播放器、初始化 |
-| `src/assets/js/core/material-editor.js` | 素材编辑器，支持 SVGA 素材的编辑功能 | 素材编辑、素材管理、编辑器 |
+| `src/assets/js/core/material-editor.js` | 素材编辑器，支持 SVGA 素材的编辑功能，使用 Konva.js 渲染 | 素材编辑、素材管理、编辑器、Konva、Transformer |
 | `src/assets/js/core/material-interactions.js` | 素材交互逻辑，包含素材的交互操作 | 素材交互、交互操作 |
 | `src/assets/js/core/material-operations.js` | 素材操作逻辑，包含素材替换、保存等功能 | 素材操作、替换逻辑、保存逻辑 |
 | `src/assets/js/core/material-state.js` | 素材状态管理，记录素材编辑状态 | 状态管理、素材状态、编辑状态 |
@@ -228,6 +228,6 @@ MeeWoo 是一个 SVGA 动画预览与转换工具，支持多种动画格式的�
 
 ## 版本信息
 
-- 索引版本：1.1.3
-- 最后更新：[2026-02-11 14:30:00]
+- 索引版本：1.1.4
+- 最后更新：[2026-02-25 13:28:00]
 - 适用项目版本：v1.0.0
