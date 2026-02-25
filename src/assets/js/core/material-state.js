@@ -5,12 +5,14 @@
  * 1. 【状态定义】 - 素材编辑器状态定义
  * 2. 【状态管理】 - 素材编辑状态管理相关方法
  * 3. 【历史记录】 - 编辑历史管理相关方法
+ * 4. 【批处理】 - 状态变更的批处理功能
  * 
  * 功能说明：
  * 提供素材编辑器的状态管理功能，包括：
  * 1. 编辑器界面状态管理
  * 2. 素材编辑状态管理
  * 3. 编辑历史记录管理
+ * 4. 状态变更的批处理
  * 
  * 使用方式：
  * 在 material-editor.js 中引入此文件，并使用 MeeWoo.Core.MaterialState 模块
@@ -48,6 +50,8 @@
                 scale: 1.0,          // 预览缩放
                 offsetX: 0,          // 预览X位移
                 offsetY: 0,          // 预览Y位移
+                exportAreaX: 0,      // 导出区域在画布中的X位置
+                exportAreaY: 0,      // 导出区域在画布中的Y位置
 
                 // 内容状态
                 baseImage: null,     // 当前底图 (Image Object or DataURL)
@@ -95,7 +99,12 @@
                 textDragStartY: 0,
                 textDragStartPosX: 50,
                 textDragStartPosY: 50,
-                textMouseMoved: false  // 标记是否发生了拖拽移动
+                textMouseMoved: false,  // 标记是否发生了拖拽移动
+                
+                // 批处理相关
+                _batchUpdate: false,
+                _pendingUpdates: {},
+                _batchTimeout: null
             };
         },
 
@@ -174,7 +183,9 @@
                 imageOffsetX: editorState.imageOffsetX,
                 imageOffsetY: editorState.imageOffsetY,
                 imageScale: editorState.imageScale,
-                customBaseImage: editorState.baseImage !== editorState.defaultBaseImage ? editorState.baseImage : undefined
+                customBaseImage: editorState.baseImage !== editorState.defaultBaseImage ? editorState.baseImage : undefined,
+                originalBaseImageWidth: editorState.baseImageWidth,
+                originalBaseImageHeight: editorState.baseImageHeight
             };
         },
 
@@ -215,6 +226,95 @@
             if (materialEditStates[imageKey]) {
                 delete materialEditStates[imageKey];
             }
+        },
+
+        /**
+         * ==================== 【批处理】 ====================
+         * 状态变更的批处理功能
+         */
+
+        /**
+         * 开始批处理更新
+         * @param {Object} editorState - 编辑器状态对象
+         */
+        startBatchUpdate: function (editorState) {
+            editorState._batchUpdate = true;
+            editorState._pendingUpdates = {};
+        },
+
+        /**
+         * 结束批处理更新
+         * @param {Object} editorState - 编辑器状态对象
+         * @param {Function} callback - 批处理完成后的回调函数
+         * @param {number} delay - 批处理延迟时间（毫秒）
+         */
+        endBatchUpdate: function (editorState, callback, delay) {
+            var delay = delay || 0;
+            
+            // 清除之前的批处理定时器
+            if (editorState._batchTimeout) {
+                clearTimeout(editorState._batchTimeout);
+                editorState._batchTimeout = null;
+            }
+            
+            editorState._batchTimeout = setTimeout(function () {
+                MaterialState.applyBatchUpdates(editorState);
+                editorState._batchUpdate = false;
+                editorState._batchTimeout = null;
+                
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            }, delay);
+        },
+
+        /**
+         * 应用批处理更新
+         * @param {Object} editorState - 编辑器状态对象
+         */
+        applyBatchUpdates: function (editorState) {
+            if (!editorState._batchUpdate || Object.keys(editorState._pendingUpdates).length === 0) {
+                return;
+            }
+            
+            // 应用所有待处理的更新
+            for (var key in editorState._pendingUpdates) {
+                if (editorState._pendingUpdates.hasOwnProperty(key)) {
+                    editorState[key] = editorState._pendingUpdates[key];
+                }
+            }
+            
+            // 清空待处理更新
+            editorState._pendingUpdates = {};
+        },
+
+        /**
+         * 更新编辑器状态（支持批处理）
+         * @param {Object} editorState - 编辑器状态对象
+         * @param {Object} updates - 要更新的状态
+         */
+        updateEditorState: function (editorState, updates) {
+            if (editorState._batchUpdate) {
+                // 在批处理模式下，将更新添加到待处理队列
+                Object.assign(editorState._pendingUpdates, updates);
+            } else {
+                // 不在批处理模式下，立即应用更新
+                Object.assign(editorState, updates);
+            }
+        },
+
+        /**
+         * 取消批处理更新
+         * @param {Object} editorState - 编辑器状态对象
+         */
+        cancelBatchUpdate: function (editorState) {
+            if (editorState._batchTimeout) {
+                clearTimeout(editorState._batchTimeout);
+                editorState._batchTimeout = null;
+            }
+            
+            editorState._batchUpdate = false;
+            editorState._pendingUpdates = {};
         }
     };
 

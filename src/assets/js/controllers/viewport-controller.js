@@ -92,6 +92,7 @@
     this.scale = 1;      // 缩放比例
     this.offsetX = 0;    // 水平偏移（像素）
     this.offsetY = 0;    // 垂直偏移（像素）
+    this.viewMode = 'fit-height'; // 视图模式：'fit-height' 适应屏幕高度 | '1:1' 原始尺寸
 
     // 交互状态
     this.isDragging = false;

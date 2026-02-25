@@ -7,6 +7,7 @@
  * 3. 【变换约束】 - 变换约束和限制
  * 4. 【变换事件】 - 变换事件处理
  * 5. 【变换状态】 - 变换状态管理
+ * 6. 【性能优化】 - 事件节流和性能优化
  * 
  * 功能说明：
  * 负责 Konva 元素的变换管理，使用 Konva.Transformer 实现元素的变换操作，包括：
@@ -17,6 +18,7 @@
  * 5. 变换约束（如比例锁定）
  * 6. 变换事件处理
  * 7. 变换状态管理
+ * 8. 性能优化功能
  * 
  * 命名空间：MeeWoo.Core.KonvaTransformer
  */
@@ -60,7 +62,13 @@
                 keepRatio: false,
                 centeredScaling: false,
                 centeredRotation: true,
-                allowEmptySelection: false
+                allowEmptySelection: false,
+                // 性能优化选项
+                performance: {
+                    enableThrottling: true,
+                    throttleDelay: 16, // 约60fps
+                    enableBatchRendering: true
+                }
             };
 
             // 合并配置
@@ -100,7 +108,14 @@
                 isTransforming: false,
                 currentElement: null,
                 startTransformState: null,
-                transformHistory: []
+                transformHistory: [],
+                // 性能优化相关
+                performance: {
+                    lastTransformTime: 0,
+                    isDragging: false,
+                    isScaling: false,
+                    isRotating: false
+                }
             };
 
             // 初始化变换事件
@@ -115,42 +130,74 @@
          */
         initTransformEvents: function (transformerState) {
             var transformer = transformerState.transformer;
+            var config = transformerState.config;
 
-            // 变换开始事件
-            transformer.on('transformstart', this.handleTransformStart.bind(this, transformerState));
+            // 创建事件处理函数
+            var eventHandlers = {
+                transformstart: this.handleTransformStart.bind(this, transformerState),
+                transformend: this.handleTransformEnd.bind(this, transformerState),
+                rotatestart: this.handleRotateStart.bind(this, transformerState),
+                rotateend: this.handleRotateEnd.bind(this, transformerState),
+                scalestart: this.handleScaleStart.bind(this, transformerState),
+                scaleend: this.handleScaleEnd.bind(this, transformerState),
+                dragstart: this.handleDragStart.bind(this, transformerState),
+                dragend: this.handleDragEnd.bind(this, transformerState)
+            };
 
-            // 变换进行中事件
-            transformer.on('transform', this.handleTransform.bind(this, transformerState));
+            // 为高频事件创建节流版本
+            var throttledHandlers = {};
+            if (config.performance.enableThrottling && typeof MeeWoo.Core.KonvaPerformance !== 'undefined') {
+                var throttleDelay = config.performance.throttleDelay || 16;
+                throttledHandlers = {
+                    transform: MeeWoo.Core.KonvaPerformance.throttle(
+                        this.handleTransform.bind(this, transformerState),
+                        throttleDelay
+                    ),
+                    rotate: MeeWoo.Core.KonvaPerformance.throttle(
+                        this.handleRotate.bind(this, transformerState),
+                        throttleDelay
+                    ),
+                    scale: MeeWoo.Core.KonvaPerformance.throttle(
+                        this.handleScale.bind(this, transformerState),
+                        throttleDelay
+                    ),
+                    dragmove: MeeWoo.Core.KonvaPerformance.throttle(
+                        this.handleDragMove.bind(this, transformerState),
+                        throttleDelay
+                    )
+                };
+            } else {
+                // 不使用节流
+                throttledHandlers = {
+                    transform: this.handleTransform.bind(this, transformerState),
+                    rotate: this.handleRotate.bind(this, transformerState),
+                    scale: this.handleScale.bind(this, transformerState),
+                    dragmove: this.handleDragMove.bind(this, transformerState)
+                };
+            }
 
-            // 变换结束事件
-            transformer.on('transformend', this.handleTransformEnd.bind(this, transformerState));
+            // 绑定事件监听器
+            transformer.on('transformstart', eventHandlers.transformstart);
+            transformer.on('transform', throttledHandlers.transform);
+            transformer.on('transformend', eventHandlers.transformend);
 
-            // 旋转开始事件
-            transformer.on('rotatestart', this.handleRotateStart.bind(this, transformerState));
+            transformer.on('rotatestart', eventHandlers.rotatestart);
+            transformer.on('rotate', throttledHandlers.rotate);
+            transformer.on('rotateend', eventHandlers.rotateend);
 
-            // 旋转进行中事件
-            transformer.on('rotate', this.handleRotate.bind(this, transformerState));
+            transformer.on('scalestart', eventHandlers.scalestart);
+            transformer.on('scale', throttledHandlers.scale);
+            transformer.on('scaleend', eventHandlers.scaleend);
 
-            // 旋转结束事件
-            transformer.on('rotateend', this.handleRotateEnd.bind(this, transformerState));
+            transformer.on('dragstart', eventHandlers.dragstart);
+            transformer.on('dragmove', throttledHandlers.dragmove);
+            transformer.on('dragend', eventHandlers.dragend);
 
-            // 缩放开始事件
-            transformer.on('scalestart', this.handleScaleStart.bind(this, transformerState));
-
-            // 缩放进行中事件
-            transformer.on('scale', this.handleScale.bind(this, transformerState));
-
-            // 缩放结束事件
-            transformer.on('scaleend', this.handleScaleEnd.bind(this, transformerState));
-
-            // 拖拽开始事件
-            transformer.on('dragstart', this.handleDragStart.bind(this, transformerState));
-
-            // 拖拽进行中事件
-            transformer.on('dragmove', this.handleDragMove.bind(this, transformerState));
-
-            // 拖拽结束事件
-            transformer.on('dragend', this.handleDragEnd.bind(this, transformerState));
+            // 存储事件处理器引用，便于后续清理
+            transformerState.eventHandlers = {
+                ...eventHandlers,
+                ...throttledHandlers
+            };
         },
 
         /**
@@ -272,6 +319,20 @@
         handleTransform: function (transformerState, e) {
             // 触发变换进行中事件
             this.triggerTransformEvent(transformerState, 'transform', e);
+            
+            // 使用批量渲染（如果启用）
+            if (transformerState.config.performance.enableBatchRendering && transformerState.stageInstance) {
+                var layersToUpdate = [transformerState.stageInstance.layers.editLayer, transformerState.stageInstance.layers.helperLayer];
+                layersToUpdate.forEach(function (layer) {
+                    if (layer) {
+                        if (transformerState.stageInstance.performanceOptimizer && transformerState.stageInstance.performanceOptimizer.batchRenderer) {
+                            transformerState.stageInstance.performanceOptimizer.batchRenderer.addRenderTask(layer);
+                        } else {
+                            layer.draw();
+                        }
+                    }
+                });
+            }
         },
 
         /**
@@ -287,6 +348,11 @@
             
             // 触发变换结束事件
             this.triggerTransformEvent(transformerState, 'transformend', e);
+            
+            // 立即执行所有待处理的渲染任务
+            if (transformerState.stageInstance && transformerState.stageInstance.performanceOptimizer && transformerState.stageInstance.performanceOptimizer.batchRenderer) {
+                transformerState.stageInstance.performanceOptimizer.batchRenderer.flush();
+            }
         },
 
         /**
@@ -295,6 +361,7 @@
          * @param {Konva.Event} e - 事件对象
          */
         handleRotateStart: function (transformerState, e) {
+            transformerState.performance.isRotating = true;
             // 触发旋转开始事件
             this.triggerTransformEvent(transformerState, 'rotatestart', e);
         },
@@ -307,6 +374,20 @@
         handleRotate: function (transformerState, e) {
             // 触发旋转进行中事件
             this.triggerTransformEvent(transformerState, 'rotate', e);
+            
+            // 使用批量渲染（如果启用）
+            if (transformerState.config.performance.enableBatchRendering && transformerState.stageInstance) {
+                var layersToUpdate = [transformerState.stageInstance.layers.editLayer, transformerState.stageInstance.layers.helperLayer];
+                layersToUpdate.forEach(function (layer) {
+                    if (layer) {
+                        if (transformerState.stageInstance.performanceOptimizer && transformerState.stageInstance.performanceOptimizer.batchRenderer) {
+                            transformerState.stageInstance.performanceOptimizer.batchRenderer.addRenderTask(layer);
+                        } else {
+                            layer.draw();
+                        }
+                    }
+                });
+            }
         },
 
         /**
@@ -315,8 +396,14 @@
          * @param {Konva.Event} e - 事件对象
          */
         handleRotateEnd: function (transformerState, e) {
+            transformerState.performance.isRotating = false;
             // 触发旋转结束事件
             this.triggerTransformEvent(transformerState, 'rotateend', e);
+            
+            // 立即执行所有待处理的渲染任务
+            if (transformerState.stageInstance && transformerState.stageInstance.performanceOptimizer && transformerState.stageInstance.performanceOptimizer.batchRenderer) {
+                transformerState.stageInstance.performanceOptimizer.batchRenderer.flush();
+            }
         },
 
         /**
@@ -325,6 +412,7 @@
          * @param {Konva.Event} e - 事件对象
          */
         handleScaleStart: function (transformerState, e) {
+            transformerState.performance.isScaling = true;
             // 触发缩放开始事件
             this.triggerTransformEvent(transformerState, 'scalestart', e);
         },
@@ -337,6 +425,20 @@
         handleScale: function (transformerState, e) {
             // 触发缩放进行中事件
             this.triggerTransformEvent(transformerState, 'scale', e);
+            
+            // 使用批量渲染（如果启用）
+            if (transformerState.config.performance.enableBatchRendering && transformerState.stageInstance) {
+                var layersToUpdate = [transformerState.stageInstance.layers.editLayer, transformerState.stageInstance.layers.helperLayer];
+                layersToUpdate.forEach(function (layer) {
+                    if (layer) {
+                        if (transformerState.stageInstance.performanceOptimizer && transformerState.stageInstance.performanceOptimizer.batchRenderer) {
+                            transformerState.stageInstance.performanceOptimizer.batchRenderer.addRenderTask(layer);
+                        } else {
+                            layer.draw();
+                        }
+                    }
+                });
+            }
         },
 
         /**
@@ -345,8 +447,14 @@
          * @param {Konva.Event} e - 事件对象
          */
         handleScaleEnd: function (transformerState, e) {
+            transformerState.performance.isScaling = false;
             // 触发缩放结束事件
             this.triggerTransformEvent(transformerState, 'scaleend', e);
+            
+            // 立即执行所有待处理的渲染任务
+            if (transformerState.stageInstance && transformerState.stageInstance.performanceOptimizer && transformerState.stageInstance.performanceOptimizer.batchRenderer) {
+                transformerState.stageInstance.performanceOptimizer.batchRenderer.flush();
+            }
         },
 
         /**
@@ -355,6 +463,7 @@
          * @param {Konva.Event} e - 事件对象
          */
         handleDragStart: function (transformerState, e) {
+            transformerState.performance.isDragging = true;
             // 触发拖拽开始事件
             this.triggerTransformEvent(transformerState, 'dragstart', e);
         },
@@ -367,6 +476,20 @@
         handleDragMove: function (transformerState, e) {
             // 触发拖拽进行中事件
             this.triggerTransformEvent(transformerState, 'dragmove', e);
+            
+            // 使用批量渲染（如果启用）
+            if (transformerState.config.performance.enableBatchRendering && transformerState.stageInstance) {
+                var layersToUpdate = [transformerState.stageInstance.layers.editLayer, transformerState.stageInstance.layers.helperLayer];
+                layersToUpdate.forEach(function (layer) {
+                    if (layer) {
+                        if (transformerState.stageInstance.performanceOptimizer && transformerState.stageInstance.performanceOptimizer.batchRenderer) {
+                            transformerState.stageInstance.performanceOptimizer.batchRenderer.addRenderTask(layer);
+                        } else {
+                            layer.draw();
+                        }
+                    }
+                });
+            }
         },
 
         /**
@@ -375,8 +498,14 @@
          * @param {Konva.Event} e - 事件对象
          */
         handleDragEnd: function (transformerState, e) {
+            transformerState.performance.isDragging = false;
             // 触发拖拽结束事件
             this.triggerTransformEvent(transformerState, 'dragend', e);
+            
+            // 立即执行所有待处理的渲染任务
+            if (transformerState.stageInstance && transformerState.stageInstance.performanceOptimizer && transformerState.stageInstance.performanceOptimizer.batchRenderer) {
+                transformerState.stageInstance.performanceOptimizer.batchRenderer.flush();
+            }
         },
 
         /**
@@ -500,26 +629,30 @@
             var transformer = transformerState.transformer;
             
             // 解绑事件监听器
-            transformer.off('transformstart');
-            transformer.off('transform');
-            transformer.off('transformend');
-            transformer.off('rotatestart');
-            transformer.off('rotate');
-            transformer.off('rotateend');
-            transformer.off('scalestart');
-            transformer.off('scale');
-            transformer.off('scaleend');
-            transformer.off('dragstart');
-            transformer.off('dragmove');
-            transformer.off('dragend');
-            
-            // 移除变换控制器
-            transformer.destroy();
+            if (transformer) {
+                transformer.off('transformstart');
+                transformer.off('transform');
+                transformer.off('transformend');
+                transformer.off('rotatestart');
+                transformer.off('rotate');
+                transformer.off('rotateend');
+                transformer.off('scalestart');
+                transformer.off('scale');
+                transformer.off('scaleend');
+                transformer.off('dragstart');
+                transformer.off('dragmove');
+                transformer.off('dragend');
+                
+                // 移除变换控制器
+                transformer.destroy();
+            }
             
             // 清空引用
             transformerState.transformer = null;
             transformerState.currentElement = null;
             transformerState.transformHistory = [];
+            transformerState.eventHandlers = null;
+            transformerState.performance = null;
         }
     };
 

@@ -6,6 +6,7 @@
  * 2. 【属性管理】 - 管理元素属性和样式
  * 3. 【事件处理】 - 元素事件监听和处理
  * 4. 【生命周期】 - 元素的添加、更新、删除
+ * 5. 【性能优化】 - 元素缓存和渲染优化
  * 
  * 功能说明：
  * 负责 Konva 素材元素的创建、管理和维护，提供元素相关的核心功能，包括：
@@ -14,6 +15,7 @@
  * 3. 元素事件监听和处理
  * 4. 元素生命周期管理
  * 5. 元素数据与 Konva 对象的映射
+ * 6. 性能优化功能
  * 
  * 命名空间：MeeWoo.Core.KonvaElement
  */
@@ -56,7 +58,13 @@
             var defaultConfig = {
                 id: this.generateElementId(),
                 draggable: true,
-                name: 'element-' + type
+                name: 'element-' + type,
+                // 性能优化选项
+                performance: {
+                    enableCaching: false,
+                    cacheThreshold: 500, // 当元素复杂度超过此阈值时自动启用缓存
+                    visibleOnly: true // 只渲染可见区域内的元素
+                }
             };
 
             // 合并配置
@@ -94,6 +102,16 @@
             if (element) {
                 element.setAttr('elementType', type);
                 element.setAttr('elementData', elementConfig);
+                element.setAttr('performanceConfig', elementConfig.performance);
+                
+                // 启用缓存（如果配置启用）
+                if (elementConfig.performance.enableCaching && element.cache) {
+                    try {
+                        element.cache();
+                    } catch (e) {
+                        console.warn('Error caching element:', e);
+                    }
+                }
             }
 
             return element;
@@ -262,10 +280,24 @@
          * 更新元素属性
          * @param {Konva.Node} element - Konva 元素实例
          * @param {Object} properties - 要更新的属性
+         * @param {boolean} immediate - 是否立即执行渲染
          */
-        updateElementProperties: function (element, properties) {
+        updateElementProperties: function (element, properties, immediate) {
             if (!element || !(element instanceof Konva.Node)) {
                 return;
+            }
+
+            // 检查是否需要更新缓存
+            var needUpdateCache = false;
+            var performanceConfig = element.getAttr('performanceConfig') || {};
+            
+            // 检查是否修改了影响缓存的属性
+            var cacheAffectingProps = ['width', 'height', 'scaleX', 'scaleY', 'rotation', 'skewX', 'skewY', 'fill', 'stroke', 'strokeWidth', 'opacity'];
+            for (var prop in properties) {
+                if (properties.hasOwnProperty(prop) && cacheAffectingProps.includes(prop)) {
+                    needUpdateCache = true;
+                    break;
+                }
             }
 
             // 更新元素属性
@@ -274,6 +306,28 @@
             // 更新元素数据
             var elementData = element.getAttr('elementData') || {};
             element.setAttr('elementData', Object.assign({}, elementData, properties));
+
+            // 更新缓存（如果需要）
+            if (needUpdateCache && performanceConfig.enableCaching && element.cache && element.clearCache) {
+                try {
+                    element.clearCache();
+                    element.cache();
+                } catch (e) {
+                    console.warn('Error updating element cache:', e);
+                }
+            }
+
+            // 渲染元素（如果需要）
+            var layer = element.getLayer();
+            if (layer) {
+                if (immediate) {
+                    layer.draw();
+                } else if (element.getStage() && element.getStage().performanceOptimizer && element.getStage().performanceOptimizer.batchRenderer) {
+                    element.getStage().performanceOptimizer.batchRenderer.addRenderTask(layer);
+                } else {
+                    layer.draw();
+                }
+            }
         },
 
         /**
@@ -470,6 +524,122 @@
             }
 
             return this.createElement(elementData.type, elementData.properties || {});
+        },
+
+        /**
+         * 优化复杂样式的渲染
+         * @param {Konva.Node} element - Konva 元素实例
+         * @param {boolean} enable - 是否启用优化
+         */
+        optimizeComplexStyles: function (element, enable) {
+            if (!element || !(element instanceof Konva.Node)) {
+                return;
+            }
+
+            if (typeof MeeWoo.Core.KonvaPerformance !== 'undefined') {
+                MeeWoo.Core.KonvaPerformance.optimizeComplexStyles(element, enable);
+            } else {
+                if (enable) {
+                    // 启用缓存
+                    if (element.cache) {
+                        try {
+                            element.cache();
+                        } catch (e) {
+                            console.warn('Error caching element:', e);
+                        }
+                    }
+                } else {
+                    // 禁用缓存
+                    if (element.clearCache) {
+                        try {
+                            element.clearCache();
+                        } catch (e) {
+                            console.warn('Error clearing cache:', e);
+                        }
+                    }
+                }
+            }
+        },
+
+        /**
+         * 检查元素是否在可视区域内
+         * @param {Konva.Node} element - Konva 元素实例
+         * @param {Konva.Stage} stage - Konva 舞台实例
+         * @returns {boolean} 是否在可视区域内
+         */
+        isElementInViewport: function (element, stage) {
+            if (!element || !(element instanceof Konva.Node) || !stage) {
+                return false;
+            }
+
+            if (typeof MeeWoo.Core.KonvaPerformance !== 'undefined') {
+                return MeeWoo.Core.KonvaPerformance.isElementInViewport(element, stage);
+            } else {
+                try {
+                    var box = element.getClientRect();
+                    var stageBox = {
+                        x: 0,
+                        y: 0,
+                        width: stage.width(),
+                        height: stage.height()
+                    };
+
+                    return !(box.x > stageBox.x + stageBox.width ||
+                             box.x + box.width < stageBox.x ||
+                             box.y > stageBox.y + stageBox.height ||
+                             box.y + box.height < stageBox.y);
+                } catch (e) {
+                    console.warn('Error checking element visibility:', e);
+                    return true;
+                }
+            }
+        },
+
+        /**
+         * 批量更新元素属性
+         * @param {Array} elements - Konva 元素实例数组
+         * @param {Object} properties - 要更新的属性
+         * @param {boolean} immediate - 是否立即执行渲染
+         */
+        batchUpdateElements: function (elements, properties, immediate) {
+            if (!Array.isArray(elements) || elements.length === 0) {
+                return;
+            }
+
+            var layersToUpdate = new Set();
+
+            elements.forEach(function (element) {
+                if (element && element instanceof Konva.Node) {
+                    // 更新元素属性
+                    KonvaElement.updateElementProperties(element, properties, false);
+                    
+                    // 收集需要更新的图层
+                    var layer = element.getLayer();
+                    if (layer) {
+                        layersToUpdate.add(layer);
+                    }
+                }
+            });
+
+            // 批量渲染图层
+            if (immediate) {
+                layersToUpdate.forEach(function (layer) {
+                    layer.draw();
+                });
+            } else {
+                // 使用批量渲染器（如果可用）
+                var firstElement = elements[0];
+                if (firstElement && firstElement.getStage() && firstElement.getStage().performanceOptimizer && firstElement.getStage().performanceOptimizer.batchRenderer) {
+                    var batchRenderer = firstElement.getStage().performanceOptimizer.batchRenderer;
+                    layersToUpdate.forEach(function (layer) {
+                        batchRenderer.addRenderTask(layer);
+                    });
+                } else {
+                    layersToUpdate.forEach(function (layer) {
+                        layer.draw();
+                    });
+                }
+            }
         }
     };
 

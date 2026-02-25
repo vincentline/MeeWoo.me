@@ -5,6 +5,7 @@
  * 1. 【核心功能】 - 舞台初始化、图层管理、尺寸调整
  * 2. 【事件处理】 - 舞台事件监听和分发
  * 3. 【状态管理】 - 舞台状态和配置管理
+ * 4. 【性能优化】 - 图层缓存、批量渲染
  * 
  * 功能说明：
  * 负责 Konva 舞台和图层的创建、管理和维护，提供舞台相关的核心功能，包括：
@@ -13,6 +14,7 @@
  * 3. 舞台尺寸调整和响应式处理
  * 4. 舞台事件监听和分发
  * 5. 舞台状态管理
+ * 6. 性能优化功能
  * 
  * 命名空间：MeeWoo.Core.KonvaStage
  */
@@ -44,7 +46,13 @@
             var defaultOptions = {
                 width: window.innerWidth,
                 height: window.innerHeight,
-                backgroundColor: null
+                backgroundColor: null,
+                // 性能优化选项
+                performance: {
+                    enableBatchRendering: true,
+                    enableLayerCaching: true,
+                    batchDelay: 16 // 约60fps
+                }
             };
 
             // 合并配置
@@ -58,7 +66,7 @@
             });
 
             // 创建默认图层
-            var layers = this.createDefaultLayers(stage);
+            var layers = this.createDefaultLayers(stage, config.performance.enableLayerCaching);
 
             // 存储舞台状态
             var stageInstance = {
@@ -68,6 +76,11 @@
                 isInitialized: true
             };
 
+            // 初始化性能优化
+            if (config.performance) {
+                this.initPerformanceOptimization(stageInstance);
+            }
+
             // 初始化舞台事件
             this.initStageEvents(stageInstance);
 
@@ -75,11 +88,24 @@
         },
 
         /**
+         * 初始化性能优化
+         * @param {Object} stageInstance - 舞台实例对象
+         */
+        initPerformanceOptimization: function (stageInstance) {
+            // 确保性能优化模块已加载
+            if (typeof MeeWoo.Core.KonvaPerformance !== 'undefined') {
+                // 初始化性能优化器
+                stageInstance.performanceOptimizer = MeeWoo.Core.KonvaPerformance.initPerformanceOptimizer(stageInstance);
+            }
+        },
+
+        /**
          * 创建默认图层
          * @param {Konva.Stage} stage - 舞台实例
+         * @param {boolean} enableCaching - 是否启用图层缓存
          * @returns {Object} 图层集合
          */
-        createDefaultLayers: function (stage) {
+        createDefaultLayers: function (stage, enableCaching) {
             // 背景层 - 用于显示底图、网格等固定元素
             var backgroundLayer = new Konva.Layer({
                 name: 'backgroundLayer'
@@ -99,6 +125,17 @@
             var uiLayer = new Konva.Layer({
                 name: 'uiLayer'
             });
+
+            // 启用图层缓存（如果配置启用）
+            if (enableCaching) {
+                // 背景层可以缓存，因为它通常不经常变化
+                backgroundLayer.setAttr('cacheEnabled', true);
+                
+                // 编辑层和辅助层不缓存，因为它们经常变化
+                editLayer.setAttr('cacheEnabled', false);
+                helperLayer.setAttr('cacheEnabled', false);
+                uiLayer.setAttr('cacheEnabled', false);
+            }
 
             // 添加到舞台
             stage.add(backgroundLayer, editLayer, helperLayer, uiLayer);
@@ -169,27 +206,76 @@
          * 重绘指定图层
          * @param {Object} stageInstance - 舞台实例对象
          * @param {string|Array} layerNames - 图层名称或名称数组
+         * @param {boolean} immediate - 是否立即执行渲染
          */
-        redrawLayers: function (stageInstance, layerNames) {
+        redrawLayers: function (stageInstance, layerNames, immediate) {
             if (typeof layerNames === 'string') {
                 layerNames = [layerNames];
             }
 
+            var layersToRender = [];
+
             layerNames.forEach(function (layerName) {
                 var layer = stageInstance.layers[layerName];
                 if (layer) {
-                    layer.draw();
+                    layersToRender.push(layer);
                 }
             });
+
+            // 使用批量渲染（如果启用）
+            if (stageInstance.performanceOptimizer && stageInstance.performanceOptimizer.batchRenderer && !immediate) {
+                layersToRender.forEach(function (layer) {
+                    stageInstance.performanceOptimizer.batchRenderer.addRenderTask(layer);
+                });
+            } else {
+                // 立即渲染
+                layersToRender.forEach(function (layer) {
+                    layer.draw();
+                });
+            }
         },
 
         /**
          * 重绘所有图层
          * @param {Object} stageInstance - 舞台实例对象
+         * @param {boolean} immediate - 是否立即执行渲染
          */
-        redrawAll: function (stageInstance) {
+        redrawAll: function (stageInstance, immediate) {
             var stage = stageInstance.stage;
-            stage.draw();
+            
+            // 使用批量渲染（如果启用）
+            if (stageInstance.performanceOptimizer && stageInstance.performanceOptimizer.batchRenderer && !immediate) {
+                // 批量渲染所有图层
+                for (var layerName in stageInstance.layers) {
+                    if (stageInstance.layers.hasOwnProperty(layerName)) {
+                        var layer = stageInstance.layers[layerName];
+                        stageInstance.performanceOptimizer.batchRenderer.addRenderTask(layer);
+                    }
+                }
+            } else {
+                // 立即渲染
+                stage.draw();
+            }
+        },
+
+        /**
+         * 立即执行所有待处理的渲染任务
+         * @param {Object} stageInstance - 舞台实例对象
+         */
+        flushRender: function (stageInstance) {
+            if (stageInstance.performanceOptimizer && stageInstance.performanceOptimizer.batchRenderer) {
+                stageInstance.performanceOptimizer.batchRenderer.flush();
+            }
+        },
+
+        /**
+         * 清除渲染队列
+         * @param {Object} stageInstance - 舞台实例对象
+         */
+        clearRenderQueue: function (stageInstance) {
+            if (stageInstance.performanceOptimizer && stageInstance.performanceOptimizer.batchRenderer) {
+                stageInstance.performanceOptimizer.batchRenderer.clearQueue();
+            }
         },
 
         /**
@@ -202,6 +288,19 @@
                 if (stageInstance.eventListeners.resize) {
                     window.removeEventListener('resize', stageInstance.eventListeners.resize);
                 }
+            }
+
+            // 清理性能优化器
+            if (stageInstance.performanceOptimizer) {
+                // 清除渲染队列
+                if (stageInstance.performanceOptimizer.batchRenderer) {
+                    stageInstance.performanceOptimizer.batchRenderer.clearQueue();
+                }
+                // 清除缓存
+                if (stageInstance.performanceOptimizer.cacheManager) {
+                    stageInstance.performanceOptimizer.cacheManager.clearAllCache();
+                }
+                stageInstance.performanceOptimizer = null;
             }
 
             // 销毁舞台
