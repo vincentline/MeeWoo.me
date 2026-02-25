@@ -18,6 +18,8 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-02-26 01:49:21] 【修改文件】 : copy-static.py - 添加已压缩JS文件排除规则，避免对gif.js和gif.worker.js进行二次压缩
+[2026-02-26 01:49:21] 【修改文件】 : src/assets/js/service/gif/gif-exporter.js - 移除调试代码，关闭debug模式
 [2026-02-25 13:28:00] 【修改文件】 : src/assets/js/core/material-editor.js - 实现显示区域与导出区域分离：Stage尺寸改为容器尺寸，添加蓝色虚线参考线标识导出区域，导出时创建临时Stage
 [2026-02-25 13:28:00] 【修改文件】 : src/assets/js/core/material-editor.js - 实现文案canvas动态尺寸：根据文案实际尺寸自动调整canvas区域，支持对齐方式变化时正确偏移
 [2026-02-25 13:28:00] 【修改文件】 : src/assets/js/core/material-editor.js - 实现底图和文案的选中状态：添加Konva Transformer手柄支持比例缩放，选中后才可移动
