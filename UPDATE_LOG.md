@@ -18,6 +18,10 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-02-26 02:18:49] 【修改文件】 : src/index.html - 帮助按钮改为点击弹出浮层，添加遮罩层和关闭按钮
+[2026-02-26 02:18:49] 【修改文件】 : src/assets/css/styles.css - 帮助浮层改为居中显示，宽度70%，添加标题栏和关闭按钮样式
+[2026-02-26 02:18:49] 【修改文件】 : src/assets/js/core/app.js - 新增 showHelp 状态、toggleHelp/closeHelp 方法
+[2026-02-26 02:15:43] 【修改文件】 : src/help.md - 重构帮助文档大纲：改为快捷操作、格式转换、格式支持情况、特色功能、使用注意五大板块；补充SVGA导出序列帧/WebP、MP4绿幕抠图、多段变速等功能说明
 [2026-02-26 01:49:21] 【修改文件】 : copy-static.py - 添加已压缩JS文件排除规则，避免对gif.js和gif.worker.js进行二次压缩
 [2026-02-26 01:49:21] 【修改文件】 : src/assets/js/service/gif/gif-exporter.js - 移除调试代码，关闭debug模式
 [2026-02-25 13:28:00] 【修改文件】 : src/assets/js/core/material-editor.js - 实现显示区域与导出区域分离：Stage尺寸改为容器尺寸，添加蓝色虚线参考线标识导出区域，导出时创建临时Stage

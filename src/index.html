@@ -251,8 +251,14 @@
 
 
     <!-- Help 按钮（沉浸模式隐藏） -->
-    <div class="help-button" v-show="!isImmersiveMode">
-      <div class="help-popup" v-html="helpContent"></div>
+    <div class="help-button" v-show="!isImmersiveMode" @click="toggleHelp"></div>
+
+    <!-- Help 浮层（点击显示，居中） -->
+    <div class="help-overlay" v-if="showHelp" @click="closeHelp">
+      <div class="help-modal" @click.stop>
+        
+        <div class="help-modal-content" v-html="helpContent"></div>
+      </div>
     </div>
 
     <!-- 主页面 -->
@@ -783,9 +789,10 @@
                           <span v-if="!frames.hasFile" class="tooltip-text">请先拖入序列帧图片</span>
                           {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '转GIF' }}
                         </button>
-                        <button class="btn-large-primary tooltip">
-                          <span class="tooltip-text">功能开发中...</span>
-                          转webp
+                        <button class="btn-large-primary" :class="{'tooltip': !frames.hasFile}" :disabled="!frames.hasFile"
+                          @click="openWebpPanel">
+                          <span v-if="!frames.hasFile" class="tooltip-text">请先拖入序列帧图片</span>
+                          {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
                         </button>
                         <button class="btn-large-secondary" :class="{'tooltip': !frames.hasFile}"
                           :disabled="!frames.hasFile" @click="openFramesToSvgaPanel">

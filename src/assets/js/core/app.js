@@ -187,6 +187,7 @@ function initApp() {
 
         // Help 内容
         helpContent: '',
+        showHelp: false,
 
         // 库加载进度（响应式）
         loadingLibraryInfo: null, // { name, progress }
@@ -3866,6 +3867,14 @@ function initApp() {
         this.$nextTick(function () {
           _this.initPlayerController();
         });
+      },
+
+      toggleHelp: function () {
+        this.showHelp = !this.showHelp;
+      },
+
+      closeHelp: function () {
+        this.showHelp = false;
       },
 
       applyCanvasBackground: function () {
