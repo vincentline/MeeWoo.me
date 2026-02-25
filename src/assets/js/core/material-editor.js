@@ -383,6 +383,7 @@
                     e.cancelBubble = true;
                     _this.editor.activeElement = 'image';
                     _this.baseLayerInstance.draggable(true);
+                    _this.stageInstance.draggable(false);
                     _this.updateTransformer();
                 });
 
@@ -676,6 +677,7 @@
                     e.cancelBubble = true;
                     _this.editor.activeElement = 'text';
                     _this.textLayerInstance.draggable(true);
+                    _this.stageInstance.draggable(false);
                     _this.updateTransformer();
                 });
 
@@ -726,8 +728,38 @@
                         if (_this.textLayerInstance) {
                             _this.textLayerInstance.draggable(false);
                         }
+                        _this.stageInstance.draggable(true);
                         _this.updateTransformer();
+                    } else {
+                        _this.stageInstance.draggable(false);
                     }
+                });
+
+                this.stageInstance.on('wheel', function (e) {
+                    e.evt.preventDefault();
+                    
+                    var oldScale = _this.stageInstance.scaleX();
+                    var pointer = _this.stageInstance.getPointerPosition();
+                    
+                    var mousePointTo = {
+                        x: (pointer.x - _this.stageInstance.x()) / oldScale,
+                        y: (pointer.y - _this.stageInstance.y()) / oldScale
+                    };
+                    
+                    var direction = e.evt.deltaY > 0 ? -1 : 1;
+                    var newScale = direction > 0 ? oldScale * 1.05 : oldScale / 1.05;
+                    newScale = Math.max(0.1, Math.min(5.0, newScale));
+                    
+                    _this.stageInstance.scale({ x: newScale, y: newScale });
+                    
+                    var newPos = {
+                        x: pointer.x - mousePointTo.x * newScale,
+                        y: pointer.y - mousePointTo.y * newScale
+                    };
+                    _this.stageInstance.position(newPos);
+                    _this.stageInstance.batchDraw();
+                    
+                    _this.editor.scale = parseFloat(newScale.toFixed(2));
                 });
             },
 
@@ -933,15 +965,6 @@
             },
 
             onPreviewAreaMouseDown: function (event) {},
-
-            onPreviewAreaWheel: function (event) {
-                event.preventDefault();
-                
-                var delta = event.deltaY > 0 ? -0.02 : 0.02;
-                var newScale = this.editor.scale + delta;
-                newScale = Math.max(0.1, Math.min(5.0, newScale));
-                this.editor.scale = parseFloat(newScale.toFixed(2));
-            },
 
             onImageMouseDown: function (event) {},
 

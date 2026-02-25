@@ -97,7 +97,8 @@
       var availableCores = navigator.hardwareConcurrency || 2;
       var workerCount = Math.max(1, Math.min(Math.floor(availableCores / 2), 4));
       
-      var workerScriptPath = '/assets/js/service/gif/gif.worker.js';
+      // 使用相对路径，确保在不同部署环境中都能正确加载
+      var workerScriptPath = 'assets/js/service/gif/gif.worker.js';
       
       var gifOptions = {
         workers: workerCount,

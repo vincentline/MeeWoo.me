@@ -1067,10 +1067,10 @@
         </div>
         <div class="center-modal-body material-editor-body">
           <!-- 左侧预览区 - Konva 渲染 -->
-          <div class="editor-preview-area" @mousedown="onPreviewAreaMouseDown" @wheel="onPreviewAreaWheel">
+          <div class="editor-preview-area" @mousedown="onPreviewAreaMouseDown">
             <!-- Konva 舞台容器 -->
             <div class="editor-preview-wrapper" ref="editorPreviewContent"
-              :style="{ width: '100%', height: '100%', transform: 'scale(' + editor.scale + ')', transformOrigin: 'center center' }">
+              :style="{ width: '100%', height: '100%' }">
             </div>
 
             <!-- 底部按钮组 -->
