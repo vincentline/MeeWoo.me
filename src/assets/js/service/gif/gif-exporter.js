@@ -97,33 +97,49 @@
       var availableCores = navigator.hardwareConcurrency || 2;
       var workerCount = Math.max(1, Math.min(Math.floor(availableCores / 2), 4));
       
-      // 构建worker脚本的绝对路径，确保在任何环境中都能正确加载
+      // 构建worker脚本的路径
       var workerScriptPath = 'assets/js/service/gif/gif.worker.js';
-      // 确保路径正确
       var baseUrl = window.location.origin;
       var fullWorkerPath = new URL(workerScriptPath, baseUrl).href;
       console.log('[GIF Exporter] Worker script path:', fullWorkerPath);
       
-      var gifOptions = {
-        workers: workerCount,
-        workerScript: fullWorkerPath,
-        quality: Math.min(quality, 20),
-        width: width,
-        height: height,
-        repeat: 0,
-        background: '#ffffff'
+      // 创建GIF实例的函数
+      var createGifInstance = function(useWorker) {
+        var gifOptions = {
+          workers: useWorker ? workerCount : 0, // 0表示使用主线程
+          workerScript: fullWorkerPath,
+          quality: Math.min(quality, 20),
+          width: width,
+          height: height,
+          repeat: 0,
+          background: '#ffffff',
+          debug: true
+        };
+        
+        if (transparent) {
+          gifOptions.transparent = 0x000000; // 使用RGB格式的透明颜色，GIF只支持RGB格式
+        } else {
+          // 不透明模式：使用背景色
+          var bgColor = config.backgroundColor || '#ffffff';
+          if (bgColor === 'transparent') bgColor = '#ffffff';
+          gifOptions.background = bgColor;
+        }
+        
+        return new GIF(gifOptions);
       };
-
-      if (transparent) {
-        gifOptions.transparent = 0x000000; // 使用RGB格式的透明颜色，GIF只支持RGB格式
-      } else {
-        // 不透明模式：使用背景色
-        var bgColor = config.backgroundColor || '#ffffff';
-        if (bgColor === 'transparent') bgColor = '#ffffff';
-        gifOptions.background = bgColor;
+      
+      // 尝试创建GIF实例，优先使用worker，如果失败则回退到主线程
+      var gif;
+      try {
+        // 先尝试使用worker
+        gif = createGifInstance(true);
+        console.log('[GIF Exporter] Created GIF instance with worker');
+      } catch (error) {
+        // 如果worker创建失败，回退到主线程
+        console.warn('[GIF Exporter] Worker creation failed, falling back to main thread:', error.message);
+        gif = createGifInstance(false);
+        console.log('[GIF Exporter] Created GIF instance with main thread');
       }
-
-      var gif = new GIF(gifOptions);
 
       // 编码完成Promise
       var encodingPromise = new Promise(function (resolve, reject) {
