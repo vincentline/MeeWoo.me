@@ -175,23 +175,29 @@
                 var _this = this;
                 var container = this.$refs.editorPreviewContent;
                 if (!container) {
-                    console.error('Konva container not found');
+                    console.error('[Konva] Container not found: $refs.editorPreviewContent is undefined');
                     return;
                 }
 
                 try {
                     if (typeof Konva === 'undefined') {
-                        console.error('Konva library not loaded');
+                        console.error('[Konva] Konva library not loaded');
                         return;
                     }
 
-                    var containerWidth = container.parentElement.clientWidth;
-                    var containerHeight = container.parentElement.clientHeight;
+                    // 获取容器父元素（editor-preview-area）的尺寸
+                    var parentElement = container.parentElement;
+                    if (!parentElement) {
+                        console.error('[Konva] Parent element not found');
+                        return;
+                    }
+
+                    var containerWidth = parentElement.clientWidth;
+                    var containerHeight = parentElement.clientHeight;
 
                     // 检查容器尺寸是否有效，如果为0则延迟重试
                     // 这是因为弹窗CSS过渡动画未完成时，容器尺寸可能为0
                     if (containerWidth === 0 || containerHeight === 0) {
-                        console.log('Container size is 0, retrying in 100ms...');
                         setTimeout(function() {
                             _this.initKonvaStage();
                         }, 100);
@@ -409,8 +415,10 @@
                         _this.baseLayerInstance.add(baseImage);
                         _this.konvaLayers.backgroundLayer.add(_this.baseLayerInstance);
                         _this.stageInstance.draw();
-
                         _this.bindBaseImageEvents();
+                    };
+                    img.onerror = function(err) {
+                        console.error('[Konva] Image load error:', err);
                     };
                     img.crossOrigin = 'Anonymous';
                     img.src = this.editor.baseImage;
@@ -931,8 +939,11 @@
                             }, 100);
                         } else {
                             // 如果尺寸未加载，等待 baseImage 变化
+                            // 使用 immediate: true 确保即使 baseImage 已经被设置也能触发
+                            var initCalled = false;
                             var unwatch = _this.$watch('editor.baseImage', function(newVal) {
-                                if (newVal && _this.editor.baseImageWidth && _this.editor.baseImageHeight) {
+                                if (!initCalled && newVal && _this.editor.baseImageWidth && _this.editor.baseImageHeight) {
+                                    initCalled = true;
                                     unwatch();
                                     _this.$nextTick(function() {
                                         // 额外延迟100ms，确保CSS过渡动画完成
@@ -941,7 +952,7 @@
                                         }, 100);
                                     });
                                 }
-                            });
+                            }, { immediate: true });
                         }
                     });
                 };

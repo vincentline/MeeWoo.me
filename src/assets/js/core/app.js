@@ -4373,9 +4373,8 @@ function initApp() {
         return null;
       },
 
-      openMaterialEditor: function (item) {
-        window.MeeWoo.Core.MaterialOperations.openMaterialEditor(this, item);
-      },
+      // openMaterialEditor 方法已移动到 material-editor.js mixin 中
+      // 删除此处重复定义，以使 mixin 的方法生效（包含 Konva 初始化逻辑）
 
       replaceMaterial: function (index) {
         var _this = this;

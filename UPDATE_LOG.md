@@ -18,6 +18,8 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-02-26 18:35:00] 【修改文件】 : src/assets/js/core/app.js - 删除冠余的 openMaterialEditor 方法定义，该方法覆盖了 material-editor.js mixin 中的同名方法，导致 Konva 初始化逻辑丢失
+[2026-02-26 18:35:00] 【修改文件】 : ai_protocol_hub/tool_guides/EXPERIENCES.md - 添加 Vue Mixin 方法覆盖问题的开发经验
 [2026-02-26 17:30:00] 【修改文件】 : src/assets/js/core/material-editor.js - 修复素材图编辑弹窗Konva渲染问题：1) 添加容器尺寸有效性检查，尺寸为0时自动延迟重试；2) 延迟初始化时机，确保CSS过渡动画完成后才初始化；3) 统一图片渲染逻辑，修复initKonvaBaseImage和updateKonvaBaseImage中的尺寸计算和偏移设置不一致问题
 [2026-02-26 16:05:00] 【修改文件】 : src/assets/js/core/app.js - 修复YYEVA图片key蒙版不生效问题：传递完整视频帧数据用于提取蒙版形状
 [2026-02-26 16:05:00] 【修改文件】 : src/assets/js/service/yyeva/yyeva-renderer.js - 实现真正的YYEVA蒙版提取和应用逻辑：从outputFrame位置提取蒙版并应用到替换图片
