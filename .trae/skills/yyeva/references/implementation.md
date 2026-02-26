@@ -78,15 +78,19 @@ if (typeof pako === 'undefined') {
 4. 在 outputFrame 位置绘制动态元素
 ```
 
-### 文本元素渲染
+### 文本元素渲染（带透明度动画）
+
+文本key同样需要应用蒙版透明度。
 
 ```javascript
-function renderYyevaText(ctx, effectInfo, frameData, userConfig) {
+function renderYyevaText(ctx, effectInfo, frameData, userConfig, maskContext) {
+  var renderFrame = frameData.renderFrame || frameData.outputFrame;
   var outputFrame = frameData.outputFrame;
-  var x = outputFrame[0];
-  var y = outputFrame[1];
-  var w = outputFrame[2];
-  var h = outputFrame[3];
+  
+  var x = renderFrame[0];
+  var y = renderFrame[1];
+  var w = renderFrame[2];
+  var h = renderFrame[3];
   
   // 获取配置（用户配置优先）
   var text = userConfig.text || effectInfo.effectTag || '';
@@ -94,63 +98,135 @@ function renderYyevaText(ctx, effectInfo, frameData, userConfig) {
   var fontColor = userConfig.fontColor || effectInfo.fontColor || '#ffffff';
   var textAlign = userConfig.textAlign || effectInfo.textAlign || 'center';
   
-  // 设置样式
-  ctx.font = fontSize + 'px ' + (effectInfo.fontFamily || 'Arial');
-  ctx.fillStyle = fontColor;
-  ctx.textAlign = textAlign;
-  ctx.textBaseline = 'top';
+  // 创建临时画布绘制文本
+  var tempCanvas = document.createElement('canvas');
+  tempCanvas.width = Math.floor(w);
+  tempCanvas.height = Math.floor(h);
+  var tempCtx = tempCanvas.getContext('2d');
   
   // 绘制文本
-  ctx.fillText(text, x + w / 2, y + h);
+  tempCtx.font = fontSize + 'px ' + (effectInfo.fontFamily || 'Arial, sans-serif');
+  tempCtx.fillStyle = fontColor;
+  tempCtx.textAlign = textAlign;
+  tempCtx.textBaseline = 'middle';
+  tempCtx.fillText(text, w / 2, h / 2);
+  
+  // 应用蒙版透明度
+  if (outputFrame && maskContext && maskContext.ctx) {
+    applyMaskAlpha(tempCtx, Math.floor(w), Math.floor(h), outputFrame, maskContext);
+  }
+  
+  ctx.drawImage(tempCanvas, x, y);
 }
 ```
 
-### 图片元素渲染
+### 图片元素渲染（带蒙版）
+
+图片key的渲染需要从视频帧底部提取蒙版，并应用透明度动画。
 
 ```javascript
-function renderYyevaImage(ctx, effectInfo, frameData, userConfig) {
+function renderYyevaImage(ctx, effectInfo, frameData, userConfig, maskContext) {
+  // renderFrame 是元素在画面上的实际渲染位置
+  var renderFrame = frameData.renderFrame;
+  // outputFrame 是蒙版在视频帧中的位置（底部区域）
   var outputFrame = frameData.outputFrame;
-  var x = outputFrame[0];
-  var y = outputFrame[1];
-  var w = outputFrame[2];
-  var h = outputFrame[3];
+  
+  var x = renderFrame[0];
+  var y = renderFrame[1];
+  var w = renderFrame[2];
+  var h = renderFrame[3];
   
   var imageSource = userConfig.imageSource;
   if (!imageSource) return;
   
-  // 创建/获取缓存的图片对象
   var img = getCachedImage(effectInfo.effectTag, imageSource);
   
   if (img.complete && img.naturalWidth > 0) {
-    drawImageWithScale(ctx, img, x, y, w, h, effectInfo.scaleMode);
+    // 应用蒙版：从视频帧的outputFrame位置提取蒙版形状
+    if (outputFrame && maskContext && maskContext.ctx) {
+      renderImageWithMask(ctx, img, x, y, w, h, outputFrame, maskContext);
+    } else {
+      drawImageCover(ctx, img, x, y, w, h);
+    }
   }
 }
+```
 
-function drawImageWithScale(ctx, img, x, y, w, h, scaleMode) {
-  var imgRatio = img.width / img.height;
-  var targetRatio = w / h;
-  var drawW, drawH, offsetX, offsetY;
+### 蒙版提取与应用
+
+```javascript
+function renderImageWithMask(ctx, img, x, y, w, h, outputFrame, maskContext) {
+  var maskX = Math.floor(outputFrame[0]);
+  var maskY = Math.floor(outputFrame[1]);
+  var maskW = Math.floor(outputFrame[2]);
+  var maskH = Math.floor(outputFrame[3]);
   
-  if (scaleMode === 'scaleFill') {
-    // 填充模式：拉伸填满
-    drawW = w;
-    drawH = h;
-    offsetX = x;
-    offsetY = y;
-  } else {
-    // 适应模式：保持比例居中
-    if (imgRatio > targetRatio) {
-      drawW = w;
-      drawH = w / imgRatio;
-    } else {
-      drawH = h;
-      drawW = h * imgRatio;
-    }
-    offsetX = x + (w - drawW) / 2;
-    offsetY = y + (h - drawH) / 2;
+  // 创建临时画布
+  var tempCanvas = document.createElement('canvas');
+  tempCanvas.width = Math.floor(w);
+  tempCanvas.height = Math.floor(h);
+  var tempCtx = tempCanvas.getContext('2d');
+  
+  // 绘制图片（cover模式）
+  drawImageCover(tempCtx, img, 0, 0, w, h);
+  
+  // 从视频帧的outputFrame位置提取蒙版
+  var srcCtx = maskContext.ctx;
+  var maskImageData = srcCtx.getImageData(maskX, maskY, maskW, maskH);
+  
+  // 缩放蒙版到目标尺寸
+  var scaledMaskCanvas = document.createElement('canvas');
+  scaledMaskCanvas.width = maskW;
+  scaledMaskCanvas.height = maskH;
+  scaledMaskCanvas.getContext('2d').putImageData(maskImageData, 0, 0);
+  
+  var maskCanvas = document.createElement('canvas');
+  maskCanvas.width = w;
+  maskCanvas.height = h;
+  var maskCtx = maskCanvas.getContext('2d');
+  maskCtx.drawImage(scaledMaskCanvas, 0, 0, maskW, maskH, 0, 0, w, h);
+  
+  // 获取像素数据
+  var imageData = tempCtx.getImageData(0, 0, w, h);
+  var finalMaskData = maskCtx.getImageData(0, 0, w, h);
+  var pixels = imageData.data;
+  var maskPixels = finalMaskData.data;
+  
+  // 应用蒙版：R通道灰度值控制透明度
+  for (var i = 0; i < pixels.length; i += 4) {
+    var maskAlpha = maskPixels[i]; // R通道代表透明度
+    pixels[i + 3] = Math.floor((pixels[i + 3] * maskAlpha) / 255);
   }
   
-  ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+  tempCtx.putImageData(imageData, 0, 0);
+  ctx.drawImage(tempCanvas, x, y);
+}
+```
+
+### 图片缩放（cover模式）
+
+图片使用cover模式：保持比例，短边填满，长边居中裁剪。
+
+```javascript
+function drawImageCover(ctx, img, x, y, w, h) {
+  var imgW = img.width;
+  var imgH = img.height;
+  var imgRatio = imgW / imgH;
+  var targetRatio = w / h;
+  
+  var srcX = 0, srcY = 0, srcW = imgW, srcH = imgH;
+  
+  if (imgRatio > targetRatio) {
+    // 图片更宽，裁剪左右
+    srcW = imgH * targetRatio;
+    srcX = (imgW - srcW) / 2;
+  } else {
+    // 图片更高，裁剪上下
+    srcH = imgW / targetRatio;
+    srcY = (imgH - srcH) / 2;
+  }
+  
+  ctx.drawImage(img, srcX, srcY, srcW, srcH, x, y, w, h);
 }
 ```
 

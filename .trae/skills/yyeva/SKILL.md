@@ -99,15 +99,19 @@ src/assets/js/
 │   └── detectYyevaType()        # 检测并解析 YYEVA 数据
 ├── core/app.js                  # 核心渲染逻辑
 │   ├── renderYyevaFrame()       # 双通道渲染入口
-│   ├── _renderYyevaEffects()    # 动态元素渲染调度
-│   ├── _renderYyevaText()       # 文本元素渲染
-│   ├── _renderYyevaImage()      # 图片元素渲染
-│   ├── setYyevaText()           # 设置文本 API
-│   └── setYyevaImage()          # 设置图片 API
+│   ├── setYevaText()            # 设置文本 API
+│   └── setYevaImage()           # 设置图片 API
 ├── controllers/player-controller.js
 │   └── YyevaPlayerAdapter       # 播放器适配器
-└── service/yyeva/yyeva-parser.js
-    └── YyevaParser              # 独立解析服务
+└── service/yyeva/
+    ├── yyeva-parser.js          # 解析服务
+    └── yyeva-renderer.js        # 渲染服务（核心）
+        ├── renderEffects()      # 动态元素渲染调度
+        ├── _renderText()        # 文本渲染（带透明度动画）
+        ├── _renderImage()       # 图片渲染入口
+        ├── _renderImageWithMask() # 蒙版提取与应用
+        ├── _drawImageToCanvas() # cover模式绘制
+        └── _applyMaskAlpha()    # 透明度应用
 ```
 
 ## 数据结构

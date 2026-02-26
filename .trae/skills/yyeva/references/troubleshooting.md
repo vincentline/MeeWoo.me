@@ -70,7 +70,34 @@ console.log('zlib header:', compressed[0].toString(16), compressed[1].toString(1
 
 ## 渲染问题
 
-### 问题 5: currentFrame is not defined
+### 问题 5: 图片key蒙版不生效
+
+**现象：** 替换图片后显示为完整方形，没有蒙版形状
+
+**原因：**
+1. 未传递完整视频帧上下文（maskContext）
+2. 蒙版提取位置错误（outputFrame指向视频帧底部，不是显示位置）
+3. 只截取了显示区域，未包含蒙版存储区域
+
+**解决方案：**
+```javascript
+// 必须传递完整视频帧的上下文，而不是只传显示区域的ImageData
+var maskContext = {
+  ctx: tempCtx,                  // 完整视频帧的上下文
+  videoWidth: video.videoWidth,  // 视频宽度
+  videoHeight: video.videoHeight,// 视频高度（包含蒙版区域）
+  displayWidth: displayWidth,    // 有效显示宽度
+  displayHeight: displayHeight   // 有效显示高度
+};
+this.yyevaRenderer.renderEffects(ctx, this.currentFrame, yyevaData, maskContext);
+```
+
+**关键点：**
+- `outputFrame` 坐标指向视频帧底部的蒙版区域（y > displayHeight）
+- `renderFrame` 才是元素在画面上的实际渲染位置
+- 蒙版的灰度值（R通道）控制透明度
+
+### 问题 6: currentFrame is not defined
 
 **现象：**
 ```

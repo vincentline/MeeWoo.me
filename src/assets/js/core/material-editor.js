@@ -166,6 +166,11 @@
                 this.materialEditStates = window.MeeWoo.Core.MaterialState.getDefaultMaterialEditStates();
             },
 
+            /**
+             * 初始化 Konva 舞台
+             * 注意：需要在容器尺寸确定后调用，否则会导致渲染异常
+             * 如果容器尺寸为0，会自动延迟重试
+             */
             initKonvaStage: function () {
                 var _this = this;
                 var container = this.$refs.editorPreviewContent;
@@ -183,51 +188,70 @@
                     var containerWidth = container.parentElement.clientWidth;
                     var containerHeight = container.parentElement.clientHeight;
 
+                    // 检查容器尺寸是否有效，如果为0则延迟重试
+                    // 这是因为弹窗CSS过渡动画未完成时，容器尺寸可能为0
+                    if (containerWidth === 0 || containerHeight === 0) {
+                        console.log('Container size is 0, retrying in 100ms...');
+                        setTimeout(function() {
+                            _this.initKonvaStage();
+                        }, 100);
+                        return;
+                    }
+
+                    // 如果舞台已存在，先清除内容并更新尺寸
                     if (this.stageInstance) {
                         this.clearKonvaContent();
-                        
+
                         this.stageInstance.width(containerWidth);
                         this.stageInstance.height(containerHeight);
-                        
+
                         this.textCanvas = null;
                         this.textCanvasCtx = null;
-                        
+
                         this.initExportAreaGuide();
                         this.initKonvaTransformer();
-                        
+
                         this.initKonvaBaseImage();
                         this.initKonvaTextLayer();
                         this.stageInstance.draw();
                         return;
                     }
 
+                    // 创建新的 Konva 舞台
                     this.stageInstance = new Konva.Stage({
                         container: container,
                         width: containerWidth,
                         height: containerHeight
                     });
 
+                    // 创建背景图层（用于显示素材图）
                     this.konvaLayers.backgroundLayer = new Konva.Layer({
                         name: 'backgroundLayer'
                     });
                     this.stageInstance.add(this.konvaLayers.backgroundLayer);
 
+                    // 创建文字图层（用于显示文案）
                     this.konvaLayers.textLayer = new Konva.Layer({
                         name: 'textLayer'
                     });
                     this.stageInstance.add(this.konvaLayers.textLayer);
 
+                    // 创建变换器图层（用于显示选中框）
                     this.konvaLayers.transformerLayer = new Konva.Layer({
                         name: 'transformerLayer'
                     });
                     this.stageInstance.add(this.konvaLayers.transformerLayer);
 
+                    // 初始化导出区域引导框
                     this.initExportAreaGuide();
+                    // 初始化变换器
                     this.initKonvaTransformer();
 
+                    // 初始化底图和文字层
                     this.initKonvaBaseImage();
                     this.initKonvaTextLayer();
                     this.stageInstance.draw();
+                    // 初始化舞台事件
                     this.initKonvaStageEvents();
 
                 } catch (error) {
@@ -328,13 +352,19 @@
                 this.stageInstance.draw();
             },
 
+            /**
+             * 初始化 Konva 底图
+             * 创建 Group 并加载图片，图片会根据目标尺寸进行缩放
+             */
             initKonvaBaseImage: function () {
                 if (!this.stageInstance || this.baseLayerInstance) return;
 
                 var _this = this;
+                var targetWidth = this.editor.baseImageWidth;
+                var targetHeight = this.editor.baseImageHeight;
 
-                var exportCenterX = this.editor.exportAreaX + (this.editor.baseImageWidth / 2);
-                var exportCenterY = this.editor.exportAreaY + (this.editor.baseImageHeight / 2);
+                var exportCenterX = this.editor.exportAreaX + (targetWidth / 2);
+                var exportCenterY = this.editor.exportAreaY + (targetHeight / 2);
 
                 this.baseLayerInstance = new Konva.Group({
                     name: 'baseImageGroup',
@@ -349,13 +379,31 @@
                 if (this.editor.baseImage) {
                     var img = new Image();
                     img.onload = function () {
+                        var imgWidth = img.width;
+                        var imgHeight = img.height;
+
+                        // 根据目标尺寸计算显示尺寸（保持宽高比，填充模式）
+                        var displayWidth, displayHeight;
+                        if (targetWidth && targetHeight) {
+                            var scaleX = targetWidth / imgWidth;
+                            var scaleY = targetHeight / imgHeight;
+                            var scale = Math.max(scaleX, scaleY);
+                            displayWidth = imgWidth * scale;
+                            displayHeight = imgHeight * scale;
+                        } else {
+                            displayWidth = imgWidth;
+                            displayHeight = imgHeight;
+                        }
+
                         var baseImage = new Konva.Image({
                             name: 'baseImage',
                             image: img,
-                            width: img.width,
-                            height: img.height,
-                            offsetX: img.width / 2,
-                            offsetY: img.height / 2
+                            width: displayWidth,
+                            height: displayHeight,
+                            offsetX: displayWidth / 2,
+                            offsetY: displayHeight / 2,
+                            x: 0,
+                            y: 0
                         });
 
                         _this.baseLayerInstance.add(baseImage);
@@ -763,22 +811,26 @@
                 });
             },
 
+            /**
+             * 更新 Konva 底图
+             * 当用户上传新图片或切换素材时调用
+             */
             updateKonvaBaseImage: function () {
                 var _this = this;
-                
+
                 if (!this.baseLayerInstance || !this.editor.baseImage) return;
 
                 var targetWidth = this.editor.baseImageWidth;
                 var targetHeight = this.editor.baseImageHeight;
 
                 var baseImage = this.baseLayerInstance.findOne('.baseImage');
-                
+
                 var img = new Image();
                 img.onload = function () {
                     var imgWidth = img.width;
                     var imgHeight = img.height;
 
-                    var displayWidth, displayHeight, offsetX = 0, offsetY = 0;
+                    var displayWidth, displayHeight;
 
                     if (targetWidth && targetHeight) {
                         var scaleX = targetWidth / imgWidth;
@@ -787,9 +839,6 @@
 
                         displayWidth = imgWidth * scale;
                         displayHeight = imgHeight * scale;
-
-                        offsetX = (targetWidth - displayWidth) / 2;
-                        offsetY = (targetHeight - displayHeight) / 2;
                     } else {
                         displayWidth = imgWidth;
                         displayHeight = imgHeight;
@@ -798,23 +847,31 @@
                     }
 
                     if (baseImage) {
+                        // 更新现有图片
                         baseImage.image(img);
                         baseImage.width(displayWidth);
                         baseImage.height(displayHeight);
-                        baseImage.x(offsetX);
-                        baseImage.y(offsetY);
+                        // 设置偏移使图片中心与Group原点对齐（与initKonvaBaseImage保持一致）
+                        baseImage.offsetX(displayWidth / 2);
+                        baseImage.offsetY(displayHeight / 2);
+                        // 重置位置为0，因为Group的位置已经控制了整体位置
+                        baseImage.x(0);
+                        baseImage.y(0);
                     } else {
+                        // 创建新图片，与initKonvaBaseImage中的逻辑一致
                         var newBaseImage = new Konva.Image({
                             name: 'baseImage',
                             image: img,
                             width: displayWidth,
                             height: displayHeight,
-                            x: offsetX,
-                            y: offsetY
+                            offsetX: displayWidth / 2,
+                            offsetY: displayHeight / 2,
+                            x: 0,
+                            y: 0
                         });
                         _this.baseLayerInstance.add(newBaseImage);
                     }
-                    
+
                     _this.stageInstance.draw();
                 };
                 img.crossOrigin = 'Anonymous';
@@ -852,22 +909,36 @@
                 this.stageInstance.draw();
             },
 
+            /**
+             * 打开素材编辑器
+             * @param {Object} item - 素材项
+             */
             openMaterialEditor: function (item) {
                 var _this = this;
                 window.MeeWoo.Core.MaterialOperations.openMaterialEditor(this, item);
-                // 等待图片尺寸加载完成后再初始化 Konva stage
+
+                // 延迟初始化 Konva stage，确保：
+                // 1. Vue 完成 DOM 更新（$nextTick）
+                // 2. CSS 过渡动画完成（弹窗显示动画约300ms）
+                // 3. 图片尺寸已加载
                 var checkAndInit = function() {
                     _this.$nextTick(function() {
                         // 检查图片尺寸是否已加载
                         if (_this.editor.baseImageWidth && _this.editor.baseImageHeight) {
-                            _this.initKonvaStage();
+                            // 额外延迟100ms，确保CSS过渡动画完成，容器尺寸稳定
+                            setTimeout(function() {
+                                _this.initKonvaStage();
+                            }, 100);
                         } else {
                             // 如果尺寸未加载，等待 baseImage 变化
                             var unwatch = _this.$watch('editor.baseImage', function(newVal) {
                                 if (newVal && _this.editor.baseImageWidth && _this.editor.baseImageHeight) {
                                     unwatch();
                                     _this.$nextTick(function() {
-                                        _this.initKonvaStage();
+                                        // 额外延迟100ms，确保CSS过渡动画完成
+                                        setTimeout(function() {
+                                            _this.initKonvaStage();
+                                        }, 100);
                                     });
                                 }
                             });
