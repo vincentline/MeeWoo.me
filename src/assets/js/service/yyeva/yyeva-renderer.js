@@ -96,7 +96,7 @@
 
         // 渲染对应类型的元素
         if (effectInfo.effectType === 'txt') {
-          this._renderText(ctx, effectInfo, item, this.effectConfig[effectInfo.effectTag] || {});
+          this._renderText(ctx, effectInfo, item, this.effectConfig[effectInfo.effectTag] || {}, maskContext);
         } else if (effectInfo.effectType === 'img') {
           var userConfig = this.effectConfig[effectInfo.effectTag] || {};
           if (userConfig.imageSource) {
@@ -127,10 +127,14 @@
      * @param {Object} effectInfo - 效果信息
      * @param {Object} frameData - 帧数据
      * @param {Object} userConfig - 用户配置
+     * @param {Object} maskContext - 蒙版上下文（用于透明度动画）
      */
-    _renderText: function (ctx, effectInfo, frameData, userConfig) {
-      // 使用 renderFrame 而不是 outputFrame，这是实际显示位置
+    _renderText: function (ctx, effectInfo, frameData, userConfig, maskContext) {
+      // 使用 renderFrame 作为实际显示位置
       var renderFrame = frameData.renderFrame || frameData.outputFrame;
+      // 使用 outputFrame 作为蒙版位置（用于提取透明度）
+      var outputFrame = frameData.outputFrame;
+      
       var x = renderFrame[0];
       var y = renderFrame[1];
       var w = renderFrame[2];
@@ -144,28 +148,30 @@
       var fontColor = (userConfig && userConfig.fontColor) || effectInfo.fontColor || '#ffffff';
       var textAlign = (userConfig && userConfig.textAlign) || effectInfo.textAlign || 'center';
 
-      // 保存当前状态
-      ctx.save();
-      
-      // 应用蒙版：使用渲染区域作为蒙版，确保文本在指定区域内显示
-      ctx.beginPath();
-      ctx.rect(x, y, w, h);
-      ctx.clip();
+      // 创建临时画布绘制文本
+      var tempCanvas = document.createElement('canvas');
+      tempCanvas.width = Math.floor(w);
+      tempCanvas.height = Math.floor(h);
+      var tempCtx = tempCanvas.getContext('2d');
 
-      // 设置字体样式
-      ctx.font = fontSize + 'px ' + (effectInfo.fontFamily || 'Arial, sans-serif');
-      ctx.fillStyle = fontColor;
-      ctx.textAlign = textAlign;
-      ctx.textBaseline = 'middle';
+      // 设置字体样式并绘制文本
+      tempCtx.font = fontSize + 'px ' + (effectInfo.fontFamily || 'Arial, sans-serif');
+      tempCtx.fillStyle = fontColor;
+      tempCtx.textAlign = textAlign;
+      tempCtx.textBaseline = 'middle';
+      tempCtx.fillText(text, w / 2, h / 2);
 
-      // 计算文本垂直位置，确保在渲染区域内居中
-      var textY = y + h / 2;
+      // 应用蒙版透明度（如果有）
+      if (outputFrame && maskContext && maskContext.ctx) {
+        this._applyMaskAlpha(tempCtx, Math.floor(w), Math.floor(h), outputFrame, maskContext);
+      }
+
+      // 绘制到目标画布
+      ctx.drawImage(tempCanvas, x, y);
       
-      // 绘制文本
-      ctx.fillText(text, x + w / 2, textY);
-      
-      // 恢复状态
-      ctx.restore();
+      // 清理
+      tempCanvas.width = 0;
+      tempCanvas.height = 0;
     },
 
     /**
@@ -258,7 +264,6 @@
       
       // 从完整视频帧的outputFrame位置提取蒙版形状
       try {
-        // 确保坐标在有效范围内
         var srcCtx = maskContext.ctx;
         var videoWidth = maskContext.videoWidth;
         var videoHeight = maskContext.videoHeight;
@@ -271,20 +276,17 @@
           // 从alpha通道区域提取蒙版数据
           var maskImageData = srcCtx.getImageData(maskX, maskY, maskW, maskH);
           
-          // 创建蒙版画布
-          var maskCanvas = document.createElement('canvas');
-          maskCanvas.width = Math.floor(w);
-          maskCanvas.height = Math.floor(h);
-          var maskCtx = maskCanvas.getContext('2d');
-          
-          // 将蒙版缩放到目标尺寸
+          // 创建蒙版画布并缩放到目标尺寸
           var scaledMaskCanvas = document.createElement('canvas');
           scaledMaskCanvas.width = maskW;
           scaledMaskCanvas.height = maskH;
           var scaledMaskCtx = scaledMaskCanvas.getContext('2d');
           scaledMaskCtx.putImageData(maskImageData, 0, 0);
           
-          // 绘制缩放后的蒙版到目标尺寸
+          var maskCanvas = document.createElement('canvas');
+          maskCanvas.width = Math.floor(w);
+          maskCanvas.height = Math.floor(h);
+          var maskCtx = maskCanvas.getContext('2d');
           maskCtx.drawImage(scaledMaskCanvas, 0, 0, maskW, maskH, 0, 0, w, h);
           
           // 获取缩放后的蒙版数据
@@ -297,9 +299,7 @@
           
           // 应用蒙版：使用蒙版的R通道（灰度值）作为图片的alpha通道
           for (var i = 0; i < pixels.length; i += 4) {
-            // 蒙版的R通道值代表透明度（白色=不透明，黑色=完全透明）
-            var maskAlpha = maskPixels[i]; // R通道
-            // 将蒙版alpha与图片原有alpha相乘
+            var maskAlpha = maskPixels[i]; // R通道代表透明度
             pixels[i + 3] = Math.floor((pixels[i + 3] * maskAlpha) / 255);
           }
           
@@ -308,14 +308,10 @@
           
           // 清理中间画布
           scaledMaskCanvas.width = 0;
-          scaledMaskCanvas.height = 0;
           maskCanvas.width = 0;
-          maskCanvas.height = 0;
-        } else {
-          console.warn('[YYEVA] 蒙版位置超出视频范围:', maskX, maskY, maskW, maskH, '视频尺寸:', videoWidth, videoHeight);
         }
       } catch (e) {
-        console.error('[YYEVA] 提取蒙版失败:', e);
+        // 蒙版提取失败时静默处理
       }
       
       // 将处理后的图片绘制到目标画布
@@ -323,18 +319,17 @@
       
       // 清理临时画布
       tempCanvas.width = 0;
-      tempCanvas.height = 0;
     },
 
     /**
-     * 绘制图片到画布
+     * 绘制图片到画布（cover模式：保持比例，短边填满，长边裁剪居中）
      * @param {CanvasRenderingContext2D} ctx - 画布上下文
      * @param {HTMLImageElement} img - 图片元素
      * @param {number} x - X坐标
      * @param {number} y - Y坐标
      * @param {number} w - 宽度
      * @param {number} h - 高度
-     * @param {string} scaleMode - 缩放模式
+     * @param {string} scaleMode - 缩放模式（未使用，统一使用cover）
      */
     _drawImageToCanvas: function (ctx, img, x, y, w, h, scaleMode) {
       var imgW = img.width;
@@ -344,26 +339,21 @@
 
       var imgRatio = imgW / imgH;
       var targetRatio = targetW / targetH;
-      var drawW, drawH, offsetX, offsetY;
-
-      if (scaleMode === 'scaleFill') {
-        drawW = targetW;
-        drawH = targetH;
-        offsetX = x;
-        offsetY = y;
+      
+      // cover模式：保持比例，短边填满，长边超出裁剪
+      var srcX = 0, srcY = 0, srcW = imgW, srcH = imgH;
+      
+      if (imgRatio > targetRatio) {
+        // 图片更宽，裁剪左右
+        srcW = imgH * targetRatio;
+        srcX = (imgW - srcW) / 2;
       } else {
-        if (imgRatio > targetRatio) {
-          drawW = targetW;
-          drawH = targetW / imgRatio;
-        } else {
-          drawH = targetH;
-          drawW = targetH * imgRatio;
-        }
-        offsetX = x + (targetW - drawW) / 2;
-        offsetY = y + (targetH - drawH) / 2;
+        // 图片更高，裁剪上下
+        srcH = imgW / targetRatio;
+        srcY = (imgH - srcH) / 2;
       }
 
-      ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+      ctx.drawImage(img, srcX, srcY, srcW, srcH, x, y, targetW, targetH);
     },
 
     /**
@@ -408,6 +398,68 @@
         });
       }
       return effects;
+    },
+
+    /**
+     * 从蒙版提取透明度并应用到画布
+     * @param {CanvasRenderingContext2D} ctx - 画布上下文
+     * @param {number} w - 宽度
+     * @param {number} h - 高度
+     * @param {Array} outputFrame - 蒙版位置 [x, y, w, h]
+     * @param {Object} maskContext - 蒙版上下文
+     */
+    _applyMaskAlpha: function (ctx, w, h, outputFrame, maskContext) {
+      var maskX = Math.floor(outputFrame[0]);
+      var maskY = Math.floor(outputFrame[1]);
+      var maskW = Math.floor(outputFrame[2]);
+      var maskH = Math.floor(outputFrame[3]);
+      
+      var srcCtx = maskContext.ctx;
+      var videoWidth = maskContext.videoWidth;
+      var videoHeight = maskContext.videoHeight;
+      
+      // 检查outputFrame是否在视频帧范围内
+      if (maskX < 0 || maskY < 0 || maskX + maskW > videoWidth || maskY + maskH > videoHeight) {
+        return;
+      }
+      
+      try {
+        // 从视频帧提取蒙版数据
+        var maskImageData = srcCtx.getImageData(maskX, maskY, maskW, maskH);
+        
+        // 缩放蒙版到目标尺寸
+        var scaledMaskCanvas = document.createElement('canvas');
+        scaledMaskCanvas.width = maskW;
+        scaledMaskCanvas.height = maskH;
+        var scaledMaskCtx = scaledMaskCanvas.getContext('2d');
+        scaledMaskCtx.putImageData(maskImageData, 0, 0);
+        
+        var maskCanvas = document.createElement('canvas');
+        maskCanvas.width = w;
+        maskCanvas.height = h;
+        var maskCtx = maskCanvas.getContext('2d');
+        maskCtx.drawImage(scaledMaskCanvas, 0, 0, maskW, maskH, 0, 0, w, h);
+        
+        var finalMaskData = maskCtx.getImageData(0, 0, w, h);
+        var maskPixels = finalMaskData.data;
+        
+        // 获取画布内容并应用透明度
+        var imageData = ctx.getImageData(0, 0, w, h);
+        var pixels = imageData.data;
+        
+        for (var i = 0; i < pixels.length; i += 4) {
+          var maskAlpha = maskPixels[i]; // R通道代表透明度
+          pixels[i + 3] = Math.floor((pixels[i + 3] * maskAlpha) / 255);
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+        
+        // 清理
+        scaledMaskCanvas.width = 0;
+        maskCanvas.width = 0;
+      } catch (e) {
+        console.error('[YYEVA] 应用蒙版透明度失败:', e);
+      }
     },
 
     /**
