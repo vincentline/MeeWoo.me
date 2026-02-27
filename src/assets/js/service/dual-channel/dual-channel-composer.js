@@ -104,6 +104,8 @@
     _memoryPool: null,
 
     _memoryClearInterval: null,
+    
+    _memoryClearTimerId: null,
 
     _wasmLoader: null,
 
@@ -399,14 +401,28 @@
      * @private
      */
     _startMemoryClearInterval: function() {
-        if (this._memoryClearInterval) {
-            clearInterval(this._memoryClearInterval);
+        // 如果已有定时器，先取消
+        if (this._memoryClearTimerId) {
+            if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+                window.MeeWoo.Service.TimerService.cancel(this._memoryClearTimerId);
+            } else {
+                clearInterval(this._memoryClearInterval);
+            }
+            this._memoryClearTimerId = null;
         }
 
         if (this.defaults.memoryPool.enabled && this.defaults.memoryPool.clearInterval > 0) {
-            this._memoryClearInterval = setInterval(() => {
-                this._clearMemoryPool();
-            }, this.defaults.memoryPool.clearInterval);
+            // 使用定时器服务管理内存清理
+            if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+                this._memoryClearTimerId = window.MeeWoo.Service.TimerService.createInterval(() => {
+                    this._clearMemoryPool();
+                }, this.defaults.memoryPool.clearInterval, 'dual-channel-memory');
+            } else {
+                // 降级方案：使用原生 setInterval
+                this._memoryClearInterval = setInterval(() => {
+                    this._clearMemoryPool();
+                }, this.defaults.memoryPool.clearInterval);
+            }
         }
     },
 

@@ -1037,7 +1037,7 @@ body.dark-mode .viewer-filename {
   align-items: center;
   gap: 2px;
   pointer-events: auto;
-  margin-bottom: 160px;
+  margin-bottom: 80px;
 }
 
 .empty-state-title {

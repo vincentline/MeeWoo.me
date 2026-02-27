@@ -320,7 +320,16 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(url); }, 100);
+      
+      // 使用定时器服务延迟释放 URL 对象
+      if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+        window.MeeWoo.Service.TimerService.createDelay(function () {
+          URL.revokeObjectURL(url);
+        }, 100, 'gif-export');
+      } else {
+        // 降级方案：使用原生 setTimeout
+        setTimeout(function () { URL.revokeObjectURL(url); }, 100);
+      }
     },
 
     /**

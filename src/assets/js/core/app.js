@@ -499,8 +499,9 @@ function initApp() {
           'MP4：绿幕抠图、多段变速'
         ],
         currentEmptyStateTitleIndex: 0,
-        currentEmptyStateTitle: 'SVGA → 双通道MP4、MP4',
-        emptyStateTitleTimer: null
+        currentEmptyStateTitle: 'SVGA → 双通道 MP4、MP4',
+        emptyStateTitleTimer: null,
+        emptyStateTitleTimerId: null
       };
     },
     methods: {
@@ -1246,10 +1247,19 @@ function initApp() {
        * 切换空状态标题到下一句
        */
       nextEmptyStateTitle: function () {
-        console.log('nextEmptyStateTitle called');
         this.currentEmptyStateTitleIndex = (this.currentEmptyStateTitleIndex + 1) % this.emptyStateTitles.length;
         this.currentEmptyStateTitle = this.emptyStateTitles[this.currentEmptyStateTitleIndex];
-        console.log('New title:', this.currentEmptyStateTitle);
+        // 注意：不要在这里重置定时器，否则会导致定时器永远无法触发
+        // resetEmptyStateTitleTimer() 只在用户交互时调用
+      },
+
+      /**
+       * 处理空状态标题点击事件
+       */
+      handleEmptyStateClick: function () {
+        // 切换标题
+        this.nextEmptyStateTitle();
+        // 重置定时器（用户交互后重新开始计时）
         this.resetEmptyStateTitleTimer();
       },
 
@@ -1258,14 +1268,51 @@ function initApp() {
        */
       resetEmptyStateTitleTimer: function () {
         var _this = this;
+        
+        // 清除现有定时器
+        if (this.emptyStateTitleTimerId) {
+          if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+            window.MeeWoo.Service.TimerService.cancel(this.emptyStateTitleTimerId);
+          }
+          this.emptyStateTitleTimerId = null;
+        }
         if (this.emptyStateTitleTimer) {
           clearInterval(this.emptyStateTitleTimer);
+          this.emptyStateTitleTimer = null;
         }
-        this.emptyStateTitleTimer = setInterval(function() {
-          if (_this.isEmpty()) {
-            _this.nextEmptyStateTitle();
-          }
-        }, 4000);
+        
+        // 使用定时器服务每 4 秒切换一次空状态标题
+        if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+          this.emptyStateTitleTimerId = window.MeeWoo.Service.TimerService.createInterval(function() {
+            // 注意：这里必须使用 this.isEmpty 而不是 _this.isEmpty
+            // 因为 isEmpty 是 Vue 的 computed 属性，不是 methods
+            if (_this.$options.computed && typeof _this.$options.computed.isEmpty === 'function') {
+              // 通过计算属性访问
+              if (_this.isEmpty) {
+                _this.nextEmptyStateTitle();
+              }
+            } else if (_this.isEmpty) {
+              // 直接访问（兼容普通方法和计算属性）
+              if (typeof _this.isEmpty === 'function') {
+                if (_this.isEmpty()) {
+                  _this.nextEmptyStateTitle();
+                }
+              } else {
+                // 如果是布尔值
+                if (_this.isEmpty) {
+                  _this.nextEmptyStateTitle();
+                }
+              }
+            }
+          }, 4000, 'app-empty-state');
+        } else {
+          // 降级方案：使用原生 setInterval
+          this.emptyStateTitleTimer = setInterval(function() {
+            if (_this.isEmpty) {
+              _this.nextEmptyStateTitle();
+            }
+          }, 4000);
+        }
       },
 
       /* ==================== SVGA加载与播放 ==================== */
@@ -10945,7 +10992,6 @@ function initApp() {
       this.initViewportController();
 
       // 启动空状态标题自动切换
-      console.log('About to start empty state title timer');
       this.resetEmptyStateTitleTimer();
 
       // 默认随浏览器主题
@@ -11092,6 +11138,12 @@ function initApp() {
       }
 
       // 清理空状态标题定时器
+      if (this.emptyStateTitleTimerId) {
+        if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+          window.MeeWoo.Service.TimerService.cancel(this.emptyStateTitleTimerId);
+        }
+        this.emptyStateTitleTimerId = null;
+      }
       if (this.emptyStateTitleTimer) {
         clearInterval(this.emptyStateTitleTimer);
         this.emptyStateTitleTimer = null;

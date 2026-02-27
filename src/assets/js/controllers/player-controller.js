@@ -93,13 +93,24 @@
   if (typeof Howl !== 'undefined') {
     GlobalAudioManager.init();
   } else {
-    // 2. 如果未定义，轮询检测（保留作为兜底）
-    var checkHowl = setInterval(function () {
-      if (typeof Howl !== 'undefined') {
-        GlobalAudioManager.init();
-        clearInterval(checkHowl);
-      }
-    }, 100); // 缩短检测间隔
+    // 2. 如果未定义，使用定时器服务轮询检测（保留作为兜底）
+    if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+      window.MeeWoo.Service.TimerService.createPoll(
+        function () { return typeof Howl !== 'undefined'; },  // 条件：Howl 已加载
+        function () { /* 轮询中 */ },                          // 每次轮询的回调（空）
+        100,                                                   // 间隔 100ms
+        5000,                                                  // 超时 5 秒
+        'audio-init'                                           // 分组
+      );
+    } else {
+      // 降级方案：使用原生 setInterval
+      var checkHowl = setInterval(function () {
+        if (typeof Howl !== 'undefined') {
+          GlobalAudioManager.init();
+          clearInterval(checkHowl);
+        }
+      }, 100); // 缩短检测间隔
+    }
   }
 
   // ==================== Lottie 播放器适配器 ====================

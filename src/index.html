@@ -298,7 +298,7 @@
           <div class="empty-state-slogan">动画格式预览与转换工具</div>
           <div class="empty-state-text">
             <div class="empty-state-subtitle">你可以</div>
-            <div class="empty-state-title" @click="nextEmptyStateTitle">{{ currentEmptyStateTitle }}</div>
+            <div class="empty-state-title" @click="handleEmptyStateClick">{{ currentEmptyStateTitle }}</div>
             <div class="empty-state-slogan">支持预览：SVGA、双通道MP4、普通MP4、Lottie格式、序列帧</div>
           </div>
         </div>
@@ -1792,6 +1792,9 @@
 
   <!-- 任务管理器模块 -->
   <script src="assets/js/service/task-manager.js"></script>
+
+  <!-- 定时器服务 -->
+  <script src="assets/js/service/timer-service.js"></script>
 
   <!-- YYEVA 相关服务 -->
   <script src="assets/js/service/yyeva/yyeva-parser.js"></script>

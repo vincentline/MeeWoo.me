@@ -242,14 +242,26 @@
     }
   };
 
-  // 确保Vue加载完成后注册组件（适配Vue2）
+  // 确保 Vue 加载完成后注册组件（适配 Vue2）
   function registerComponent() {
     if (window.Vue) {
-      // 注册组件，让Vue识别<yyeva-key-panel>标签
+      // 注册组件，让 Vue 识别<yyeva-key-panel>标签
       Vue.component('yyeva-key-panel', window.MeeWoo.Components.YyevaKeyPanel);
     } else {
-      // 如果Vue还没加载，延迟重试
-      setTimeout(registerComponent, 600);
+      // 如果 Vue 还没加载，使用定时器服务轮询检测
+      if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+        // 使用轮询方式，每 600ms 检查一次，最多等待 30 秒
+        window.MeeWoo.Service.TimerService.createPoll(
+          function () { return window.Vue !== undefined; },  // 条件：Vue 已加载
+          function () { /* 轮询中，不需要回调 */ },          // 每次轮询的回调（空）
+          600,                                                // 间隔
+          30000,                                              // 超时 30 秒
+          'component-register'                                // 分组
+        );
+      } else {
+        // 降级方案：使用原生 setTimeout 递归
+        setTimeout(registerComponent, 600);
+      }
     }
   }
 

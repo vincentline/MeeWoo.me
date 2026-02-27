@@ -145,10 +145,18 @@
               // 绘制缩放后的帧
               ctx.clearRect(0, 0, scaledWidth, scaledHeight);
               ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
-
-              // 清理blob URL (延迟清理以防止浏览器异步绘制时资源丢失)
+              
+              // 清理 blob URL (延迟清理以防止浏览器异步绘制时资源丢失)
+              // 使用定时器服务管理 URL 清理
               (function (src) {
-                setTimeout(function () { URL.revokeObjectURL(src); }, 100);
+                if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+                  window.MeeWoo.Service.TimerService.createDelay(function () {
+                    URL.revokeObjectURL(src);
+                  }, 100, 'svga-frame-extract');
+                } else {
+                  // 降级方案：使用原生 setTimeout
+                  setTimeout(function () { URL.revokeObjectURL(src); }, 100);
+                }
               })(img.src);
 
               // 转为PNG Uint8Array并使用图片压缩服务压缩

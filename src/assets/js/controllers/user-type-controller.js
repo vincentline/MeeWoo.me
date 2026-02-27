@@ -278,25 +278,49 @@
          */
         startLoginStatusPolling() {
             // 清除现有轮询
-            if (this.pollingInterval) {
-                clearInterval(this.pollingInterval);
-            }
-            
-            // 每500ms检查一次登录状态
-            this.pollingInterval = setInterval(() => {
-                const currentLoginStatus = window.authUtils && window.authUtils.isLoggedIn();
-                if (currentLoginStatus !== this.lastLoginStatus) {
-                    this.lastLoginStatus = currentLoginStatus;
-                    this.refresh();
-                    this.notifyObservers();
+            if (this.pollingTimerId) {
+                if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+                    window.MeeWoo.Service.TimerService.cancel(this.pollingTimerId);
+                } else {
+                    clearInterval(this.pollingInterval);
                 }
-            }, 500);
+                this.pollingTimerId = null;
+            }
+                    
+            // 使用定时器服务每 500ms 检查一次登录状态
+            if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+                const self = this;
+                this.pollingTimerId = window.MeeWoo.Service.TimerService.createInterval(() => {
+                    const currentLoginStatus = window.authUtils && window.authUtils.isLoggedIn();
+                    if (currentLoginStatus !== self.lastLoginStatus) {
+                        self.lastLoginStatus = currentLoginStatus;
+                        self.refresh();
+                        self.notifyObservers();
+                    }
+                }, 500, 'user-type-polling');
+            } else {
+                // 降级方案：使用原生 setInterval
+                this.pollingInterval = setInterval(() => {
+                    const currentLoginStatus = window.authUtils && window.authUtils.isLoggedIn();
+                    if (currentLoginStatus !== this.lastLoginStatus) {
+                        this.lastLoginStatus = currentLoginStatus;
+                        this.refresh();
+                        this.notifyObservers();
+                    }
+                }, 500);
+            }
         }
-
+        
         /**
          * 停止登录状态轮询检测
          */
         stopLoginStatusPolling() {
+            if (this.pollingTimerId) {
+                if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+                    window.MeeWoo.Service.TimerService.cancel(this.pollingTimerId);
+                }
+                this.pollingTimerId = null;
+            }
             if (this.pollingInterval) {
                 clearInterval(this.pollingInterval);
                 this.pollingInterval = null;
