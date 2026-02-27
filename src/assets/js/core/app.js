@@ -3137,25 +3137,42 @@ function initApp() {
       },
       
       // [NEW] 初始化 YYEVA 渲染 Worker
-      _initYyevaRenderWorker: function() {
+      _initYyevaRenderWorker: async function() {
         try {
-          // 创建 Worker（使用相对路径，避免 import.meta 语法）
-          this.yyevaRenderWorker = new Worker('assets/js/service/yyeva/yyeva-render-worker.js');
+          // 使用 fetch + Blob URL 方式加载 Worker（与 dual-channel-composer 保持一致，避免 CORS 问题）
+          var workerPath = '/assets/js/service/yyeva/yyeva-render-worker.js';
+          var response = await fetch(workerPath);
+          if (!response.ok) {
+            throw new Error('Worker文件加载失败: ' + response.status);
+          }
+          var workerCode = await response.text();
+          
+          // 创建 Blob URL
+          var blob = new Blob([workerCode], { type: 'application/javascript' });
+          var blobUrl = URL.createObjectURL(blob);
+          
+          // 创建 Worker
+          this.yyevaRenderWorker = new Worker(blobUrl);
           
           // Worker 消息监听
-          this.yyevaRenderWorker.onmessage = (e) => {
-            const { type, taskId, result, time, error } = e.data;
+          var _this = this;
+          this.yyevaRenderWorker.onmessage = function(e) {
+            var type = e.data.type;
+            var taskId = e.data.taskId;
+            var result = e.data.result;
+            var time = e.data.time;
+            var error = e.data.error;
             
             switch (type) {
               case 'frameProcessed':
-                this._handleWorkerFrameResult(taskId, result, time);
+                _this._handleWorkerFrameResult(taskId, result, time);
                 break;
               case 'initialized':
                 // Worker 初始化完成
                 break;
               case 'error':
                 console.error('[YYEVA Worker] 错误:', error);
-                this._fallbackToMainThreadRender();
+                _this._fallbackToMainThreadRender();
                 break;
               case 'cleanedUp':
                 // 资源清理完成
@@ -3163,9 +3180,9 @@ function initApp() {
             }
           };
           
-          this.yyevaRenderWorker.onerror = (error) => {
+          this.yyevaRenderWorker.onerror = function(error) {
             console.error('[YYEVA Worker] 加载失败:', error);
-            this._fallbackToMainThreadRender();
+            _this._fallbackToMainThreadRender();
           };
           
           // 初始化 Worker
