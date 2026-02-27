@@ -138,9 +138,21 @@ if (typeof window === 'undefined') {
               window.location.reload();
               return;
             }
-
-            // 继续检查，直到Service Worker激活或超时
-            setTimeout(checkSWStatus, 500);
+          
+            // 继续检查，直到 Service Worker 激活或超时
+            // 使用定时器服务进行轮询检测
+            if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+              window.MeeWoo.Service.TimerService.createPoll(
+                function () { return registration.active !== null; },  // 条件：Service Worker 已激活
+                function () { /* 轮询中 */ },                           // 每次轮询的回调（空）
+                500,                                                    // 间隔 500ms
+                10000,                                                  // 超时 10 秒
+                'service-worker'                                        // 分组
+              );
+            } else {
+              // 降级方案：使用原生 setTimeout
+              setTimeout(checkSWStatus, 500);
+            }
           };
 
           // 立即检查状态
