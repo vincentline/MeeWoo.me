@@ -8,7 +8,7 @@
  * - 标题区：key素材替换
  * - 信息区：显示图片key和文本key数量
  * - 说明区：使用说明
- * - 搜索区：key名称搜索
+
  * - 图片key区：显示图片key列表，支持替换和恢复
  * - 文本key区：显示文本key列表，支持输入和恢复
  * - 底部按钮：取消和确定
@@ -38,10 +38,10 @@
           </div>
         </div>
 
-        <!-- 搜索区 -->
+        <!-- 搜索区
         <div class="yyeva-key-search">
           <input type="text" class="material-search-input" placeholder="搜索key名称..." v-model="searchQuery" />
-        </div>
+        </div> -->
 
         <!-- 图片key区 -->
         <div class="yyeva-key-section" v-if="filteredImageKeys.length > 0">

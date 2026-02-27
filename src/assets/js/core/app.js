@@ -3131,12 +3131,86 @@ function initApp() {
           halfWidth: 0,
           height: 0
         };
+        
+        // [NEW] 初始化 YYEVA 渲染 Worker
+        this._initYyevaRenderWorker();
+      },
+      
+      // [NEW] 初始化 YYEVA 渲染 Worker
+      _initYyevaRenderWorker: function() {
+        try {
+          // 创建 Worker（使用相对路径，避免 import.meta 语法）
+          this.yyevaRenderWorker = new Worker('assets/js/service/yyeva/yyeva-render-worker.js');
+          
+          // Worker 消息监听
+          this.yyevaRenderWorker.onmessage = (e) => {
+            const { type, taskId, result, time, error } = e.data;
+            
+            switch (type) {
+              case 'frameProcessed':
+                this._handleWorkerFrameResult(taskId, result, time);
+                break;
+              case 'initialized':
+                // Worker 初始化完成
+                break;
+              case 'error':
+                console.error('[YYEVA Worker] 错误:', error);
+                this._fallbackToMainThreadRender();
+                break;
+              case 'cleanedUp':
+                // 资源清理完成
+                break;
+            }
+          };
+          
+          this.yyevaRenderWorker.onerror = (error) => {
+            console.error('[YYEVA Worker] 加载失败:', error);
+            this._fallbackToMainThreadRender();
+          };
+          
+          // 初始化 Worker
+          this.yyevaRenderWorker.postMessage({
+            type: 'init',
+            taskId: 'init-' + Date.now()
+          });
+          
+          // 任务队列管理
+          this._yyevaWorkerTaskQueue = [];
+          this._yyevaWorkerProcessing = false;
+          
+          // 启用 Worker 渲染模式
+          this._useWorkerRender = true;
+          
+        } catch (error) {
+          console.error('[YYEVA Worker] 创建失败:', error);
+          this._fallbackToMainThreadRender();
+        }
+      },
+      
+      // [NEW] 回退到主线程渲染
+      _fallbackToMainThreadRender: function() {
+        this._useWorkerRender = false;
+        
+        // 清理 Worker
+        if (this.yyevaRenderWorker) {
+          try {
+            this.yyevaRenderWorker.terminate();
+          } catch (e) {
+            // 忽略终止错误
+          }
+          this.yyevaRenderWorker = null;
+        }
       },
 
       // 双通道MP4 渲染循环
       startYyevaRenderLoop: function () {
         var _this = this;
         var lastUIUpdate = 0; // [Optimize] UI更新节流
+        var lastFrameTime = 0; // [NEW] 上次渲染时间戳
+        var videoFps = _this.yyevaVideo.fps || 30; // 视频帧率
+        
+        // [NEW] 智能渲染间隔：≤30fps时等于视频帧率，>30fps时使用60fps
+        var renderInterval = videoFps <= 30 ? (1000 / videoFps) : (1000 / 60);
 
         function render(timestamp) {
           if (!_this.yyevaVideo || !_this.yyevaCanvas || !_this.yyevaCtx) {
@@ -3144,7 +3218,11 @@ function initApp() {
           }
           if (!timestamp) timestamp = performance.now();
 
-          _this.renderYyevaFrame();
+          // [NEW] 智能渲染：只在需要时才渲染帧
+          if (timestamp - lastFrameTime >= renderInterval) {
+            _this.renderYyevaFrame();
+            lastFrameTime = timestamp;
+          }
 
           // [Optimize] 节流更新 UI (30ms)
           if (timestamp - lastUIUpdate > 30) {
@@ -3179,9 +3257,98 @@ function initApp() {
         // 确定彩色和Alpha的位置
         // 默认认为Alpha在右侧（左彩右黑），除非明确标记为'left'
         var isAlphaRight = this.yyeva.alphaPosition !== 'left';
-        var colorX = isAlphaRight ? 0 : halfWidth;
-        var alphaX = isAlphaRight ? halfWidth : 0;
 
+        // [NEW] 使用 Worker 渲染（如果可用）
+        if (this._useWorkerRender && this.yyevaRenderWorker) {
+          this._renderFrameWithWorker(video, canvas, ctx, displayWidth, displayHeight, isAlphaRight);
+          return;
+        }
+
+        // [Fallback] 主线程渲染（Worker不可用时的回退方案）
+        this._renderFrameInMainThread(video, canvas, ctx, displayWidth, displayHeight, isAlphaRight, halfWidth, height);
+      },
+      
+      // [NEW] 使用 Worker 渲染帧
+      _renderFrameWithWorker: function(video, canvas, ctx, displayWidth, displayHeight, isAlphaRight) {
+        // 复用临时Canvas（性能优化：避免每帧创建新Canvas，减少GC和内存分配）
+        var tempCanvas = this.yyevaTempCanvas;
+        var tempCtx = this.yyevaTempCtx;
+
+        // 仅在尺寸变化时调整Canvas大小
+        if (tempCanvas.width !== video.videoWidth || tempCanvas.height !== video.videoHeight) {
+          tempCanvas.width = video.videoWidth;
+          tempCanvas.height = video.videoHeight;
+        }
+
+        // 清空临时画布，防止残留
+        tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.drawImage(video, 0, 0);
+
+        // 获取帧数据
+        var frameData = tempCtx.getImageData(0, 0, video.videoWidth, video.videoHeight);
+        
+        // 创建任务ID
+        var taskId = 'frame-' + Date.now() + '-' + Math.random();
+        
+        // 发送到 Worker 处理
+        this.yyevaRenderWorker.postMessage({
+          type: 'processFrame',
+          taskId: taskId,
+          data: {
+            frameData: frameData.data,  // Uint8ClampedArray
+            displayWidth: displayWidth,
+            displayHeight: displayHeight,
+            isAlphaRight: isAlphaRight,
+            videoWidth: video.videoWidth
+          }
+        }, [frameData.data.buffer]); // Transferable Object 零拷贝
+        
+        // 存储任务信息用于回调
+        this._yyevaWorkerTaskQueue.push({
+          taskId: taskId,
+          canvas: canvas,
+          ctx: ctx,
+          timestamp: performance.now()
+        });
+      },
+      
+      // [NEW] 处理 Worker 返回的帧结果
+      _handleWorkerFrameResult: function(taskId, resultData, processTime) {
+        // 查找对应的任务
+        var taskIndex = this._yyevaWorkerTaskQueue.findIndex(t => t.taskId === taskId);
+        if (taskIndex === -1) return; // 任务已过期
+        
+        var task = this._yyevaWorkerTaskQueue[taskIndex];
+        
+        // 创建 ImageData
+        var imageData = new ImageData(resultData, task.canvas.width, task.canvas.height);
+        
+        // 清除画布
+        task.ctx.clearRect(0, 0, task.canvas.width, task.canvas.height);
+        
+        // 绘制处理后的图像
+        task.ctx.putImageData(imageData, 0, 0);
+        
+        // 渲染 YYEVA 动态元素（如果有)
+        if (this.yyeva.isYyeva && this.yyeva.yyevaData && this.yyevaRenderer) {
+          var maskContext = {
+            ctx: this.yyevaTempCtx,
+            videoWidth: this.yyevaVideo.videoWidth,
+            videoHeight: this.yyevaVideo.videoHeight,
+            displayWidth: this.yyeva.displayWidth,
+            displayHeight: this.yyeva.displayHeight,
+            alphaX: this.yyeva.alphaPosition !== 'left' ? Math.floor(this.yyevaVideo.videoWidth / 2) : 0,
+            descript: this.yyeva.yyevaData.descript
+          };
+          this.yyevaRenderer.renderEffects(task.ctx, this.currentFrame, this.yyeva.yyevaData, maskContext);
+        }
+        
+        // 从队列中移除已完成的任务
+        this._yyevaWorkerTaskQueue.splice(taskIndex, 1);
+      },
+      
+      // [NEW] 主线程渲染（回退方案）
+      _renderFrameInMainThread: function(video, canvas, ctx, displayWidth, displayHeight, isAlphaRight, halfWidth, height) {
         // 复用临时Canvas（性能优化：避免每帧创建新Canvas，减少GC和内存分配）
         var tempCanvas = this.yyevaTempCanvas;
         var tempCtx = this.yyevaTempCtx;
@@ -3207,6 +3374,9 @@ function initApp() {
         }
 
         // 复用像素数据对象，避免每帧创建新的ImageData
+        var colorX = isAlphaRight ? 0 : halfWidth;
+        var alphaX = isAlphaRight ? halfWidth : 0;
+        
         if (!this.yyevaPixelPool.colorData || 
             this.yyevaPixelPool.width !== displayWidth || 
             this.yyevaPixelPool.height !== displayHeight) {
@@ -3238,14 +3408,34 @@ function initApp() {
         var alphaData = this.yyevaPixelPool.alphaData;
 
         // 合成最终图像
+        // [Optimize] 使用查找表优化反预乘计算，避免重复除法运算
+        var inverseAlphaTable = this._yyevaInverseAlphaTable;
+        if (!inverseAlphaTable) {
+          // 预计算所有可能 alpha 值的倒数查找表
+          inverseAlphaTable = new Float32Array(256);
+          for (var j = 1; j <= 255; j++) {
+            inverseAlphaTable[j] = 255 / j;
+          }
+          this._yyevaInverseAlphaTable = inverseAlphaTable;
+        }
+        
         for (var i = 0; i < colorData.data.length; i += 4) {
           var alpha = alphaData.data[i]; // 使用R通道作为Alpha值
 
-          // 反预乘：将预乘的RGB值还原
+          // [Optimize] 反预乘：使用查找表避免除法运算
           if (alpha > 0) {
-            colorData.data[i] = Math.min(255, (colorData.data[i] * 255) / alpha);
-            colorData.data[i + 1] = Math.min(255, (colorData.data[i + 1] * 255) / alpha);
-            colorData.data[i + 2] = Math.min(255, (colorData.data[i + 2] * 255) / alpha);
+            if (alpha < 255) {
+              var invAlpha = inverseAlphaTable[alpha];
+              colorData.data[i] = Math.min(255, Math.round(colorData.data[i] * invAlpha));
+              colorData.data[i + 1] = Math.min(255, Math.round(colorData.data[i + 1] * invAlpha));
+              colorData.data[i + 2] = Math.min(255, Math.round(colorData.data[i + 2] * invAlpha));
+            }
+            // alpha == 255 时无需处理，直接保留原值
+          } else {
+            // alpha == 0 时设为黑色
+            colorData.data[i] = 0;
+            colorData.data[i + 1] = 0;
+            colorData.data[i + 2] = 0;
           }
 
           colorData.data[i + 3] = alpha;
@@ -3272,8 +3462,6 @@ function initApp() {
           this.yyevaRenderer.renderEffects(ctx, this.currentFrame, this.yyeva.yyevaData, maskContext);
         }
       },
-
-
 
       // YYEVA 渲染器方法委托
       setYevaText: function (effectTag, config) {
@@ -3522,6 +3710,39 @@ function initApp() {
 
         // 清理像素数据对象池
         this.yyevaPixelPool = null;
+        
+        // [Optimize] 清理反预乘查找表缓存
+        this._yyevaInverseAlphaTable = null;
+        
+        // [NEW] 清理 YYEVA 渲染 Worker
+        if (this.yyevaRenderWorker) {
+          try {
+            // 发送清理消息
+            this.yyevaRenderWorker.postMessage({
+              type: 'cleanup',
+              taskId: 'cleanup-' + Date.now()
+            });
+            
+            // 延迟终止，确保消息发送完成
+            setTimeout(() => {
+              if (this.yyevaRenderWorker) {
+                this.yyevaRenderWorker.terminate();
+                this.yyevaRenderWorker = null;
+              }
+            }, 100);
+          } catch (e) {
+            console.error('清理 Worker 失败:', e);
+            if (this.yyevaRenderWorker) {
+              this.yyevaRenderWorker.terminate();
+              this.yyevaRenderWorker = null;
+            }
+          }
+        }
+        
+        // 清理 Worker 相关状态
+        this._yyevaWorkerTaskQueue = [];
+        this._yyevaWorkerProcessing = false;
+        this._useWorkerRender = false;
 
         // 清理进度计算缓存变量
         this.cachedDuration = null;

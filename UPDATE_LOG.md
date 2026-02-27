@@ -18,6 +18,8 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-02-28 04:15:00] 【新增文件】 : src/assets/js/service/yyeva/yyeva-render-worker.js - 新增 YYEVA 渲染 Web Worker，实现双通道 MP4 像素合成的后台线程处理，使用查找表优化和 Transferable Objects 零拷贝传输
+[2026-02-28 04:15:00] 【修改文件】 : src/assets/js/core/app.js - 双通道 MP4 渲染性能优化：集成 Web Worker 后台渲染模式，添加智能动态渲染频率（≤30fps使用视频帧率，>30fps使用60fps），实现主线程回退机制
 [2026-02-28 02:57:21] 【修改文件】 : src/assets/js/core/material-interactions.js - 修复 SVGA 模式编辑素材图弹窗的视图模式切换按钮问题：使用 getClientRect() 实现正确的居中逻辑，1:1 和适应画布按钮都能正确居中显示
 [2026-02-28 02:57:21] 【修改文件】 : src/assets/js/core/material-editor.js - 修复素材图编辑弹窗第一次拖动画布无响应的问题：添加 mouseenter 事件监听器实现无感激活舞台拖拽，初始化时启用 draggable 并使用 batchDraw() 确保图层交互状态
 [2026-02-28 01:30:03] 【修改文件】 : src/assets/js/service/gif/gif-exporter.js - 使用 TimerService 管理 URL 清理，替换 setTimeout 为 createDelay，分组 ID 为'gif-export'
