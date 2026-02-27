@@ -485,7 +485,22 @@ function initApp() {
 
         // 登录状态
         isLoggedIn: false,
-        userInfo: null
+        userInfo: null,
+
+        // 空状态标题切换
+        emptyStateTitles: [
+          'SVGA → 双通道MP4、MP4',
+          '双通道MP4 → SVGA、MP4',
+          'MP4 → SVGA、双通道MP4',
+          'Lottie → 双通道MP4、MP4',
+          '所有支持的格式 → 序列帧/GIF/webp',
+          'SVGA：素材图编辑和替换',
+          '双通道MP4：key效果预览',
+          'MP4：绿幕抠图、多段变速'
+        ],
+        currentEmptyStateTitleIndex: 0,
+        currentEmptyStateTitle: 'SVGA → 双通道MP4、MP4',
+        emptyStateTitleTimer: null
       };
     },
     methods: {
@@ -1225,6 +1240,32 @@ function initApp() {
         }).catch(function (error) {
           _this.helpContent = '<p>无法加载帮助文档</p>';
         });
+      },
+
+      /**
+       * 切换空状态标题到下一句
+       */
+      nextEmptyStateTitle: function () {
+        console.log('nextEmptyStateTitle called');
+        this.currentEmptyStateTitleIndex = (this.currentEmptyStateTitleIndex + 1) % this.emptyStateTitles.length;
+        this.currentEmptyStateTitle = this.emptyStateTitles[this.currentEmptyStateTitleIndex];
+        console.log('New title:', this.currentEmptyStateTitle);
+        this.resetEmptyStateTitleTimer();
+      },
+
+      /**
+       * 重置空状态标题自动切换定时器
+       */
+      resetEmptyStateTitleTimer: function () {
+        var _this = this;
+        if (this.emptyStateTitleTimer) {
+          clearInterval(this.emptyStateTitleTimer);
+        }
+        this.emptyStateTitleTimer = setInterval(function() {
+          if (_this.isEmpty()) {
+            _this.nextEmptyStateTitle();
+          }
+        }, 4000);
       },
 
       /* ==================== SVGA加载与播放 ==================== */
@@ -10886,6 +10927,7 @@ function initApp() {
     },
     mounted: function () {
       var _this = this;
+      console.log('Vue mounted');
 
       // 注意：拖拽事件已在 Vue 模板中通过 @drop.prevent="onDrop" 绑定
       // 此处不再重复绑定，避免同一文件被处理两次
@@ -10901,6 +10943,10 @@ function initApp() {
 
       this.initSvgaPlayer();
       this.initViewportController();
+
+      // 启动空状态标题自动切换
+      console.log('About to start empty state title timer');
+      this.resetEmptyStateTitleTimer();
 
       // 默认随浏览器主题
       var checkDarkMode = function () {
@@ -11043,6 +11089,12 @@ function initApp() {
       if (this.inputController) {
         this.inputController.destroy();
         this.inputController = null;
+      }
+
+      // 清理空状态标题定时器
+      if (this.emptyStateTitleTimer) {
+        clearInterval(this.emptyStateTitleTimer);
+        this.emptyStateTitleTimer = null;
       }
     }
   });

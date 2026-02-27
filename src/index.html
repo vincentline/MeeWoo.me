@@ -295,10 +295,11 @@
           <div class="empty-state-icon">
             <img :src="isDarkMode ? 'assets/img/logo04_dark.png' : 'assets/img/logo04.png'" alt="Logo" />
           </div>
-          <div class="empty-state-slogan">动画格式预览与转换工具...</div>
+          <div class="empty-state-slogan">动画格式预览与转换工具</div>
           <div class="empty-state-text">
-            <div class="empty-state-title">你可以转GIF；SVGA素材图替换；转双通道MP4；转SVGA；转MP4...</div>
-            <div class="empty-state-subtitle">支持文件包括：SVGA、双通道MP4、普通MP4、Lottie格式、序列帧、webp（开发中...）</div>
+            <div class="empty-state-subtitle">你可以</div>
+            <div class="empty-state-title" @click="nextEmptyStateTitle">{{ currentEmptyStateTitle }}</div>
+            <div class="empty-state-slogan">支持预览：SVGA、双通道MP4、普通MP4、Lottie格式、序列帧</div>
           </div>
         </div>
 
