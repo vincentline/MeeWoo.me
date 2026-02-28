@@ -2259,6 +2259,168 @@ body.dark-mode .sprite-AI-img.btn-icon-ai:hover {
   opacity: 1;
 }
 
+/* 更多导出按钮容器 */
+.export-more-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 更多导出按钮 - 方形按钮，浅色，44x44 */
+.btn-export-more {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid #e6e6e6;
+  background-color: #ffffff;
+  background-image: url('../img/output_more.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 24px 24px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+  flex: none;
+}
+
+body.dark-mode .btn-export-more {
+  background-color: #1a1a1a;
+  border-color: #404040;
+  background-image: url('../img/output_more_dark.png');
+}
+
+.btn-export-more:hover {
+  background-color: #f3f3f3;
+  border-color: #d3d3d3;
+}
+
+body.dark-mode .btn-export-more:hover {
+  background-color: #333333;
+  border-color: #666666;
+}
+
+.btn-export-more:active {
+  background-color: #d3d3d3;
+  border-color: #333333;
+}
+
+body.dark-mode .btn-export-more:active {
+  background-color: #404040;
+  border-color: #888888;
+}
+
+.btn-export-more:disabled {
+  background-color: #ffffff;
+  border-color: #f3f3f3;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+body.dark-mode .btn-export-more:disabled {
+  background-color: #1a1a1a;
+  border-color: #2a2a2a;
+}
+
+/* 更多导出菜单 - hover时向上展开 */
+.export-more-menu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 0px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  z-index: 1000;
+  min-width: 160px;
+  background-color: #ffffff;
+  box-shadow: 0px 6px 50px 0px rgba(51, 51, 51, 0.1);
+  border-radius: 12px;
+}
+
+body.dark-mode .export-more-menu {
+  background-color: #2a2a2a;
+  border-color: #404040;
+  box-shadow: 0px 10px 32px 0px rgba(0, 0, 0, 0.4);
+}
+
+/* hover容器时显示菜单 */
+.export-more-container:hover .export-more-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* 菜单项按钮 */
+.export-menu-item {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  background-color: #ffffff;
+  border: 0px solid #e6e6e6;
+  border-radius: 12px;
+  /* box-shadow: 0px 6px 50px 0px rgba(51, 51, 51, 0.1); */
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.57;
+  color: #515151;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+body.dark-mode .export-menu-item {
+  background-color: #2a2a2a;
+  border-color: #404040;
+  box-shadow: 0px 6px 50px 0px rgba(0, 0, 0, 0.4);
+  color: #e0e0e0;
+}
+
+.export-menu-item:hover {
+  background-color: #f3f3f3;
+  color: #333333;
+}
+
+body.dark-mode .export-menu-item:hover {
+  color: #ffffff;
+}
+
+.export-menu-item:active {
+  background-color: #d3d3d3;
+  border-color: #333333;
+}
+
+body.dark-mode .export-menu-item:active {
+  background-color: #404040;
+  border-color: #888888;
+}
+
+.export-menu-item:disabled {
+  background-color: #ffffff;
+  border-color: #f3f3f3;
+  color: #aaaaaa;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+body.dark-mode .export-menu-item:disabled {
+  background-color: #1a1a1a;
+  border-color: #2a2a2a;
+  color: #666666;
+}
+
 /* 缩放按钮 */
 .zoom-btn {
   width: 28px;

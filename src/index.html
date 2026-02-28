@@ -609,21 +609,6 @@
                         </button>
                       </div>
                       <div class="footer-actions">
-                        <button class="btn-large-primary" :class="{'tooltip': !svga.hasFile}" :disabled="!svga.hasFile"
-                          @click="openFramesPanel">
-                          <span v-if="!svga.hasFile" class="tooltip-text">请先拖入 SVGA 文件</span>
-                          {{ isExportingFrames ? '导出中 ' + framesExportProgress + '%' : '转序列帧' }}
-                        </button>
-                        <button class="btn-large-primary" :class="{'tooltip': !svga.hasFile}" :disabled="!svga.hasFile"
-                          @click="openGifPanel">
-                          <span v-if="!svga.hasFile" class="tooltip-text">请先拖入 SVGA 文件</span>
-                          {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '转GIF' }}
-                        </button>
-                        <button class="btn-large-primary" :class="{'tooltip': !svga.hasFile}" :disabled="!svga.hasFile"
-                          @click="openWebpPanel">
-                          <span v-if="!svga.hasFile" class="tooltip-text">请先拖入 SVGA 文件</span>
-                          {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
-                        </button>
                         <button class="btn-large-secondary" :class="{'tooltip': !svga.hasFile}"
                           :disabled="!svga.hasFile" @click="openStandardMp4Panel('svga')">
                           <span v-if="!svga.hasFile" class="tooltip-text">请先拖入 SVGA 文件</span>
@@ -634,6 +619,23 @@
                           <span v-if="!svga.hasFile" class="tooltip-text">请先拖入 SVGA 文件</span>
                           转双通道MP4
                         </button>
+                        <!-- 更多导出按钮 -->
+                        <div class="export-more-container" :class="{'tooltip': !svga.hasFile}">
+                          <span v-if="!svga.hasFile" class="tooltip-text">请先拖入 SVGA 文件</span>
+                          <button class="btn-export-more" :disabled="!svga.hasFile"></button>
+                          <!-- hover展开菜单 -->
+                          <div class="export-more-menu" v-if="svga.hasFile">
+                            <button class="export-menu-item" @click="openFramesPanel" :disabled="isExportingFrames">
+                              {{ isExportingFrames ? '导出中 ' + framesExportProgress + '%' : '转序列帧' }}
+                            </button>
+                            <button class="export-menu-item" @click="openGifPanel" :disabled="isExportingGIF">
+                              {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '转GIF' }}
+                            </button>
+                            <button class="export-menu-item" @click="openWebpPanel" :disabled="isExportingWebp">
+                              {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </template>
 
@@ -656,21 +658,6 @@
                         </button>
                       </div>
                       <div class="footer-actions">
-                        <button class="btn-large-primary" :class="{'tooltip': !yyeva.hasFile}" :disabled="!yyeva.hasFile"
-                          @click="openFramesPanel">
-                          <span v-if="!yyeva.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
-                          {{ isExportingFrames ? '导出中 ' + framesExportProgress + '%' : '转序列帧' }}
-                        </button>
-                        <button class="btn-large-primary" :class="{'tooltip': !yyeva.hasFile}"
-                          :disabled="!yyeva.hasFile" @click="openGifPanel">
-                          <span v-if="!yyeva.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
-                          {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '转GIF' }}
-                        </button>
-                        <button class="btn-large-primary" :class="{'tooltip': !yyeva.hasFile}" :disabled="!yyeva.hasFile"
-                          @click="openWebpPanel">
-                          <span v-if="!yyeva.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
-                          {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
-                        </button>
                         <button class="btn-large-secondary" :class="{'tooltip': !yyeva.hasFile}"
                           :disabled="!yyeva.hasFile" @click="openStandardMp4Panel('yyeva')">
                           <span v-if="!yyeva.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
@@ -681,6 +668,23 @@
                           <span v-if="!yyeva.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
                           转SVGA
                         </button>
+                        <!-- 更多导出按钮 -->
+                        <div class="export-more-container" :class="{'tooltip': !yyeva.hasFile}">
+                          <span v-if="!yyeva.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
+                          <button class="btn-export-more" :disabled="!yyeva.hasFile"></button>
+                          <!-- hover展开菜单 -->
+                          <div class="export-more-menu" v-if="yyeva.hasFile">
+                            <button class="export-menu-item" @click="openFramesPanel" :disabled="isExportingFrames">
+                              {{ isExportingFrames ? '导出中 ' + framesExportProgress + '%' : '转序列帧' }}
+                            </button>
+                            <button class="export-menu-item" @click="openGifPanel" :disabled="isExportingGIF">
+                              {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '转GIF' }}
+                            </button>
+                            <button class="export-menu-item" @click="openWebpPanel" :disabled="isExportingWebp">
+                              {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </template>
 
@@ -709,23 +713,8 @@
                           <span v-if="speedRemapConfig.enabled" class="btn-checkmark">✓</span>
                         </button>
                       </div>
-                      <div class="footer-actions">
-                        <button class="btn-large-primary" :class="{'tooltip': !mp4.hasFile}" :disabled="!mp4.hasFile"
-                          @click="openFramesPanel">
-                          <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
-                          {{ isExportingFrames ? '导出中 ' + framesExportProgress + '%' : '转序列帧' }}
-                        </button>
-                        <button class="btn-large-primary" :class="{'tooltip': !mp4.hasFile}" :disabled="!mp4.hasFile"
-                          @click="openGifPanel">
-                          <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
-                          {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '转GIF' }}
-                        </button>
-                        <button class="btn-large-primary" :class="{'tooltip': !mp4.hasFile}" :disabled="!mp4.hasFile"
-                          @click="openWebpPanel">
-                          <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
-                          {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
-                        </button>
-                        <button class="btn-large-primary" :class="{'tooltip': !mp4.hasFile}" :disabled="!mp4.hasFile"
+                     <div class="footer-actions">
+                        <button class="btn-large-secondary" :class="{'tooltip': !mp4.hasFile}" :disabled="!mp4.hasFile"
                           @click="openMp4ToSvgaPanel">
                           <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
                           转SVGA
@@ -735,6 +724,23 @@
                           <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
                           转双通道MP4
                         </button>
+                        <!-- 更多导出按钮 -->
+                        <div class="export-more-container" :class="{'tooltip': !mp4.hasFile}">
+                          <span v-if="!mp4.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
+                          <button class="btn-export-more" :disabled="!mp4.hasFile"></button>
+                          <!-- hover展开菜单 -->
+                          <div class="export-more-menu" v-if="mp4.hasFile">
+                            <button class="export-menu-item" @click="openFramesPanel" :disabled="isExportingFrames">
+                              {{ isExportingFrames ? '导出中 ' + framesExportProgress + '%' : '转序列帧' }}
+                            </button>
+                            <button class="export-menu-item" @click="openGifPanel" :disabled="isExportingGIF">
+                              {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '转GIF' }}
+                            </button>
+                            <button class="export-menu-item" @click="openWebpPanel" :disabled="isExportingWebp">
+                              {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </template>
 
@@ -746,21 +752,6 @@
                         </button>
                       </div>
                       <div class="footer-actions">
-                        <button class="btn-large-primary" :class="{'tooltip': !lottie.hasFile}" :disabled="!lottie.hasFile"
-                          @click="openFramesPanel">
-                          <span v-if="!lottie.hasFile" class="tooltip-text">请先拖入 Lottie 文件</span>
-                          {{ isExportingFrames ? '导出中 ' + framesExportProgress + '%' : '转序列帧' }}
-                        </button>
-                        <button class="btn-large-primary" :class="{'tooltip': !lottie.hasFile}"
-                          :disabled="!lottie.hasFile" @click="openGifPanel">
-                          <span v-if="!lottie.hasFile" class="tooltip-text">请先拖入 Lottie 文件</span>
-                          {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '转GIF' }}
-                        </button>
-                        <button class="btn-large-primary" :class="{'tooltip': !lottie.hasFile}" :disabled="!lottie.hasFile"
-                          @click="openWebpPanel">
-                          <span v-if="!lottie.hasFile" class="tooltip-text">请先拖入 Lottie 文件</span>
-                          {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
-                        </button>
                         <button class="btn-large-secondary" :class="{'tooltip': !lottie.hasFile}"
                           :disabled="!lottie.hasFile" @click="openLottieToSvgaPanel">
                           <span v-if="!lottie.hasFile" class="tooltip-text">请先拖入 Lottie 文件</span>
@@ -776,6 +767,23 @@
                           <span v-if="!lottie.hasFile" class="tooltip-text">请先拖入 Lottie 文件</span>
                           转双通道MP4
                         </button>
+                        <!-- 更多导出按钮 -->
+                        <div class="export-more-container" :class="{'tooltip': !lottie.hasFile}">
+                          <span v-if="!lottie.hasFile" class="tooltip-text">请先拖入 Lottie 文件</span>
+                          <button class="btn-export-more" :disabled="!lottie.hasFile"></button>
+                          <!-- hover展开菜单 -->
+                          <div class="export-more-menu" v-if="lottie.hasFile">
+                            <button class="export-menu-item" @click="openFramesPanel" :disabled="isExportingFrames">
+                              {{ isExportingFrames ? '导出中 ' + framesExportProgress + '%' : '转序列帧' }}
+                            </button>
+                            <button class="export-menu-item" @click="openGifPanel" :disabled="isExportingGIF">
+                              {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '转GIF' }}
+                            </button>
+                            <button class="export-menu-item" @click="openWebpPanel" :disabled="isExportingWebp">
+                              {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </template>
 
@@ -790,16 +798,6 @@
                         </button>
                       </div>
                       <div class="footer-actions">
-                        <button class="btn-large-primary" :class="{'tooltip': !frames.hasFile}"
-                          :disabled="!frames.hasFile" @click="openGifPanel">
-                          <span v-if="!frames.hasFile" class="tooltip-text">请先拖入序列帧图片</span>
-                          {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '转GIF' }}
-                        </button>
-                        <button class="btn-large-primary" :class="{'tooltip': !frames.hasFile}" :disabled="!frames.hasFile"
-                          @click="openWebpPanel">
-                          <span v-if="!frames.hasFile" class="tooltip-text">请先拖入序列帧图片</span>
-                          {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
-                        </button>
                         <button class="btn-large-secondary" :class="{'tooltip': !frames.hasFile}"
                           :disabled="!frames.hasFile" @click="openFramesToSvgaPanel">
                           <span v-if="!frames.hasFile" class="tooltip-text">请先拖入序列帧图片</span>
@@ -815,6 +813,20 @@
                           <span v-if="!frames.hasFile" class="tooltip-text">请先拖入序列帧图片</span>
                           转双通道MP4
                         </button>
+                        <!-- 更多导出按钮 -->
+                        <div class="export-more-container" :class="{'tooltip': !frames.hasFile}">
+                          <span v-if="!frames.hasFile" class="tooltip-text">请先拖入序列帧图片</span>
+                          <button class="btn-export-more" :disabled="!frames.hasFile"></button>
+                          <!-- hover展开菜单 -->
+                          <div class="export-more-menu" v-if="frames.hasFile">
+                            <button class="export-menu-item" @click="openGifPanel" :disabled="isExportingGIF">
+                              {{ isExportingGIF ? '导出中 ' + gifExportProgress + '%' : '转GIF' }}
+                            </button>
+                            <button class="export-menu-item" @click="openWebpPanel" :disabled="isExportingWebp">
+                              {{ isExportingWebp ? '导出中 ' + Math.round(webpExportProgress * 100) + '%' : '转webp' }}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </template>
                   </div>

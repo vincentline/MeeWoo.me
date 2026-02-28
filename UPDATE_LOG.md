@@ -18,6 +18,9 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-02-28 10:47:24] 【修改文件】 : src/index.html - 为MP4、Lottie、序列帧、双通道MP4模式底部浮层添加更多导出按钮及hover菜单，统一导出功能入口，提升界面一致性
+[2026-02-28 10:08:43] 【修改文件】 : src/index.html - SVGA模式底部浮层增加更多导出按钮，hover展开菜单显示转序列帧/转GIF/转webp选项，优化界面布局
+[2026-02-28 10:08:43] 【修改文件】 : src/assets/css/styles.css - 新增更多导出按钮及hover菜单样式，包含浅色/暗黑模式适配，44x44方形按钮使用output_more图标
 [2026-02-28 04:15:00] 【新增文件】 : src/assets/js/service/yyeva/yyeva-render-worker.js - 新增 YYEVA 渲染 Web Worker，实现双通道 MP4 像素合成的后台线程处理，使用查找表优化和 Transferable Objects 零拷贝传输
 [2026-02-28 04:15:00] 【修改文件】 : src/assets/js/core/app.js - 双通道 MP4 渲染性能优化：集成 Web Worker 后台渲染模式，添加智能动态渲染频率（≤30fps使用视频帧率，>30fps使用60fps），实现主线程回退机制
 [2026-02-28 02:57:21] 【修改文件】 : src/assets/js/core/material-interactions.js - 修复 SVGA 模式编辑素材图弹窗的视图模式切换按钮问题：使用 getClientRect() 实现正确的居中逻辑，1:1 和适应画布按钮都能正确居中显示
