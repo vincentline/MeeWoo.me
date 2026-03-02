@@ -2,13 +2,17 @@
  * ==================== 素材编辑器操作模块 (Material Operations) ====================
  * 
  * 模块索引：
- * 1. 【样式处理】 - CSS样式过滤和处理相关方法
- * 2. 【编辑器控制】 - 素材编辑器控制相关方法
+ * 1. 【编辑器控制】 - 素材编辑器控制相关方法
  * 
  * 功能说明：
  * 提供素材编辑器的操作功能，包括：
- * 1. CSS样式处理和过滤
- * 2. 素材编辑器控制操作
+ * 1. 素材编辑器控制操作（打开、关闭、保存）
+ * 2. 图片加载和尺寸设置
+ * 3. 原始素材恢复
+ * 
+ * 已迁移的方法（请使用对应的新服务）：
+ * - filterTextStyle() → MeeWoo.Services.TextRenderer.filterTextStyle()
+ * - convertStylesToCssString() → MeeWoo.Services.TextRenderer.convertStylesToCssString()
  * 
  * 注意：渲染功能已迁移到 Konva.js，由 material-editor.js 直接处理
  * 
@@ -27,102 +31,6 @@
      * 素材编辑器操作模块
      */
     var MaterialOperations = {
-        /**
-         * ==================== 【样式处理】 ====================
-         * CSS样式过滤和处理相关方法
-         */
-
-        /**
-         * 过滤CSS样式，只保留允许的属性，过滤掉布局相关属性
-         * 避免用户粘贴的CSS包含 position/width/height 等破坏布局
-         * @param {string} styleStr - 原始样式字符串
-         * @returns {Object} 过滤后的样式对象
-         */
-        filterTextStyle: function (styleStr) {
-            if (!styleStr) return {};
-
-            var styles = {};
-
-            // 去除注释
-            styleStr = styleStr.replace(/\/\*[\s\S]*?\*\//g, '');
-
-            // 分割属性
-            var rules = styleStr.split(';');
-
-            // 黑名单：布局、尺寸、定位相关的属性
-            var blockedProperties = [
-                'position',
-                'top', 'bottom', 'left', 'right',
-                'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height',
-                // 'display', // 允许 display 以支持某些文字特效
-                'flex', 'flex-grow', 'flex-shrink', 'flex-basis', 'flex-direction', 'flex-wrap', 'flex-flow',
-                'justify-content', 'justify-items', 'justify-self',
-                'align-content', 'align-items', 'align-self',
-                'place-content', 'place-items', 'place-self',
-                'order', 'gap',
-                'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
-                'z-index',
-                'transform', 'transform-origin',
-                'float', 'clear',
-                'white-space',
-                'overflow', 'overflow-x', 'overflow-y',
-                'line-height',
-                'text-decoration', 'text-decoration-line', 'text-decoration-style', 'text-decoration-color', 'text-decoration-thickness'
-            ];
-
-            for (var i = 0; i < rules.length; i++) {
-                var rule = rules[i].trim();
-                if (!rule) continue;
-
-                var colonIndex = rule.indexOf(':');
-                if (colonIndex === -1) continue;
-
-                var prop = rule.substring(0, colonIndex).trim().toLowerCase();
-                var value = rule.substring(colonIndex + 1).trim();
-
-                if (!prop || !value) continue;
-
-                // 检查是否在黑名单中
-                if (blockedProperties.indexOf(prop) !== -1) {
-                    continue;
-                }
-
-                styles[prop] = value;
-            }
-
-            // 自动修复：如果使用了 background-clip: text，必须确保文字颜色透明
-            // 仅当背景是渐变时才自动修复（因为我们只支持渐变背景，不支持图片背景）
-            var hasBackgroundClip = styles['-webkit-background-clip'] === 'text' || styles['background-clip'] === 'text';
-            var hasTransparentColor = styles['color'] === 'transparent' || styles['-webkit-text-fill-color'] === 'transparent' || styles['text-fill-color'] === 'transparent';
-            var bg = styles['background'] || styles['background-image'] || '';
-            var isGradient = bg.indexOf('gradient') !== -1;
-
-            if (hasBackgroundClip && !hasTransparentColor && isGradient) {
-                styles['color'] = 'transparent';
-                // 某些浏览器可能需要这个
-                if (!styles['-webkit-text-fill-color']) {
-                    styles['-webkit-text-fill-color'] = 'transparent';
-                }
-            }
-
-            return styles;
-        },
-
-        /**
-         * 将样式对象转换为CSS字符串
-         * @param {Object} styles - 样式对象
-         * @returns {string} CSS字符串
-         */
-        convertStylesToCssString: function (styles) {
-            var str = '';
-            for (var key in styles) {
-                if (styles.hasOwnProperty(key)) {
-                    str += key + ':' + styles[key] + ';';
-                }
-            }
-            return str;
-        },
-
         /**
          * ==================== 【编辑器控制】 ====================
          * 素材编辑器控制相关方法

@@ -18,6 +18,13 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-03-02 13:25:25] 【修改文件】 : src/assets/js/core/app.js - 修复双通道MP4恢复播放问题：在 restorePlayback 函数中保存并恢复 YYEVA 的 isYyeva 和 yyevaData 数据，确保带key的双通道MP4在恢复播放后仍然保持 YYEVA 播放模式
+[2026-03-02 13:17:10] 【修改文件】 : src/index.html - 引入 material-editor 服务模块脚本（text-renderer.js、image-transformer.js、material-composer.js、material-editor-service.js、index.js），确保 Mixin 可访问服务模块
+[2026-03-02 13:17:10] 【修改文件】 : docs/index.html - 同步引入 material-editor 服务模块脚本
+[2026-03-02 13:15:42] 【修改文件】 : src/assets/js/core/material-operations.js - 重构：移除已迁移到 TextRenderer 的 filterTextStyle 和 convertStylesToCssString 方法，更新文件头部注释说明迁移路径
+[2026-03-02 13:15:42] 【修改文件】 : src/assets/js/core/material-editor.js - 更新样式处理方法调用，从 MaterialOperations 改为 TextRenderer 服务
+[2026-03-02 13:04:15] 【新增文件】 : src/assets/js/components/material-editor-ui.js - 新增素材编辑器 UI 组件，挂载到 MeeWoo.Components.MaterialEditorUI，提供 open/close 方法，集成 MaterialEditorService 实现底图上传、文字编辑、图片变换等功能
+[2026-03-02 12:55:04] 【新增文件】 : src/assets/js/service/material-editor/material-editor-service.js - 新增素材编辑器服务主类，组合 TextRenderer、ImageTransformer、MaterialComposer 三个服务，提供统一的编辑器实例管理
 [2026-03-02 12:48:22] 【新增文件】 : src/assets/js/service/material-editor/text-renderer.js - 新增文字渲染服务，支持CSS样式过滤、渐变填充、文字阴影、文字描边等特效，返回PNG格式DataURL
 [2026-03-02 12:47:06] 【新增文件】 : src/assets/js/service/material-editor/image-transformer.js - 新增图片变换服务，支持 URL/Blob/Base64 图片加载，提供 cover/contain 两种填充模式的图片变换功能
 [2026-03-02 02:49:55] 【修改文件】 : src/assets/js/components/yyeva-key-panel.js - YYEVA key素材替换功能扩展：支持MP4视频上传，预览区显示中间帧，hover时自动播放视频，新增视频替换相关的数据管理和交互逻辑

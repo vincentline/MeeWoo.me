@@ -1128,6 +1128,8 @@ function initApp() {
         var currentFile = null;
         var originalVideoItem = this.originalVideoItem;
         var savedAlphaPosition = null; // 保存yyeva的alpha位置
+        var savedIsYyeva = false;      // 保存yyeva的isYyeva标识
+        var savedYyevaData = null;     // 保存yyeva的yyevaData数据
 
         // 根据当前模式获取原始文件（支持5种模式）
         if (currentMode === 'svga' && this.svga.hasFile) {
@@ -1135,6 +1137,8 @@ function initApp() {
         } else if (currentMode === 'yyeva' && this.yyeva.hasFile) {
           currentFile = this.yyeva.file;
           savedAlphaPosition = this.yyeva.alphaPosition; // 保存alpha位置用于恢复
+          savedIsYyeva = this.yyeva.isYyeva;             // 保存isYyeva标识
+          savedYyevaData = this.yyeva.yyevaData;         // 保存yyevaData数据
         } else if (currentMode === 'mp4' && this.mp4.hasFile) {
           currentFile = this.mp4.file;
         } else if (currentMode === 'lottie' && this.lottie.hasFile) {
@@ -1215,7 +1219,9 @@ function initApp() {
         } else if (currentMode === 'yyeva') {
           this.loadYyeva({
             file: currentFile,
-            alphaPosition: savedAlphaPosition // 传递保存的alpha位置
+            alphaPosition: savedAlphaPosition, // 传递保存的alpha位置
+            isYyeva: savedIsYyeva,             // 传递保存的isYyeva标识
+            yyevaData: savedYyevaData          // 传递保存的yyevaData数据
           });
         } else if (currentMode === 'mp4') {
           this.loadMp4File({ file: currentFile });

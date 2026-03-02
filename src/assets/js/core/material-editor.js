@@ -14,9 +14,17 @@
  * 3. 作为各功能模块的协调中心
  * 4. 使用 Konva.js 作为唯一的渲染引擎
  * 
+ * 重构说明：
+ * - 已引入 MaterialEditorService 服务层，用于管理编辑状态和导出功能
+ * - 文字渲染委托给 TextRenderer.renderTextToCanvas()
+ * - 导出功能优先使用服务层，失败时降级到 Konva 导出
+ * - 保留 Konva UI 层逻辑（Stage、Transformer、交互事件）
+ * 
  * 依赖模块：
  * - MeeWoo.Core.MaterialState (状态管理)
  * - MeeWoo.Core.MaterialOperations (操作逻辑)
+ * - MeeWoo.Services.MaterialEditorService (服务层，可选)
+ * - MeeWoo.Services.TextRenderer (文字渲染服务，可选)
  * 
  * 使用方式：
  * 在 app.js 中引入此文件及相关依赖，并将 MaterialEditor 作为 mixin 混入 Vue 实例
@@ -53,7 +61,10 @@
                 
                 // 文字渲染的 Canvas 缓存
                 textCanvas: null,             // 文字渲染的 Canvas 元素
-                textCanvasCtx: null           // Canvas 2D 上下文
+                textCanvasCtx: null,          // Canvas 2D 上下文
+                
+                // ==================== 服务层实例引用 ====================
+                editorServiceInstance: null   // MaterialEditorService 实例
             };
         },
 
@@ -63,7 +74,7 @@
              * 移除无效的样式属性，保留有效的 CSS 样式
              */
             editorTextStyleFiltered: function () {
-                return window.MeeWoo.Core.MaterialOperations.filterTextStyle(this.editor.textStyle);
+                return window.MeeWoo.Services.TextRenderer.filterTextStyle(this.editor.textStyle);
             },
 
             /**
@@ -72,7 +83,7 @@
              */
             editorTextStyleString: function () {
                 var styles = this.editorTextStyleFiltered;
-                return window.MeeWoo.Core.MaterialOperations.convertStylesToCssString(styles);
+                return window.MeeWoo.Services.TextRenderer.convertStylesToCssString(styles);
             },
 
             /**
@@ -671,8 +682,13 @@
              * 渲染文字到 Canvas
              * 将文字内容按照样式（字体、颜色、渐变、阴影、描边等）绘制到 Canvas
              * 然后将 Canvas 设置为 Konva.Image 的 image 源
+             * 
+             * 重构说明：
+             * - 调用 TextRenderer.renderTextToCanvas() 服务方法进行文字渲染
+             * - 保留 Konva UI 层逻辑（设置 textLayerInstance 的 image 和 offset）
              */
             renderTextCanvas: function () {
+                var _this = this;
                 var style = this.editorTextStyleFiltered;
                 var text = this.editor.textContent;
 
@@ -687,6 +703,40 @@
                     return;
                 }
 
+                // 调用 TextRenderer 服务进行文字渲染
+                var TextRenderer = window.MeeWoo.Services && window.MeeWoo.Services.TextRenderer;
+                if (TextRenderer) {
+                    // 使用服务层渲染文字到 Canvas
+                    var textCanvas = TextRenderer.renderTextToCanvas(text, style, this.editor.textAlign);
+                    
+                    // 更新 Canvas 缓存
+                    this.textCanvas = textCanvas;
+                    this.textCanvasCtx = textCanvas.getContext('2d');
+                    
+                    // 更新 Konva.Image 的 image 源和偏移
+                    if (this.textLayerInstance) {
+                        this.textLayerInstance.image(this.textCanvas);
+                        this.textLayerInstance.offsetX(textCanvas.width / 2);
+                        this.textLayerInstance.offsetY(textCanvas.height / 2);
+                    }
+                    
+                    // 重绘舞台
+                    if (this.stageInstance) {
+                        this.stageInstance.draw();
+                    }
+                } else {
+                    // 降级处理：如果 TextRenderer 服务不可用，使用原有逻辑
+                    this._renderTextCanvasFallback(style, text);
+                }
+            },
+
+            /**
+             * 文字渲染降级方法（当 TextRenderer 服务不可用时使用）
+             * @param {Object} style - 样式对象
+             * @param {string} text - 文字内容
+             * @private
+             */
+            _renderTextCanvasFallback: function (style, text) {
                 // 解析字体样式
                 var fontSize = parseFloat(style['font-size']) || 24;
                 var fontFamily = style['font-family'] || 'sans-serif';
@@ -1153,6 +1203,15 @@
                 var _this = this;
                 window.MeeWoo.Core.MaterialOperations.openMaterialEditor(this, item);
 
+                // 创建 MaterialEditorService 实例（服务层）
+                // 用于管理编辑状态和导出功能
+                if (window.MeeWoo.Services && window.MeeWoo.Services.MaterialEditorService) {
+                    this.editorServiceInstance = window.MeeWoo.Services.MaterialEditorService.create({
+                        width: this.editor.baseImageWidth || 500,
+                        height: this.editor.baseImageHeight || 500
+                    });
+                }
+
                 // 延迟初始化 Konva stage，确保：
                 // 1. Vue 完成 DOM 更新（$nextTick）
                 // 2. CSS 过渡动画完成（弹窗显示动画约300ms）
@@ -1161,6 +1220,11 @@
                     _this.$nextTick(function() {
                         // 检查图片尺寸是否已加载
                         if (_this.editor.baseImageWidth && _this.editor.baseImageHeight) {
+                            // 更新服务实例尺寸
+                            if (_this.editorServiceInstance) {
+                                _this.editorServiceInstance.width = _this.editor.baseImageWidth;
+                                _this.editorServiceInstance.height = _this.editor.baseImageHeight;
+                            }
                             // 额外延迟100ms，确保CSS过渡动画完成，容器尺寸稳定
                             setTimeout(function() {
                                 _this.initKonvaStage();
@@ -1173,6 +1237,11 @@
                                 if (!initCalled && newVal && _this.editor.baseImageWidth && _this.editor.baseImageHeight) {
                                     initCalled = true;
                                     unwatch();
+                                    // 更新服务实例尺寸
+                                    if (_this.editorServiceInstance) {
+                                        _this.editorServiceInstance.width = _this.editor.baseImageWidth;
+                                        _this.editorServiceInstance.height = _this.editor.baseImageHeight;
+                                    }
                                     _this.$nextTick(function() {
                                         // 额外延迟100ms，确保CSS过渡动画完成
                                         setTimeout(function() {
@@ -1201,92 +1270,170 @@
             /**
              * 生成编辑后的素材图片
              * 创建临时的导出 Stage，将底图和文字按原始尺寸合成并导出为 DataURL
+             * 
+             * 重构说明：
+             * - 优先使用 MaterialEditorService.export() 服务方法导出
+             * - 保留 Konva 导出作为降级方案
+             * 
              * @returns {Promise<string>} 返回 PNG 格式的 DataURL
              */
             generateEditedMaterial: function () {
                 var _this = this;
                 return new Promise(function (resolve, reject) {
-                    if (!_this.stageInstance) {
-                        reject(new Error('Konva stage not initialized'));
-                        return;
-                    }
-
-                    try {
-                        // 获取导出尺寸（原始素材尺寸）
-                        var exportWidth = _this.editor.baseImageWidth;
-                        var exportHeight = _this.editor.baseImageHeight;
-
-                        // 创建临时的导出 Stage（不显示，仅用于导出）
-                        var exportStage = new Konva.Stage({
-                            container: document.createElement('div'),
-                            width: exportWidth,
-                            height: exportHeight
-                        });
-
-                        var exportLayer = new Konva.Layer();
-                        exportStage.add(exportLayer);
-
-                        // 复制底图到导出层
-                        if (_this.baseLayerInstance && _this.editor.showImage) {
-                            var exportCenterX = exportWidth / 2;
-                            var exportCenterY = exportHeight / 2;
-
-                            var baseImage = _this.baseLayerInstance.findOne('.baseImage');
-                            if (baseImage) {
-                                var img = baseImage.image();
-                                var newBaseImage = new Konva.Image({
-                                    image: img,
-                                    width: baseImage.width(),
-                                    height: baseImage.height(),
-                                    offsetX: baseImage.offsetX(),
-                                    offsetY: baseImage.offsetY(),
-                                    x: exportCenterX + _this.editor.imageOffsetX,
-                                    y: exportCenterY + _this.editor.imageOffsetY,
-                                    scaleX: _this.editor.imageScale,
-                                    scaleY: _this.editor.imageScale
-                                });
-                                exportLayer.add(newBaseImage);
-                            }
-                        }
-
-                        // 复制文字到导出层
-                        if (_this.textLayerInstance && _this.editor.showText && _this.textCanvas) {
-                            var textCenterX = exportWidth / 2 + ((_this.editor.textPosX - 50) / 100) * exportWidth;
-                            var textCenterY = exportHeight / 2 + ((_this.editor.textPosY - 50) / 100) * exportHeight;
-
-                            var newTextImage = new Konva.Image({
-                                image: _this.textCanvas,
-                                x: textCenterX,
-                                y: textCenterY,
-                                offsetX: _this.textCanvas.width / 2,
-                                offsetY: _this.textCanvas.height / 2,
-                                scaleX: _this.editor.textScale,
-                                scaleY: _this.editor.textScale
-                            });
-                            exportLayer.add(newTextImage);
-                        }
-
-                        exportStage.draw();
-
-                        // 导出为 PNG DataURL
-                        var dataURL = exportStage.toDataURL({
-                            x: 0,
-                            y: 0,
-                            width: exportWidth,
-                            height: exportHeight,
-                            pixelRatio: 1,        // 1:1 像素比
-                            mimeType: 'image/png',
-                            quality: 1.0
-                        });
-
-                        // 销毁临时 Stage 避免内存泄漏
-                        exportStage.destroy();
-
-                        resolve(dataURL);
-                    } catch (error) {
-                        reject(error);
+                    // 优先使用服务层导出
+                    if (_this.editorServiceInstance && window.MeeWoo.Services && window.MeeWoo.Services.MaterialEditorService) {
+                        _this._exportViaService(resolve, reject);
+                    } else {
+                        // 降级处理：使用 Konva 导出
+                        _this._exportViaKonva(resolve, reject);
                     }
                 });
+            },
+
+            /**
+             * 通过服务层导出编辑结果
+             * @param {Function} resolve - Promise resolve 回调
+             * @param {Function} reject - Promise reject 回调
+             * @private
+             */
+            _exportViaService: function (resolve, reject) {
+                var _this = this;
+                var service = this.editorServiceInstance;
+
+                // 同步编辑状态到服务实例
+                service.width = this.editor.baseImageWidth;
+                service.height = this.editor.baseImageHeight;
+                service.showImage = this.editor.showImage;
+                service.showText = this.editor.showText && !!this.editor.textContent;
+
+                // 同步图片变换状态
+                service.imageOffsetX = this.editor.imageOffsetX;
+                service.imageOffsetY = this.editor.imageOffsetY;
+                service.imageScale = this.editor.imageScale;
+
+                // 同步文字状态
+                service.textContent = this.editor.textContent;
+                service.textStyle = this.editorTextStyleString;
+                service.textPosition = { x: this.editor.textPosX, y: this.editor.textPosY };
+                service.textScale = this.editor.textScale;
+                service.textAlign = this.editor.textAlign;
+
+                // 如果有底图，先加载图片
+                if (this.editor.showImage && this.editor.baseImage) {
+                    service.loadImage(this.editor.baseImage)
+                        .then(function () {
+                            return service.export();
+                        })
+                        .then(function (dataURL) {
+                            resolve(dataURL);
+                        })
+                        .catch(function (err) {
+                            // 服务层导出失败，降级到 Konva 导出
+                            console.warn('[MaterialEditor] 服务层导出失败，降级到 Konva 导出:', err);
+                            _this._exportViaKonva(resolve, reject);
+                        });
+                } else {
+                    // 没有底图，直接导出文字层
+                    service.export()
+                        .then(function (dataURL) {
+                            resolve(dataURL);
+                        })
+                        .catch(function (err) {
+                            console.warn('[MaterialEditor] 服务层导出失败，降级到 Konva 导出:', err);
+                            _this._exportViaKonva(resolve, reject);
+                        });
+                }
+            },
+
+            /**
+             * 通过 Konva 导出编辑结果（降级方案）
+             * @param {Function} resolve - Promise resolve 回调
+             * @param {Function} reject - Promise reject 回调
+             * @private
+             */
+            _exportViaKonva: function (resolve, reject) {
+                var _this = this;
+                
+                if (!this.stageInstance) {
+                    reject(new Error('Konva stage not initialized'));
+                    return;
+                }
+
+                try {
+                    // 获取导出尺寸（原始素材尺寸）
+                    var exportWidth = this.editor.baseImageWidth;
+                    var exportHeight = this.editor.baseImageHeight;
+
+                    // 创建临时的导出 Stage（不显示，仅用于导出）
+                    var exportStage = new Konva.Stage({
+                        container: document.createElement('div'),
+                        width: exportWidth,
+                        height: exportHeight
+                    });
+
+                    var exportLayer = new Konva.Layer();
+                    exportStage.add(exportLayer);
+
+                    // 复制底图到导出层
+                    if (this.baseLayerInstance && this.editor.showImage) {
+                        var exportCenterX = exportWidth / 2;
+                        var exportCenterY = exportHeight / 2;
+
+                        var baseImage = this.baseLayerInstance.findOne('.baseImage');
+                        if (baseImage) {
+                            var img = baseImage.image();
+                            var newBaseImage = new Konva.Image({
+                                image: img,
+                                width: baseImage.width(),
+                                height: baseImage.height(),
+                                offsetX: baseImage.offsetX(),
+                                offsetY: baseImage.offsetY(),
+                                x: exportCenterX + this.editor.imageOffsetX,
+                                y: exportCenterY + this.editor.imageOffsetY,
+                                scaleX: this.editor.imageScale,
+                                scaleY: this.editor.imageScale
+                            });
+                            exportLayer.add(newBaseImage);
+                        }
+                    }
+
+                    // 复制文字到导出层
+                    if (this.textLayerInstance && this.editor.showText && this.textCanvas) {
+                        var textCenterX = exportWidth / 2 + ((this.editor.textPosX - 50) / 100) * exportWidth;
+                        var textCenterY = exportHeight / 2 + ((this.editor.textPosY - 50) / 100) * exportHeight;
+
+                        var newTextImage = new Konva.Image({
+                            image: this.textCanvas,
+                            x: textCenterX,
+                            y: textCenterY,
+                            offsetX: this.textCanvas.width / 2,
+                            offsetY: this.textCanvas.height / 2,
+                            scaleX: this.editor.textScale,
+                            scaleY: this.editor.textScale
+                        });
+                        exportLayer.add(newTextImage);
+                    }
+
+                    exportStage.draw();
+
+                    // 导出为 PNG DataURL
+                    var dataURL = exportStage.toDataURL({
+                        x: 0,
+                        y: 0,
+                        width: exportWidth,
+                        height: exportHeight,
+                        pixelRatio: 1,        // 1:1 像素比
+                        mimeType: 'image/png',
+                        quality: 1.0
+                    });
+
+                    // 销毁临时 Stage 避免内存泄漏
+                    exportStage.destroy();
+
+                    resolve(dataURL);
+                } catch (error) {
+                    reject(error);
+                }
             },
 
             // ==================== 废弃的事件处理方法（保留接口兼容性） ====================
@@ -1333,10 +1480,20 @@
 
             /**
              * 关闭素材编辑器
-             * 销毁所有 Konva 对象，释放内存
+             * 销毁所有 Konva 对象和服务实例，释放内存
+             * 
+             * 重构说明：
+             * - 调用 MaterialEditorService.destroy() 销毁服务实例
+             * - 保留 Konva 对象销毁逻辑
              */
             closeMaterialEditor: function () {
                 window.MeeWoo.Core.MaterialOperations.closeMaterialEditor(this);
+                
+                // 销毁 MaterialEditorService 实例（服务层）
+                if (this.editorServiceInstance) {
+                    this.editorServiceInstance.destroy();
+                    this.editorServiceInstance = null;
+                }
                 
                 // 销毁 Transformer
                 if (this.transformerInstance) {
