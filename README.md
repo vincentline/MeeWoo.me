@@ -36,6 +36,14 @@
   - Konva 命令系统支持撤销/重做
   - 容器尺寸自适应，延迟初始化确保 CSS 动画完成
   - 修复图层选择后另一图层仍可拖动的问题
+- **素材编辑器服务化**：
+  - 将编辑能力抽象为独立服务，支持多种调用方式
+  - **TextRenderer**：文字渲染服务，支持渐变填充、文字阴影、文字描边
+  - **ImageTransformer**：图片变换服务，支持缩放、位移、cover/contain 填充模式
+  - **MaterialComposer**：素材合成服务，支持底图与文字层叠加
+  - **MaterialEditorService**：编辑器服务主类，统一入口
+  - **MaterialEditorUI**：可复用编辑器弹窗组件
+  - 支持其他页面（如 YYEVA）独立调用编辑能力
 - **导出 GIF**：
   - 基于 `gif.js` 与 Web Worker，在浏览器端完成编码
   - 显示导出进度，支持取消
@@ -217,9 +225,15 @@
   - **全局替换**：替换 9 处 setTimeout/setInterval 为 TimerService
   - **分组管理**：提供定时器分组、取消、统计等功能
   - **内存优化**：自动清理已完成的定时器，避免内存泄漏
-- **阶段 15：用户体验优化** —— 进行中
+- **阶段 15：用户体验优化** —— 已完成
   - **空状态标题优化**：修复定时器自杀问题，点击重置倒计时
   - **Computed 属性修复**：修复 TimerService 回调中 computed 属性的访问方式
   - **调试代码清理**：删除冗余 console.log，优化代码可读性
+- **阶段 16：素材编辑器服务化** —— 已完成
+  - **服务层抽象**：将素材编辑功能抽象为独立服务（TextRenderer、ImageTransformer、MaterialComposer）
+  - **统一入口**：创建 MaterialEditorService 作为编辑器服务主类
+  - **UI 组件化**：创建 MaterialEditorUI 可复用弹窗组件
+  - **代码复用**：支持 SVGA、YYEVA 等多页面调用编辑能力
+  - **兼容性保证**：现有 SVGA 素材编辑功能完全兼容，用户无感知
 
 详细路线图与技术细节见仓库中的 `ROADMAP.md`、`TECH-RESEARCH.md`。

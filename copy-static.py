@@ -127,8 +127,9 @@ def compress_js_files(directory):
             for js_file in js_files:
                 try:
                     # 使用 npx terser 压缩 JavaScript
+                    # --keep-classnames 和 --keep-fnames 保留 Vue 相关的类名和函数名
                     subprocess.run(
-                        ['npx', 'terser', js_file, '-o', js_file, '--compress', '--mangle'],
+                        ['npx', 'terser', js_file, '-o', js_file, '--compress', '--mangle', '--keep-classnames', '--keep-fnames'],
                         check=True,
                         shell=True  # 在 Windows 上使用 shell
                     )

@@ -20,7 +20,7 @@ import os
 import sys
 
 # 配置端口
-PORT = 8086
+PORT = 8085
 
 
 class CoopCoepHandler(http.server.SimpleHTTPRequestHandler):
