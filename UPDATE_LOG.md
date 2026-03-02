@@ -18,6 +18,12 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-03-03 03:55:53] 【修改文件】 : src/assets/js/core/material-editor.js - 恢复使用 Konva listening 属性控制图层交互：选中底图层时设置文字层 listening(false) 使事件穿透，点击空白区域或选中文案层时恢复 listening(true)，切换选择需要点击两次
+[2026-03-03 03:46:14] 【修改文件】 : src/assets/js/core/material-editor.js - 修复素材编辑器拖动卡顿问题：在 mousedown 时临时禁用所有图层的 draggable，避免 Konva 原生拖动机制与手动拖动逻辑冲突，mouseup/mouseleave 时恢复原状态
+[2026-03-03 03:36:05] 【修改文件】 : src/assets/js/core/material-editor.js - 重构素材编辑器图层交互：完全重写点击/拖动判断逻辑，在 mouseup 时判断点击（时间<300ms 且 位移<5px），在 mousemove 时判断拖动（位移≥5px），解决拖动卡顿问题，实现流畅的穿透拖动交互
+[2026-03-03 03:17:50] 【修改文件】 : src/assets/js/core/material-editor.js - 优化素材编辑器图层交互：基于移动距离阈值(5px)区分点击和拖动操作，点击选中文案层，拖动则移动已选中的底图层，实现精准的交互区分
+[2026-03-03 03:07:30] 【修改文件】 : src/assets/js/core/material-editor.js - 优化素材编辑器图层交互：选中底图层时在文案层上点击可选中文案层，拖动则转发到底图层，实现点击选中上层、拖动操作下层的智能交互
+[2026-03-03 02:54:38] 【修改文件】 : src/assets/js/core/material-editor.js - 修复素材编辑器图层遮挡问题：选中底图层时设置文字层 listening(false) 使事件穿透，选中文字层或点击空白区域时恢复 listening(true)
 [2026-03-02 13:25:25] 【修改文件】 : src/assets/js/core/app.js - 修复双通道MP4恢复播放问题：在 restorePlayback 函数中保存并恢复 YYEVA 的 isYyeva 和 yyevaData 数据，确保带key的双通道MP4在恢复播放后仍然保持 YYEVA 播放模式
 [2026-03-02 13:17:10] 【修改文件】 : src/index.html - 引入 material-editor 服务模块脚本（text-renderer.js、image-transformer.js、material-composer.js、material-editor-service.js、index.js），确保 Mixin 可访问服务模块
 [2026-03-02 13:17:10] 【修改文件】 : docs/index.html - 同步引入 material-editor 服务模块脚本

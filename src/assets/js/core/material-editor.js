@@ -588,12 +588,12 @@
 
                 // 点击/触摸选中底图
                 this.baseLayerInstance.on('click tap', function (e) {
-                    e.cancelBubble = true;  // 阻止事件冒泡到舞台
+                    e.cancelBubble = true;
                     _this.editor.activeElement = 'image';
                     _this.baseLayerInstance.draggable(true);
-                    // 取消文字层的拖拽状态，防止选中底图后文字层仍可拖动
                     if (_this.textLayerInstance) {
                         _this.textLayerInstance.draggable(false);
+                        _this.textLayerInstance.listening(false);
                     }
                     _this.stageInstance.draggable(false);
                     _this.updateTransformer();
@@ -946,25 +946,28 @@
 
             /**
              * 绑定文字层的交互事件
-             * 包括：点击选中、拖拽移动、变换器缩放
+             * 
+             * 交互逻辑说明：
+             * 使用 Konva 的 listening 属性控制事件响应：
+             * - 选中底图层时，设置文字层 listening(false)，事件穿透到底图
+             * - 选中文案层时，设置文字层 listening(true)，正常响应事件
+             * - 切换选择需要点击两次（第一次取消选中，第二次选中目标层）
              */
             bindTextEvents: function () {
                 var _this = this;
 
                 if (!this.textLayerInstance) return;
 
-                // 获取导出区域尺寸和中心点坐标
                 var exportWidth = this.editor.baseImageWidth || 500;
                 var exportHeight = this.editor.baseImageHeight || 500;
                 var exportCenterX = this.editor.exportAreaX + (exportWidth / 2);
                 var exportCenterY = this.editor.exportAreaY + (exportHeight / 2);
 
-                // 点击/触摸选中文字层
                 this.textLayerInstance.on('click tap', function (e) {
-                    e.cancelBubble = true;  // 阻止事件冒泡到舞台
+                    e.cancelBubble = true;
                     _this.editor.activeElement = 'text';
                     _this.textLayerInstance.draggable(true);
-                    // 取消底图的拖拽状态，防止选中文字后底图仍可拖动
+                    _this.textLayerInstance.listening(true);
                     if (_this.baseLayerInstance) {
                         _this.baseLayerInstance.draggable(false);
                     }
@@ -972,12 +975,10 @@
                     _this.updateTransformer();
                 });
 
-                // 拖拽开始
                 this.textLayerInstance.on('dragstart', function () {
                     _this.editor.isTextDragging = true;
                 });
 
-                // 拖拽中：将绝对位置转换为百分比坐标并同步到 Vue 数据
                 this.textLayerInstance.on('dragmove', function () {
                     var offsetX = _this.textLayerInstance.x() - exportCenterX;
                     var offsetY = _this.textLayerInstance.y() - exportCenterY;
@@ -985,18 +986,15 @@
                     _this.editor.textPosY = 50 + (offsetY / exportHeight) * 100;
                 });
 
-                // 拖拽结束
                 this.textLayerInstance.on('dragend', function () {
                     _this.editor.isTextDragging = false;
                     _this.updateRestoreBtnState();
                 });
 
-                // 变换开始
                 this.textLayerInstance.on('transformstart', function () {
                     _this.editor.isTextDragging = true;
                 });
 
-                // 变换中：同步位置和缩放比例
                 this.textLayerInstance.on('transform', function () {
                     var offsetX = _this.textLayerInstance.x() - exportCenterX;
                     var offsetY = _this.textLayerInstance.y() - exportCenterY;
@@ -1005,7 +1003,6 @@
                     _this.editor.textScale = _this.textLayerInstance.scaleX();
                 });
 
-                // 变换结束：保留两位小数
                 this.textLayerInstance.on('transformend', function () {
                     _this.editor.isTextDragging = false;
                     _this.editor.textScale = parseFloat(_this.textLayerInstance.scaleX().toFixed(2));
@@ -1030,21 +1027,18 @@
 
                 // 点击舞台空白区域时取消所有元素的选中状态
                 this.stageInstance.on('click tap', function (e) {
-                    // 检查是否点击的是舞台背景（而非其他元素）
                     if (e.target === _this.stageInstance) {
                         _this.editor.activeElement = 'none';
-                        // 禁用所有元素的拖拽
                         if (_this.baseLayerInstance) {
                             _this.baseLayerInstance.draggable(false);
                         }
                         if (_this.textLayerInstance) {
                             _this.textLayerInstance.draggable(false);
+                            _this.textLayerInstance.listening(true);
                         }
-                        // 启用舞台拖拽（用于平移画布）
                         _this.stageInstance.draggable(true);
                         _this.updateTransformer();
                     } else {
-                        // 点击了其他元素，禁用舞台拖拽
                         _this.stageInstance.draggable(false);
                     }
                 });
