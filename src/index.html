@@ -646,8 +646,9 @@
                           title="打开文件...">
                         </button>
                         <button class="btn-large-primary btn-download-file tooltip"
-                          title="下载文件...">
-                          <span class="tooltip-text">功能开发中...</span>
+                          title="下载文件..." @click="openDualChannelPanel"
+                          :disabled="!yyeva.hasFile || isGlobalTaskRunning">
+                          <span v-if="!yyeva.hasFile" class="tooltip-text">请先拖入 MP4 文件</span>
                         </button>
                         <button class="btn-large-primary btn-material-manager" @click="openYyevaKeyPanel"
                           v-if="yyeva.hasFile" title="key素材管理">
@@ -898,10 +899,15 @@
     <yyeva-key-panel :visible="activeRightPanel === 'yyeva-key' && currentModule === 'yyeva'" 
       :image-keys="yyevaImageKeys" :text-keys="yyevaTextKeys"
       :replaced-images="yyevaReplacedImages" :replaced-texts="yyevaReplacedTexts"
+      :replaced-videos="yyevaReplacedVideos"
+      :player-muted="isMuted"
       @close="closeRightPanel"
       @confirm="handleYyevaKeyConfirm"
       @image-replaced="handleYyevaImageReplaced"
       @image-restored="handleYyevaImageRestored"
+      @video-replaced="handleYyevaVideoReplaced"
+      @video-restored="handleYyevaVideoRestored"
+      @video-mute-changed="handleYyevaVideoMuteChanged"
       @text-restored="handleYyevaTextRestored"
       @text-input="handleYyevaTextInput"></yyeva-key-panel>
 
@@ -1811,6 +1817,7 @@
   <!-- YYEVA 相关服务 -->
   <script src="assets/js/service/yyeva/yyeva-parser.js"></script>
   <script src="assets/js/service/yyeva/yyeva-renderer.js"></script>
+  <script src="assets/js/service/yyeva/yyeva-replacement-manager.js"></script>
 
   <!-- 应用主逻辑 -->
   <script src="assets/js/core/app.js?v=1.16"></script>

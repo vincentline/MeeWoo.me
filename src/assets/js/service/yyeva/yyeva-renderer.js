@@ -2,19 +2,21 @@
  * ==================== YYEVA 渲染器模块 (YYEVA Renderer) ====================
  * 
  * 功能说明：
- * 负责渲染 YYEVA 格式的双通道 MP4 文件中的动态元素（文本和图片）
+ * 负责渲染 YYEVA 格式的双通道 MP4 文件中的动态元素（文本、图片和视频）
  * 
  * 主要功能：
  * - 渲染 YYEVA 动态元素
  * - 处理文本渲染
  * - 处理图片渲染
- * - 管理图片缓存
- * - 提供设置文本和图片的API
+ * - 处理视频渲染（与主播放器同步）
+ * - 管理图片/视频缓存
+ * - 提供设置文本、图片、视频的API
  * 
  * @author MeeWoo Team
- * @version 1.0.0
+ * @version 1.1.0
  * ====================================================================
  */
+ 
 
 (function (window) {
   'use strict';
@@ -25,6 +27,7 @@
   function YyevaRenderer() {
     this.effectConfig = {};
     this.imageCache = {};
+    this.videoCache = {};  // 视频元素缓存
   }
 
   YyevaRenderer.prototype = {
@@ -99,7 +102,10 @@
           this._renderText(ctx, effectInfo, item, this.effectConfig[effectInfo.effectTag] || {}, maskContext);
         } else if (effectInfo.effectType === 'img') {
           var userConfig = this.effectConfig[effectInfo.effectTag] || {};
-          if (userConfig.imageSource) {
+          // 优先检查视频替换，其次检查图片替换
+          if (userConfig.videoElement) {
+            this._renderVideo(ctx, effectInfo, item, userConfig, maskContext);
+          } else if (userConfig.imageSource) {
             this._renderImage(ctx, effectInfo, item, userConfig, maskContext);
           }
         }
@@ -357,6 +363,179 @@
     },
 
     /**
+     * 渲染视频元素（与图片类似，但从视频中提取当前帧）
+     * @param {CanvasRenderingContext2D} ctx - 画布上下文
+     * @param {Object} effectInfo - 效果信息
+     * @param {Object} frameData - 帧数据
+     * @param {Object} userConfig - 用户配置（包含 videoElement）
+     * @param {Object} maskContext - 蒙版上下文
+     */
+    _renderVideo: function (ctx, effectInfo, frameData, userConfig, maskContext) {
+      // 使用 renderFrame 作为实际显示位置
+      var renderFrame = frameData.renderFrame;
+      // 使用 outputFrame 作为蒙版位置和尺寸
+      var outputFrame = frameData.outputFrame;
+      
+      if (!renderFrame) return;
+      
+      var x = renderFrame[0];
+      var y = renderFrame[1];
+      var w = renderFrame[2];
+      var h = renderFrame[3];
+
+      var videoElement = userConfig && userConfig.videoElement;
+      if (!videoElement || videoElement.readyState < 2) {
+        // 视频未就绪，跳过渲染
+        return;
+      }
+
+      // 保存当前状态
+      ctx.save();
+      
+      // 应用基础裁剪区域
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.clip();
+      
+      // 强制使用 scaleFill 模式
+      var scaleMode = 'scaleFill';
+      
+      // 应用蒙版数据：从视频帧的outputFrame位置提取蒙版形状
+      if (outputFrame && maskContext && maskContext.ctx) {
+        this._renderVideoWithMask(ctx, videoElement, x, y, w, h, scaleMode, outputFrame, maskContext);
+      } else {
+        // 没有蒙版数据时，直接绘制视频帧
+        this._drawVideoToCanvas(ctx, videoElement, x, y, w, h, scaleMode);
+      }
+      
+      // 恢复状态
+      ctx.restore();
+    },
+
+    /**
+     * 使用蒙版渲染视频帧
+     * @param {CanvasRenderingContext2D} ctx - 目标画布上下文
+     * @param {HTMLVideoElement} video - 视频元素
+     * @param {number} x - X坐标
+     * @param {number} y - Y坐标
+     * @param {number} w - 宽度
+     * @param {number} h - 高度
+     * @param {string} scaleMode - 缩放模式
+     * @param {Array} outputFrame - 蒙版位置 [x, y, w, h]
+     * @param {Object} maskContext - 蒙版上下文
+     */
+    _renderVideoWithMask: function (ctx, video, x, y, w, h, scaleMode, outputFrame, maskContext) {
+      var maskX = Math.floor(outputFrame[0]);
+      var maskY = Math.floor(outputFrame[1]);
+      var maskW = Math.floor(outputFrame[2]);
+      var maskH = Math.floor(outputFrame[3]);
+      
+      // 创建临时画布用于合成
+      var tempCanvas = document.createElement('canvas');
+      tempCanvas.width = Math.floor(w);
+      tempCanvas.height = Math.floor(h);
+      var tempCtx = tempCanvas.getContext('2d');
+      
+      // 绘制视频帧到临时画布
+      this._drawVideoToCanvas(tempCtx, video, 0, 0, w, h, scaleMode);
+      
+      // 从完整视频帧的outputFrame位置提取蒙版形状
+      try {
+        var srcCtx = maskContext.ctx;
+        var videoWidth = maskContext.videoWidth;
+        var videoHeight = maskContext.videoHeight;
+        
+        // 检查outputFrame是否在视频帧范围内
+        if (maskX >= 0 && maskY >= 0 && 
+            maskX + maskW <= videoWidth && 
+            maskY + maskH <= videoHeight) {
+          
+          // 从alpha通道区域提取蒙版数据
+          var maskImageData = srcCtx.getImageData(maskX, maskY, maskW, maskH);
+          
+          // 创建蒙版画布并缩放到目标尺寸
+          var scaledMaskCanvas = document.createElement('canvas');
+          scaledMaskCanvas.width = maskW;
+          scaledMaskCanvas.height = maskH;
+          var scaledMaskCtx = scaledMaskCanvas.getContext('2d');
+          scaledMaskCtx.putImageData(maskImageData, 0, 0);
+          
+          var maskCanvas = document.createElement('canvas');
+          maskCanvas.width = Math.floor(w);
+          maskCanvas.height = Math.floor(h);
+          var maskCtx = maskCanvas.getContext('2d');
+          maskCtx.drawImage(scaledMaskCanvas, 0, 0, maskW, maskH, 0, 0, w, h);
+          
+          // 获取缩放后的蒙版数据
+          var finalMaskData = maskCtx.getImageData(0, 0, Math.floor(w), Math.floor(h));
+          
+          // 获取视频帧像素数据
+          var imageData = tempCtx.getImageData(0, 0, Math.floor(w), Math.floor(h));
+          var pixels = imageData.data;
+          var maskPixels = finalMaskData.data;
+          
+          // 应用蒙版：使用蒙版的R通道（灰度值）作为视频帧的alpha通道
+          for (var i = 0; i < pixels.length; i += 4) {
+            var maskAlpha = maskPixels[i]; // R通道代表透明度
+            pixels[i + 3] = Math.floor((pixels[i + 3] * maskAlpha) / 255);
+          }
+          
+          // 将处理后的视频帧放回临时画布
+          tempCtx.putImageData(imageData, 0, 0);
+          
+          // 清理中间画布
+          scaledMaskCanvas.width = 0;
+          maskCanvas.width = 0;
+        }
+      } catch (e) {
+        // 蒙版提取失败时静默处理
+      }
+      
+      // 将处理后的视频帧绘制到目标画布
+      ctx.drawImage(tempCanvas, x, y);
+      
+      // 清理临时画布
+      tempCanvas.width = 0;
+    },
+
+    /**
+     * 绘制视频帧到画布（cover模式：保持比例，短边填满，长边裁剪居中）
+     * @param {CanvasRenderingContext2D} ctx - 画布上下文
+     * @param {HTMLVideoElement} video - 视频元素
+     * @param {number} x - X坐标
+     * @param {number} y - Y坐标
+     * @param {number} w - 宽度
+     * @param {number} h - 高度
+     * @param {string} scaleMode - 缩放模式
+     */
+    _drawVideoToCanvas: function (ctx, video, x, y, w, h, scaleMode) {
+      var videoW = video.videoWidth;
+      var videoH = video.videoHeight;
+      var targetW = w;
+      var targetH = h;
+
+      if (!videoW || !videoH) return;
+
+      var videoRatio = videoW / videoH;
+      var targetRatio = targetW / targetH;
+      
+      // cover模式：保持比例，短边填满，长边超出裁剪
+      var srcX = 0, srcY = 0, srcW = videoW, srcH = videoH;
+      
+      if (videoRatio > targetRatio) {
+        // 视频更宽，裁剪左右
+        srcW = videoH * targetRatio;
+        srcX = (videoW - srcW) / 2;
+      } else {
+        // 视频更高，裁剪上下
+        srcH = videoW / targetRatio;
+        srcY = (videoH - srcH) / 2;
+      }
+
+      ctx.drawImage(video, srcX, srcY, srcW, srcH, x, y, targetW, targetH);
+    },
+
+    /**
      * 设置文本配置
      * @param {string} effectTag - 效果标签
      * @param {Object} config - 配置对象，传入空对象表示恢复默认
@@ -387,7 +566,55 @@
       if (this.imageCache[cachedKey]) {
         delete this.imageCache[cachedKey];
       }
+      // 清除可能存在的视频替换
+      if (this.effectConfig[effectTag].videoElement) {
+        delete this.effectConfig[effectTag].videoElement;
+        delete this.effectConfig[effectTag].videoUrl;
+      }
       this.effectConfig[effectTag].imageSource = imageSource;
+    },
+
+    /**
+     * 设置视频配置
+     * @param {string} effectTag - 效果标签
+     * @param {Object} videoConfig - 视频配置 { videoUrl, videoElement }，传入 null 表示恢复默认
+     */
+    setVideo: function (effectTag, videoConfig) {
+      if (!this.effectConfig[effectTag]) {
+        this.effectConfig[effectTag] = {};
+      }
+      // 清除可能存在的图片替换
+      if (this.effectConfig[effectTag].imageSource) {
+        delete this.effectConfig[effectTag].imageSource;
+        var cachedKey = '_yyevaImg_' + effectTag;
+        if (this.imageCache[cachedKey]) {
+          delete this.imageCache[cachedKey];
+        }
+      }
+      
+      if (videoConfig === null) {
+        // 恢复默认，清除视频配置
+        delete this.effectConfig[effectTag].videoElement;
+        delete this.effectConfig[effectTag].videoUrl;
+        // 清除视频缓存
+        if (this.videoCache[effectTag]) {
+          delete this.videoCache[effectTag];
+        }
+      } else {
+        // 设置视频配置
+        this.effectConfig[effectTag].videoElement = videoConfig.videoElement;
+        this.effectConfig[effectTag].videoUrl = videoConfig.videoUrl;
+        // 缓存视频元素引用
+        this.videoCache[effectTag] = videoConfig.videoElement;
+      }
+    },
+
+    /**
+     * 获取所有替换视频元素（用于同步控制）
+     * @returns {Object} - 视频元素映射 { effectTag: HTMLVideoElement }
+     */
+    getReplacedVideos: function () {
+      return this.videoCache;
     },
 
     /**
@@ -480,11 +707,19 @@
     },
 
     /**
+     * 清除视频缓存
+     */
+    clearVideoCache: function () {
+      this.videoCache = {};
+    },
+
+    /**
      * 重置渲染器
      */
     reset: function () {
       this.effectConfig = {};
       this.clearImageCache();
+      this.clearVideoCache();
     },
 
     /**

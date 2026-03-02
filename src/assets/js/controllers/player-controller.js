@@ -222,6 +222,10 @@
     if (this.state.startYyevaRenderLoop) {
       this.state.startYyevaRenderLoop();
     }
+    // 同步替换视频的播放状态
+    if (this.state._syncReplacedVideosPlayState) {
+      this.state._syncReplacedVideosPlayState(true);
+    }
   };
 
   YyevaPlayerAdapter.prototype.afterPause = function () {
@@ -229,10 +233,21 @@
       cancelAnimationFrame(this.state.yyevaAnimationId);
       this.state.yyevaAnimationId = null;
     }
+    // 同步替换视频的暂停状态
+    if (this.state._syncReplacedVideosPlayState) {
+      this.state._syncReplacedVideosPlayState(false);
+    }
   };
 
   YyevaPlayerAdapter.prototype.seekTo = function (percentage) {
     VideoPlayerAdapter.prototype.seekTo.call(this, percentage);
+    
+    // 同步替换视频的播放进度
+    if (this.state._syncReplacedVideosTime && this.video) {
+      var targetTime = this.video.duration * percentage;
+      this.state._syncReplacedVideosTime(targetTime);
+    }
+    
     // 确保在跳转完成后渲染一帧（暂停时也能更新画面）
     if (this.state.renderYyevaFrame) {
       var _this = this;

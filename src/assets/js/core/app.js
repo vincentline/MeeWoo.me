@@ -244,6 +244,7 @@ function initApp() {
         yyevaTextKeys: [],       // 文本key列表
         yyevaReplacedImages: {}, // 替换的图片
         yyevaReplacedTexts: {},  // 替换的文本
+        yyevaReplacedVideos: {}, // 替换的视频 { effectTag: { videoUrl, posterFrame, videoElement } }
 
         // Lottie 状态
         lottie: {
@@ -2382,6 +2383,10 @@ function initApp() {
             },
             onPlayStateChange: function (isPlaying) {
               _this.isPlaying = isPlaying;
+              // 同步替换视频的播放状态
+              if (_this.currentModule === 'yyeva' && _this.yyevaReplacedVideos) {
+                _this._syncReplacedVideosPlayState(isPlaying);
+              }
             },
             getPlayerState: function () {
               return {
@@ -2463,6 +2468,11 @@ function initApp() {
         // 使用PlayerController统一接口
         if (this.playerController) {
           this.playerController.setMuted(this.isMuted);
+        }
+
+        // 同步替换视频的静音状态
+        if (this.currentModule === 'yyeva' && this.yyevaReplacedVideos) {
+          this._syncReplacedVideosMuted(this.isMuted);
         }
       },
 
@@ -3264,6 +3274,11 @@ function initApp() {
         // 确保视频已就绪
         if (video.readyState < 2) return;
 
+        // 同步替换视频的播放进度
+        if (Object.keys(this.yyevaReplacedVideos).length > 0) {
+          this._syncReplacedVideosTime(video.currentTime);
+        }
+
         var halfWidth = Math.floor(video.videoWidth / 2);
         var height = video.videoHeight;
         
@@ -3520,26 +3535,74 @@ function initApp() {
 
       // 处理 YYEVA Key素材确认
       handleYyevaKeyConfirm: function (data) {
-        this.yyevaReplacedImages = data.replacedImages;
-        this.yyevaReplacedTexts = data.replacedTexts;
-        
-        // 更新渲染器配置
-        if (this.yyevaRenderer) {
-          // 应用所有替换的文本
-          for (var effectTag in data.replacedTexts) {
-            this.yyevaRenderer.setText(effectTag, { text: data.replacedTexts[effectTag] });
-          }
-          // 应用所有替换的图片
-          for (var imgTag in data.replacedImages) {
-            this.yyevaRenderer.setImage(imgTag, data.replacedImages[imgTag]);
+        this.yyevaReplacedImages = data.replacedImages || {};
+        this.yyevaReplacedTexts = data.replacedTexts || {};
+
+        var replacedVideos = data.replacedVideos || {};
+        var replacedVideosMuted = data.replacedVideosMuted || {};
+
+        var oldTags = Object.keys(this.yyevaReplacementManager.replacedVideos);
+        for (var i = 0; i < oldTags.length; i++) {
+          var oldTag = oldTags[i];
+          if (!replacedVideos[oldTag]) {
+            this.yyevaReplacementManager._destroyVideoElement(oldTag);
           }
         }
-        
+
+        for (var effectTag in replacedVideos) {
+          var videoData = replacedVideos[effectTag];
+          var muted = replacedVideosMuted[effectTag] !== undefined ? replacedVideosMuted[effectTag] : this.isMuted;
+          this.yyevaReplacementManager.createVideoElement(effectTag, videoData.videoUrl, muted);
+        }
+
+        this.yyevaReplacementManager.replacedImages = this.yyevaReplacedImages;
+        this.yyevaReplacementManager.replacedTexts = this.yyevaReplacedTexts;
+        this.yyevaReplacementManager.updateRenderer();
+
+        this.yyevaReplacedVideos = this.yyevaReplacementManager.getReplacedVideos();
+
         this.closeRightPanel();
+      },
+      
+      /**
+       * 清理所有替换视频元素
+       * @private
+       */
+      _cleanupReplacedVideos: function () {
+        this.yyevaReplacementManager.clearAll();
+        this.yyevaReplacedVideos = {};
+      },
+      
+      /**
+       * 同步替换视频的播放状态
+       * @param {boolean} isPlaying - 是否播放
+       */
+      _syncReplacedVideosPlayState: function (isPlaying) {
+        this.yyevaReplacementManager.syncPlayState(isPlaying);
+      },
+
+      /**
+       * 同步替换视频的静音状态
+       * @param {boolean} isMuted - 是否静音
+       */
+      _syncReplacedVideosMuted: function (isMuted) {
+        this.yyevaReplacementManager.syncMuted(isMuted);
+      },
+      
+      /**
+       * 同步替换视频的播放进度
+       * @param {number} currentTime - 当前时间
+       */
+      _syncReplacedVideosTime: function (currentTime) {
+        this.yyevaReplacementManager.syncTime(currentTime);
       },
 
       // 处理 YYEVA 图片替换
       handleYyevaImageReplaced: function (data) {
+        // 清除可能存在的视频替换
+        if (this.yyevaReplacedVideos[data.effectTag]) {
+          this._removeReplacedVideo(data.effectTag);
+        }
         this.yyevaReplacedImages[data.effectTag] = data.imageData;
         if (this.yyevaRenderer) {
           this.yyevaRenderer.setImage(data.effectTag, data.imageData);
@@ -3552,6 +3615,48 @@ function initApp() {
         if (this.yyevaRenderer) {
           this.yyevaRenderer.setImage(effectTag, null);
         }
+      },
+      
+      // 处理 YYEVA 视频替换
+      handleYyevaVideoReplaced: function (data) {
+        if (this.yyevaReplacedImages[data.effectTag]) {
+          delete this.yyevaReplacedImages[data.effectTag];
+        }
+
+        this.yyevaReplacementManager.createVideoElement(data.effectTag, data.videoUrl, this.isMuted);
+        this.yyevaReplacedVideos = this.yyevaReplacementManager.getReplacedVideos();
+
+        if (this.yyevaRenderer) {
+          var vidData = this.yyevaReplacedVideos[data.effectTag];
+          if (vidData) {
+            this.yyevaRenderer.setVideo(data.effectTag, {
+              videoUrl: vidData.videoUrl,
+              videoElement: vidData.videoElement
+            });
+          }
+        }
+      },
+      
+      // 处理 YYEVA 视频恢复
+      handleYyevaVideoRestored: function (effectTag) {
+        this._removeReplacedVideo(effectTag);
+        if (this.yyevaRenderer) {
+          this.yyevaRenderer.setVideo(effectTag, null);
+        }
+      },
+      
+      // 处理 YYEVA 视频静音状态变化
+      handleYyevaVideoMuteChanged: function (data) {
+        this.yyevaReplacementManager.setVideoMuted(data.effectTag, data.muted);
+      },
+      
+      /**
+       * 移除单个替换视频
+       * @private
+       */
+      _removeReplacedVideo: function (effectTag) {
+        this.yyevaReplacementManager._destroyVideoElement(effectTag);
+        this.yyevaReplacedVideos = this.yyevaReplacementManager.getReplacedVideos();
       },
 
       // 处理 YYEVA 文本恢复
@@ -3799,6 +3904,9 @@ function initApp() {
 
         // 重置双通道MP4音频状态
         this.yyevaHasAudio = false;
+        
+        // 清理替换视频元素
+        this._cleanupReplacedVideos();
       },
 
       /* ==================== 普通MP4加载与播放 ==================== */
@@ -9374,6 +9482,407 @@ function initApp() {
       },
 
       /**
+       * YYEVA(双通道MP4)转双通道MP4（支持替换素材音频混合）
+       */
+      startYyevaToDualChannelConversion: async function (config) {
+        var _this = this;
+
+        if (config) {
+          this.dualChannelConfig = Object.assign({}, this.dualChannelConfig, config);
+        }
+
+        if (!this.yyeva.hasFile || !this.yyeva.file) {
+          alert('请先加载双通道MP4文件');
+          return;
+        }
+
+        if (!this.confirmIfHasOngoingTasks('双通道MP4转双通道', 'task')) {
+          return;
+        }
+
+        var config = this.dualChannelConfig;
+
+        if (config.width < 1 || config.width > 9999) {
+          alert('宽度超出范围！\n\n合法范围：1-9999 像素');
+          return;
+        }
+        if (config.height < 1 || config.height > 9999) {
+          alert('高度超出范围！\n\n合法范围：1-9999 像素');
+          return;
+        }
+        if (config.quality < 1 || config.quality > 100) {
+          alert('压缩质量超出范围！\n\n合法范围：1-100');
+          return;
+        }
+        if (config.fps < 1 || config.fps > 120) {
+          alert('帧率超出范围！\n\n合法范围：1-120 fps');
+          return;
+        }
+
+        try {
+          if (this.configManager) {
+            this.configManager.set('mp4_quality', config.quality);
+          }
+        } catch (e) { console.error('Config save failed:', e); }
+
+        this.isConvertingToDualChannel = true;
+        this.dualChannelProgress = 0;
+        this.dualChannelCancelled = false;
+        this.dualChannelStage = 'loading';
+        this.dualChannelMessage = '正在加载转换器...';
+
+        var taskId = null;
+        if (this.taskManager) {
+          taskId = this.taskManager.register('双通道MP4转双通道', function () {
+            _this.cancelDualChannelConversion();
+          });
+        }
+
+        try {
+          await Services.FFmpegService.init();
+          if (this.dualChannelCancelled) throw new Error('用户取消转换');
+
+          this.dualChannelStage = 'extracting';
+          this.dualChannelMessage = '正在提取序列帧...';
+          var frames = await this.extractYyevaFramesForDualChannel();
+          if (this.dualChannelCancelled) throw new Error('用户取消转换');
+
+          this.dualChannelStage = 'composing';
+          this.dualChannelMessage = '正在合成双通道...';
+          var dualFrames = await this.composeFramesDualChannel(frames);
+          if (this.dualChannelCancelled) throw new Error('用户取消转换');
+
+          this.dualChannelStage = 'encoding';
+          this.dualChannelMessage = '正在处理音频...';
+
+          var audioData = null;
+          var audioSpeedRatio = 1.0;
+          var isMuted = config.muted;
+
+          if (!isMuted) {
+            var mainAudioData = null;
+            var replacedVideoAudioData = null;
+
+            if (this.yyevaHasAudio && this.yyeva.file) {
+              this.dualChannelMessage = '正在提取原视频音频...';
+              var originalDuration = this.yyevaVideo ? this.yyevaVideo.duration : 0;
+              var originalTotalFrames = Math.ceil(originalDuration * (config.fps || 30));
+
+              var audios = await Services.FFmpegService.extractAudio({
+                videoFile: this.yyeva.file,
+                totalFrames: dualFrames.length,
+                fps: config.fps,
+                onProgress: function () { }
+              });
+
+              if (audios && audios.length > 0 && audios[0].audioData) {
+                mainAudioData = audios[0].audioData;
+              }
+            }
+
+            var hasReplacedVideoWithAudio = false;
+            if (this.yyevaReplacedVideos && Object.keys(this.yyevaReplacedVideos).length > 0) {
+              for (var tag in this.yyevaReplacedVideos) {
+                var vidData = this.yyevaReplacedVideos[tag];
+                if (vidData && vidData.videoUrl && !vidData.muted) {
+                  hasReplacedVideoWithAudio = true;
+                  break;
+                }
+              }
+            }
+
+            if (hasReplacedVideoWithAudio) {
+              this.dualChannelMessage = '正在提取替换视频音频...';
+              var replacedAudios = await this.extractReplacedVideosAudio(dualFrames.length, config.fps);
+              if (replacedAudios && replacedAudios.length > 0) {
+                replacedVideoAudioData = replacedAudios[0];
+              }
+            }
+
+            if (mainAudioData && replacedVideoAudioData) {
+              this.dualChannelMessage = '正在混合音频...';
+              audioData = await this.mergeAudios(mainAudioData, replacedVideoAudioData);
+            } else if (mainAudioData) {
+              audioData = mainAudioData;
+            }
+          }
+
+          this.dualChannelMessage = '正在编码为MP4...';
+          var mp4Blob = await Services.FFmpegService.convertFramesToMp4({
+            frames: dualFrames,
+            fps: config.fps,
+            quality: config.quality,
+            audioData: audioData,
+            audioSpeedRatio: audioSpeedRatio,
+            onProgress: function (p) {
+              _this.dualChannelProgress = Math.round(p * 100);
+              if (p < 0.4) {
+                _this.dualChannelMessage = '正在写入帧数据... ' + Math.round(p / 0.4 * 100) + '%';
+              } else if (p < 0.45) {
+                _this.dualChannelMessage = '正在处理音频...';
+              } else if (p < 0.95) {
+                _this.dualChannelMessage = '正在编码视频... ' + Math.round((p - 0.45) / 0.5 * 100) + '%';
+              } else {
+                _this.dualChannelMessage = '正在生成文件...';
+              }
+            },
+            checkCancelled: function () {
+              return _this.dualChannelCancelled;
+            }
+          });
+
+          if (this.dualChannelCancelled) throw new Error('用户取消转换');
+
+          this.dualChannelStage = 'done';
+          this.dualChannelMessage = '转换完成！';
+          this.dualChannelProgress = 100;
+          this.downloadDualChannelMP4(mp4Blob, 'yyeva');
+
+          setTimeout(function () {
+            var msg = '✅ 转换完成！';
+            if (isMuted) {
+              msg += '\n\n已按您的要求生成静音MP4文件。';
+            } else if (!audioData) {
+              msg += '\n\n无音频数据，已生成静音MP4文件。';
+            } else {
+              msg += '\n\n音频已合成到MP4文件中。';
+            }
+            alert(msg);
+          }, 500);
+
+          if (this.configManager) {
+            this.configManager.set('mp4_quality', config.quality);
+          }
+
+        } catch (error) {
+          if (error.message === '用户取消转换') {
+            // ignore
+          } else if (error.message === 'FFmpeg服务正忙，请稍后再试') {
+            alert('FFmpeg服务正忙，请稍后再试');
+          } else {
+            console.error('双通道MP4转双通道失败:', error);
+            alert('转换失败：' + error.message);
+          }
+        } finally {
+          if (this.taskManager && taskId) {
+            this.taskManager.finish(taskId);
+          }
+          this.isConvertingToDualChannel = false;
+        }
+      },
+
+      /**
+       * 提取YYEVA帧为ImageData数组（用于双通道转换，包含替换素材）
+       */
+      extractYyevaFramesForDualChannel: async function () {
+        var _this = this;
+        var config = this.dualChannelConfig;
+        var video = this.yyevaVideo;
+
+        if (!video) {
+          throw new Error('无法获取视频对象');
+        }
+
+        var fps = config.fps || 30;
+        var targetWidth = config.width;
+        var targetHeight = config.height;
+        var duration = video.duration;
+        var totalFrames = Math.ceil(duration * fps);
+
+        video.pause();
+
+        var tempCanvas = null;
+        try {
+          tempCanvas = new OffscreenCanvas(video.videoWidth, video.videoHeight);
+        } catch (e) {
+          tempCanvas = document.createElement('canvas');
+          tempCanvas.width = video.videoWidth;
+          tempCanvas.height = video.videoHeight;
+        }
+        var tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+
+        var displayCanvas = null;
+        try {
+          displayCanvas = new OffscreenCanvas(targetWidth, targetHeight);
+        } catch (e) {
+          displayCanvas = document.createElement('canvas');
+          displayCanvas.width = targetWidth;
+          displayCanvas.height = targetHeight;
+        }
+        var displayCtx = displayCanvas.getContext('2d', { willReadFrequently: true, alpha: true });
+
+        var halfWidth = Math.floor(video.videoWidth / 2);
+        var isAlphaRight = this.yyeva.alphaPosition !== 'left';
+        var colorX = isAlphaRight ? 0 : halfWidth;
+        var alphaX = isAlphaRight ? halfWidth : 0;
+
+        var frames = [];
+
+        var originalCurrentFrame = this.currentFrame;
+
+        for (var i = 0; i < totalFrames; i++) {
+          if (_this.dualChannelCancelled) break;
+
+          var time = i / fps;
+          video.currentTime = time;
+
+          await new Promise(function (resolve) {
+            video.onseeked = function () {
+              video.onseeked = null;
+              resolve();
+            };
+            if (video.readyState >= 2) {
+              video.onseeked = null;
+              resolve();
+            }
+          });
+
+          _this.currentFrame = i;
+
+          tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+          tempCtx.drawImage(video, 0, 0);
+
+          var colorData = tempCtx.getImageData(colorX, 0, targetWidth, targetHeight);
+          var alphaData = tempCtx.getImageData(alphaX, 0, targetWidth, targetHeight);
+
+          var inverseAlphaTable = _this._yyevaInverseAlphaTable;
+          if (!inverseAlphaTable) {
+            inverseAlphaTable = new Float32Array(256);
+            for (var j = 1; j <= 255; j++) {
+              inverseAlphaTable[j] = 255 / j;
+            }
+            _this._yyevaInverseAlphaTable = inverseAlphaTable;
+          }
+
+          for (var k = 0; k < colorData.data.length; k += 4) {
+            var alpha = alphaData.data[k];
+
+            if (alpha > 0) {
+              if (alpha < 255) {
+                var invAlpha = inverseAlphaTable[alpha];
+                colorData.data[k] = Math.min(255, Math.round(colorData.data[k] * invAlpha));
+                colorData.data[k + 1] = Math.min(255, Math.round(colorData.data[k + 1] * invAlpha));
+                colorData.data[k + 2] = Math.min(255, Math.round(colorData.data[k + 2] * invAlpha));
+              }
+            } else {
+              colorData.data[k] = 0;
+              colorData.data[k + 1] = 0;
+              colorData.data[k + 2] = 0;
+            }
+
+            colorData.data[k + 3] = alpha;
+          }
+
+          displayCtx.clearRect(0, 0, targetWidth, targetHeight);
+          displayCtx.putImageData(colorData, 0, 0);
+
+          if (_this.yyeva.isYyeva && _this.yyeva.yyevaData && _this.yyevaRenderer) {
+            var maskContext = {
+              ctx: tempCtx,
+              videoWidth: video.videoWidth,
+              videoHeight: video.videoHeight,
+              displayWidth: targetWidth,
+              displayHeight: targetHeight,
+              alphaX: alphaX,
+              descript: _this.yyeva.yyevaData.descript
+            };
+            _this.yyevaRenderer.renderEffects(displayCtx, i, _this.yyeva.yyevaData, maskContext);
+          }
+
+          var finalImageData = displayCtx.getImageData(0, 0, targetWidth, targetHeight);
+          frames.push(finalImageData);
+
+          if (i % 10 === 0) {
+            _this.dualChannelProgress = Math.floor((i / totalFrames) * 30);
+          }
+        }
+
+        this.currentFrame = originalCurrentFrame;
+
+        return frames;
+      },
+
+      /**
+       * 从替换视频中提取音频
+       */
+      extractReplacedVideosAudio: async function (totalFrames, fps) {
+        var _this = this;
+        var audioDataList = [];
+
+        if (!this.yyevaReplacedVideos) {
+          return [];
+        }
+
+        for (var tag in this.yyevaReplacedVideos) {
+          var vidData = this.yyevaReplacedVideos[tag];
+          if (vidData && vidData.videoUrl && !vidData.muted) {
+            try {
+              var response = await fetch(vidData.videoUrl);
+              var blob = await response.blob();
+              var file = new File([blob], 'replaced_video.mp4', { type: 'video/mp4' });
+
+              var audios = await Services.FFmpegService.extractAudio({
+                videoFile: file,
+                totalFrames: totalFrames,
+                fps: fps,
+                onProgress: function () { }
+              });
+
+              if (audios && audios.length > 0 && audios[0].audioData) {
+                audioDataList.push(audios[0].audioData);
+                break;
+              }
+            } catch (e) {
+              console.error('提取替换视频音频失败:', e);
+            }
+          }
+        }
+
+        return audioDataList;
+      },
+
+      /**
+       * 混合多个音频轨道
+       */
+      mergeAudios: async function (audioData1, audioData2) {
+        await Services.FFmpegService.init();
+
+        var ffmpeg = Services.FFmpegService.ffmpeg;
+        if (!ffmpeg) {
+          console.error('FFmpeg未初始化');
+          return audioData1;
+        }
+
+        var inputName1 = 'audio1.mp3';
+        var inputName2 = 'audio2.mp3';
+        var outputName = 'merged_audio.mp3';
+
+        try {
+          ffmpeg.FS('writeFile', inputName1, new Uint8Array(audioData1));
+          ffmpeg.FS('writeFile', inputName2, new Uint8Array(audioData2));
+
+          await ffmpeg.run(
+            '-i', inputName1,
+            '-i', inputName2,
+            '-filter_complex', '[0:a][1:a]amix=inputs=2:duration=longest[a]',
+            '-map', '[a]',
+            '-y', outputName
+          );
+
+          var mergedData = ffmpeg.FS('readFile', outputName);
+
+          ffmpeg.FS('unlink', inputName1);
+          ffmpeg.FS('unlink', inputName2);
+          ffmpeg.FS('unlink', outputName);
+
+          return new Uint8Array(mergedData.buffer || mergedData);
+        } catch (e) {
+          console.error('音频混合失败:', e);
+          return audioData1;
+        }
+      },
+
+      /**
        * 提取序列帧为ImageData数组（用于双通道转换）
        */
       extractFramesForDualChannel: async function () {
@@ -11063,6 +11572,9 @@ function initApp() {
         this.configManager = new Core.ConfigManager();
         this.loadUserConfig();
       }
+
+      // 初始化YYEVA替换资源管理器
+      this.yyevaReplacementManager = new YyevaReplacementManager(this);
 
       // 初始化主题
       this.initTheme();

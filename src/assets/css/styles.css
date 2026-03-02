@@ -214,6 +214,7 @@ body.dark-mode .input-unit--hint {
 
 /* ==================== 顶部导航栏 ==================== */
 
+/* Logo 图片 */
 .header-logo {
   height: 24px;
   width: auto;
@@ -234,6 +235,7 @@ body.dark-mode .header-logo:hover {
   content: url('../img/logo_hover.png');
 }
 
+/* 顶部导航栏容器 */
 .header-navbar {
   width: 100%;
   height: 56px;
@@ -246,6 +248,7 @@ body.dark-mode .header-logo:hover {
   transition: background-color 0.3s, border-color 0.3s, transform 0.3s ease, opacity 0.3s ease;
 }
 
+/* 导航链接文字 */
 .nav-link {
   font-family: 'Noto Sans SC', sans-serif;
   font-weight: 400;
@@ -258,16 +261,29 @@ body.dark-mode .header-logo:hover {
   flex-shrink: 0;
 }
 
+/* 导航链接 hover */
 .nav-link:hover {
   opacity: 0.7;
   text-decoration: underline;
 }
 
+/* 导航链接 - 暗黑模式 */
 body.dark-mode .nav-link {
   color: #66b1ff;
 }
 
+/* 头像链接容器 */
 .avatar-link {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* 头像图标 */
+.avatar-icon {
   width: 24px;
   height: 24px;
   display: flex;
@@ -277,6 +293,7 @@ body.dark-mode .nav-link {
   flex-shrink: 0;
 }
 
+/* 头像图标 - 头像形状 */
 .avatar-icon {
   width: 24px;
   height: 24px;
@@ -285,10 +302,12 @@ body.dark-mode .nav-link {
   transition: opacity 0.3s;
 }
 
+/* 头像 hover 效果 */
 .avatar-link:hover .avatar-icon {
   opacity: 0.7;
 }
 
+/* 顶部导航栏 - 暗黑模式 */
 body.dark-mode .header-navbar {
   background-color: transparent;
   border-bottom-color: transparent;
@@ -305,11 +324,14 @@ body.dark-mode .header-navbar {
   text-align: center;
 }
 
+/* 顶部导航栏标题 - 暗黑模式 */
 body.dark-mode .header-navbar-title {
   color: #e0e0e0;
 }
 
 /* ==================== 左侧操作按钮 ==================== */
+
+/* 左侧操作按钮容器 */
 .header-left-action {
   display: flex;
   align-items: center;
@@ -321,11 +343,14 @@ body.dark-mode .header-navbar-title {
   top: 16px;
 }
 
+/* 左侧操作按钮 hover */
 .header-left-action:hover {
   opacity: 0.7;
 }
 
 /* ==================== 右侧操作按钮 ==================== */
+
+/* 右侧操作按钮容器 */
 .header-right-action {
   display: flex;
   align-items: center;
@@ -350,6 +375,7 @@ body.dark-mode .header-navbar-title {
   transform: translateY(0);
 }
 
+/* 登录按钮 */
 .login-btn {
   width: 24px;
   height: 24px;
@@ -362,6 +388,7 @@ body.dark-mode .header-navbar-title {
   transition: all 0.2s ease;
 }
 
+/* 登录图标（雪碧图） */
 .login-icon {
   width: 24px;
   height: 24px;
@@ -372,29 +399,34 @@ body.dark-mode .header-navbar-title {
   display: flex;
 }
 
+/* 登录图标 - 暗黑模式 */
 body.dark-mode .login-icon {
   background-position: -40px -360px;
 }
 
+/* 登录按钮 hover */
 .login-btn:hover {
   opacity: 0.7;
 }
 
+/* 登录按钮禁用状态 */
 .login-btn.disabled {
   cursor: default;
   opacity: 1;
   pointer-events: none;
 }
 
+/* 登录按钮禁用 hover */
 .login-btn.disabled:hover {
   background: transparent;
 }
 
+/* 登录按钮 hover - 暗黑模式 */
 body.dark-mode .login-btn:hover {
   background: #333333;
 }
 
-/* 登录菜单 */
+/* 登录菜单容器 */
 .login-menu {
   position: absolute;
   top: 100%;
@@ -425,7 +457,7 @@ body.dark-mode .login-btn:hover {
   transform: translateY(0);
 }
 
-/* 确保登录菜单项在登录状态下显示 */
+/* 登录菜单项 */
 .login-menu-item {
   padding: 8px 16px;
   font-size: 14px;
@@ -463,6 +495,7 @@ body.dark-mode .login-btn:hover {
   pointer-events: auto;
 }
 
+/* 登录菜单项 - 重复定义（用于覆盖） */
 .login-menu-item {
   padding: 8px 16px;
   font-size: 14px;
@@ -479,28 +512,34 @@ body.dark-mode .login-btn:hover {
   box-sizing: border-box;
 }
 
+/* 登录菜单项 hover */
 .login-menu-item:hover {
   background: #333333;
   color: #ffffff;
 }
 
+/* 登录菜单 - 暗黑模式 */
 body.dark-mode .login-menu {
   background: transparent;
   border: none;
   box-shadow: none;
 }
 
+/* 登录菜单项 - 暗黑模式 */
 body.dark-mode .login-menu-item {
   background: #666666;
   color: #ffffff;
 }
 
+/* 登录菜单项 - 暗黑模式 hover */
 body.dark-mode .login-menu-item:hover {
   background: #444444;
   color: #ffffff;
 }
 
 /* ==================== 主题切换按钮 ==================== */
+
+/* 主题切换按钮容器 */
 .theme-toggle {
   width: 24px;
   height: 24px;
@@ -515,10 +554,12 @@ body.dark-mode .login-menu-item:hover {
   flex-shrink: 0;
 }
 
+/* 主题切换按钮 hover */
 .theme-toggle:hover {
   opacity: 0.7;
 }
 
+/* 主题切换按钮 SVG 图标 */
 .theme-toggle svg {
   width: 24px;
   height: 24px;
@@ -526,16 +567,18 @@ body.dark-mode .login-menu-item:hover {
   transition: fill 0.3s;
 }
 
+/* 主题切换按钮 SVG - 暗黑模式 */
 body.dark-mode .theme-toggle svg {
   fill: #e0e0e0;
 }
 
-/* Tooltip 气泡 */
+/* Tooltip 气泡容器 */
 .tooltip {
   position: relative;
   display: inline-block;
 }
 
+/* Tooltip 气泡文本 */
 .tooltip .tooltip-text {
   visibility: hidden;
   position: absolute;
@@ -558,13 +601,14 @@ body.dark-mode .theme-toggle svg {
   transition: opacity 0.2s, visibility 0.2s;
 }
 
-/* 主题切换按钮和登录按钮的 tooltip 在下方 */
+/* 主题切换/登录按钮 tooltip 位置 */
 .theme-toggle .tooltip-text,
 .login-btn .tooltip-text {
   bottom: auto;
   top: 125%;
 }
 
+/* Tooltip 气泡文本 - 暗黑模式 */
 body.dark-mode .tooltip .tooltip-text {
   background-color: #2a2a2a;
   border-color: #404040;
@@ -572,6 +616,7 @@ body.dark-mode .tooltip .tooltip-text {
   box-shadow: 0px 6px 10px 0px rgba(0, 0, 0, 0.5);
 }
 
+/* Tooltip 箭头 */
 .tooltip .tooltip-text::after {
   content: '';
   position: absolute;
@@ -583,7 +628,7 @@ body.dark-mode .tooltip .tooltip-text {
   border-color: #ffffff transparent transparent transparent;
 }
 
-/* 主题切换按钮和登录按钮的箭头在上方 */
+/* 主题切换/登录按钮 tooltip 箭头位置 */
 .theme-toggle .tooltip-text::after,
 .login-btn .tooltip-text::after {
   top: auto;
@@ -591,16 +636,20 @@ body.dark-mode .tooltip .tooltip-text {
   border-color: transparent transparent #ffffff transparent;
 }
 
+/* Tooltip 箭头 - 暗黑模式 */
 body.dark-mode .tooltip .tooltip-text::after {
   border-color: #2a2a2a transparent transparent transparent;
 }
 
+/* 主题切换/登录按钮 tooltip 箭头 - 暗黑模式 */
 body.dark-mode .theme-toggle .tooltip-text::after,
 body.dark-mode .login-btn .tooltip-text::after {
   border-color: transparent transparent #2a2a2a transparent;
 }
 
 /* ===== 库加载进度条 ===== */
+
+/* 库加载进度条容器 */
 .library-loading-indicator {
   position: fixed;
   top: 16px;
@@ -609,6 +658,7 @@ body.dark-mode .login-btn .tooltip-text::after {
 
 }
 
+/* 库加载进度条文字 */
 .library-loading-indicator .loading-text {
   font-size: 12px;
   line-height: 19px;
@@ -617,6 +667,7 @@ body.dark-mode .login-btn .tooltip-text::after {
   text-align: center;
 }
 
+/* 滑入动画关键帧 */
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -629,10 +680,12 @@ body.dark-mode .login-btn .tooltip-text::after {
   }
 }
 
+/* 库加载进度条文字 - 暗黑模式 */
 body.dark-mode .library-loading-indicator .loading-text {
   color: #999999;
 }
 
+/* Tooltip hover 显示 */
 .tooltip:hover .tooltip-text {
   visibility: visible;
   opacity: 1;
@@ -818,6 +871,7 @@ body.dark-mode .help-modal-content th {
   color: #333333;
 }
 
+/* Help 弹窗内容 - 标题2样式 */
 .help-modal-content h2 {
   font-size: 1.3em;
   font-weight: 400;
@@ -836,6 +890,7 @@ body.dark-mode .help-modal-content h2 {
 
 /* ====================  主页面容器 ==================== */
 
+/* 主页面容器 */
 .main-page {
   flex: 1;
   display: flex;
@@ -845,14 +900,8 @@ body.dark-mode .help-modal-content h2 {
 }
 
 /* 播放区域 */
-/* 播放区域 - 主容器
- * 结构：占据除顶栏外的所有空间，使用 Flexbox 布局
- * 布局控制：
- *   - align-items: flex-start → 子元素从顶部开始排列，不自动垂直居中
- *   - justify-content: center → 子元素水平居中
- *   - padding-bottom: 190px → 为底部的 .footer-bar 留出空间，确保拖拽虚线边界不超出屏幕
- * 位置控制：子元素 .viewer-container 的垂直位置由 JS 的 offsetY 控制（通过 transform: translateY）
- */
+
+/* 播放器区域容器 */
 .viewer-area {
   flex: 1;
   display: flex;
@@ -881,6 +930,7 @@ body.dark-mode .help-modal-content h2 {
   transition: opacity 0.2s ease;
 }
 
+/* 拖拽覆盖层显示状态 */
 .drop-overlay.show {
   opacity: 1;
   pointer-events: auto;
@@ -903,6 +953,7 @@ body.dark-mode .help-modal-content h2 {
   box-sizing: border-box;
 }
 
+/* 拖拽提示文字 */
 .drop-hint-text {
   font-size: 40px;
   font-weight: 500;
@@ -922,15 +973,7 @@ body.dark-mode .drop-hint-text {
   color: #F5F5F5;
 }
 
-/* 播放器容器
- * 结构：包裹文件名 + 播放器画布，大小由 JS 动态设置为原始尺寸（如 1080x1920）
- * 缩放机制：
- *   - transform-origin: top center → 缩放原点在顶部中心，缩放时视觉顶部保持在y=0处
- *   - transform: translate + scale → 由 JS 动态设置，translate 控制位置，scale 控制缩放
- * 关键设计：
- *   - 使用 top center 而非 center center，避免缩放后视觉顶部位置偏移导致内容显示偏下
- *   - width/height 为原始尺寸，缩放通过 transform: scale() 实现，保证布局计算正确
- */
+/* 播放器容器 */
 .viewer-container {
   position: relative;
   transform-origin: top center;
@@ -940,12 +983,7 @@ body.dark-mode .drop-hint-text {
   justify-content: flex-start;
 }
 
-/* 播放器上方文件名 */
-/* 播放器上方文件名
- * 位置：绝对定位于 .viewer-container 的顶部上方（bottom: 100%）
- * 缩放补偿：父容器缩放时，文件名通过 JS 设置反向 scale 保持字体大小不变
- * 显示控制：最大宽度跟随播放器宽度，超出部分显示省略号
- */
+/* 播放器文件名 */
 .viewer-filename {
   position: absolute;
   bottom: 100%;
@@ -965,6 +1003,7 @@ body.dark-mode .drop-hint-text {
   transition: color 0.3s;
 }
 
+/* 播放器文件名 - 暗黑模式 */
 body.dark-mode .viewer-filename {
   color: #999999;
 }
@@ -983,6 +1022,7 @@ body.dark-mode .viewer-filename {
   justify-content: center;
 }
 
+/* 播放器 canvas 元素 */
 .viewer-canvas canvas {
   transition: background-color 0.3s;
   position: relative !important;
@@ -996,7 +1036,7 @@ body.dark-mode .viewer-filename {
   -ms-interpolation-mode: bicubic;
 }
 
-/* 空状态覆盖层 */
+/* 空状态覆盖层容器 */
 .empty-state-overlay {
   position: absolute;
   inset: 0;
@@ -1008,12 +1048,14 @@ body.dark-mode .viewer-filename {
   margin-bottom: 240px;
 }
 
+/* 空状态图标 */
 .empty-state-icon {
   width: 80px;
   height: 105px; 
   margin-bottom: 8px;
 }
 
+/* 空状态图标内的SVG/图片 */
 .empty-state-icon svg,
 .empty-state-icon img {
   width: 100%;
@@ -1021,6 +1063,7 @@ body.dark-mode .viewer-filename {
   object-fit: contain;
 }
 
+/* 空状态标语 */
 .empty-state-slogan {
   font-family: 'Segoe UI', sans-serif;
   font-weight: 400;
@@ -1031,6 +1074,7 @@ body.dark-mode .viewer-filename {
   margin-bottom: 80px;
 }
 
+/* 空状态文本容器 */
 .empty-state-text {
   display: flex;
   flex-direction: column;
@@ -1040,6 +1084,7 @@ body.dark-mode .viewer-filename {
   margin-bottom: 80px;
 }
 
+/* 空状态主标题 */
 .empty-state-title {
   font-family: 'Segoe UI', sans-serif;
   font-weight: 500;
@@ -1051,6 +1096,7 @@ body.dark-mode .viewer-filename {
   margin-bottom: 8px;
 }
 
+/* 空状态副标题 */
 .empty-state-subtitle {
   font-family: 'Segoe UI', sans-serif;
   font-weight: 500;
@@ -1060,10 +1106,12 @@ body.dark-mode .viewer-filename {
   text-align: center;
 }
 
+/* 空状态标语 - 暗黑模式 */
 body.dark-mode .empty-state-slogan {
   color: #666666;
 }
 
+/* 空状态副标题 - 暗黑模式 */
 body.dark-mode .empty-state-subtitle {
   color: #999999;
 }
@@ -1074,6 +1122,7 @@ body.dark-mode .empty-state-title {
 
 /* ==================== 底部主控制区 ==================== */
 
+/* 底部主控制栏 */
 .footer-bar {
   position: absolute;
   top: calc(100vh - 190px);
@@ -1091,6 +1140,7 @@ body.dark-mode .empty-state-title {
   z-index: 130;
 }
 
+/* 底部控制栏空状态 */
 .footer-bar.is-empty {
   top: 540px;
   width: 300px;
@@ -1100,6 +1150,8 @@ body.dark-mode .empty-state-title {
 }
 
 /* ==================== 广告位 ==================== */
+
+/* 广告位容器 */
 .ad-slot {
   display: none;
   width: 240px;
@@ -1235,14 +1287,17 @@ body.dark-mode .mode-name-label * {
   background-repeat: no-repeat;
 }
 
+/* 清空画布按钮内的关闭图标 - 默认隐藏 */
 .clear-canvas-btn .btn-icon-close {
   display: none;
 }
 
+/* 清空画布按钮 hover 状态 */
 .clear-canvas-btn:hover {
   background-color: #FF8888;
 }
 
+/* 清空画布按钮 active（按下）状态 */
 .clear-canvas-btn:active {
   background-color: #FF5252;
 }
@@ -1253,6 +1308,7 @@ body.dark-mode .clear-canvas-btn {
   background-position: -360px -160px;
 }
 
+/* 暗黑模式 - 清空画布按钮内的关闭图标隐藏 */
 body.dark-mode .clear-canvas-btn .sprite-close {
   display: none;
 }
@@ -1263,6 +1319,7 @@ body.dark-mode .clear-canvas-btn:hover {
   /* hover时用回黑色图标（因为背景变红了） */
 }
 
+/* 暗黑模式 - 清空画布按钮 hover 状态下关闭图标隐藏 */
 body.dark-mode .clear-canvas-btn:hover .sprite-close {
   display: none;
 }
@@ -1272,6 +1329,7 @@ body.dark-mode .clear-canvas-btn:active {
   background-position: -320px -160px;
 }
 
+/* 暗黑模式 - 清空画布按钮 active 状态下关闭图标隐藏 */
 body.dark-mode .clear-canvas-btn:active .sprite-close {
   display: none;
 }
@@ -1321,10 +1379,12 @@ body.dark-mode .clear-canvas-btn:active .sprite-close {
   color: #fcfcfc;
 }
 
+/* 空白页状态下的点击上传文字 */
 .footer-main.footer-main-empty .click-upload-text {
   color: #fcfcfc;
 }
 
+/* 空白页状态下点击上传文字 hover 状态 */
 .footer-main.footer-main-empty .click-upload-text:hover {
   color: #ffffff;
 }
@@ -1337,6 +1397,7 @@ body.dark-mode .clear-canvas-btn:active .sprite-close {
   padding: 0;
 }
 
+/* 空状态底部提示副文字 */
 .footer-empty-tip-sub {
   font-weight: 700;
   font-size: 20px;
@@ -1349,6 +1410,7 @@ body.dark-mode .footer-empty-tip-sub {
   color: #E6E6E6;
 }
 
+/* 点击上传文字 */
 .click-upload-text {
   color: #333333;
   cursor: pointer;
@@ -1357,6 +1419,7 @@ body.dark-mode .footer-empty-tip-sub {
   font-weight: 700;
 }
 
+/* 点击上传文字 hover 状态 */
 .click-upload-text:hover {
   color: #000000;
   /* text-decoration: underline; */
@@ -1410,6 +1473,7 @@ body.dark-mode .footer-main {
   width: auto;
 }
 
+/* 模块切换标签按钮 */
 .tab-btn {
   height: 28px;
   padding: 0 8px;
@@ -1432,6 +1496,7 @@ body.dark-mode .tab-btn {
   color: #e0e0e0;
 }
 
+/* 模块切换标签按钮 hover 状态 */
 .tab-btn:hover {
   background-color: #fcfcfc;
   border-color: #e6e6e6;
@@ -1442,6 +1507,7 @@ body.dark-mode .tab-btn:hover {
   border-color: #555555;
 }
 
+/* 模块切换标签按钮 - 激活状态 */
 .tab-btn.is-active {
   background-color: #5b5b5b;
   border-color: #5b5b5b;
@@ -1453,14 +1519,17 @@ body.dark-mode .tab-btn.is-active {
   border-color: #666666;
 }
 
+/* 模块切换标签按钮 - 激活状态 hover */
 .tab-btn.is-active:hover {
   border-color: #333333;
 }
 
+/* 模块切换标签按钮 - 激活状态 active（按下） */
 .tab-btn.is-active:active {
   background-color: #333333;
 }
 
+/* 关闭按钮 */
 .close-btn {
   width: 28px;
   height: 28px;
@@ -1471,6 +1540,7 @@ body.dark-mode .tab-btn.is-active {
   position: relative;
 }
 
+/* 关闭按钮 - 伪元素（X 符号的两条线） */
 .close-btn::before,
 .close-btn::after {
   content: '';
@@ -1491,11 +1561,13 @@ body.dark-mode .tab-btn.is-active {
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
+/* 关闭按钮 hover 状态 */
 .close-btn:hover::before,
 .close-btn:hover::after {
   background-color: #5b5b5b;
 }
 
+/* 关闭按钮 active（按下）状态 */
 .close-btn:active::before,
 .close-btn:active::after {
   background-color: #333333;
@@ -1511,6 +1583,7 @@ body.dark-mode .tab-btn.is-active {
   min-height: 22px;
 }
 
+/* 信息项容器 */
 .info-item {
   display: flex;
   flex-direction: row;
@@ -1518,6 +1591,7 @@ body.dark-mode .tab-btn.is-active {
   gap: 0;
 }
 
+/* 信息项标签 */
 .info-item-label {
   font-family: 'Segoe UI', sans-serif;
   font-style: normal;
@@ -1533,6 +1607,7 @@ body.dark-mode .info-item-label {
   color: #999999;
 }
 
+/* 信息项值 */
 .info-item-value {
   font-family: 'Segoe UI', sans-serif;
   font-style: normal;
@@ -1556,6 +1631,7 @@ body.dark-mode .info-item-value {
   gap: 10px;
 }
 
+/* 控制区域左侧 */
 .controls-left {
   display: flex;
   flex-direction: row;
@@ -1563,6 +1639,7 @@ body.dark-mode .info-item-value {
   gap: 12px;
 }
 
+/* 控制区域中间 */
 .controls-center {
   flex: 1;
   display: flex;
@@ -1572,6 +1649,7 @@ body.dark-mode .info-item-value {
   gap: 8px;
 }
 
+/* 控制区域右侧 */
 .controls-right {
   display: flex;
   flex-direction: row;
@@ -1640,11 +1718,13 @@ body.dark-mode .info-item-value {
   transition: border-color 0.2s;
 }
 
+/* 颜色选择按钮 hover 状态 */
 .color-btn:hover {
   border-color: #5b5b5b7b;
   border-width: 3px;
 }
 
+/* 颜色选择按钮 - 选中状态 */
 .color-btn.is-active {
   border-color: #333333;
   border-width: 3px;
@@ -1839,6 +1919,7 @@ body.dark-mode .progress-bar:hover {
   border-color: #6D6D6D;
 }
 
+/* 进度条填充 */
 .progress-fill {
   height: 100%;
   background-color: #5B5B5B;
@@ -1876,6 +1957,7 @@ body.dark-mode .progress-fill:hover {
   pointer-events: auto;
 }
 
+/* 进度条滑块 - 暗黑模式 */
 body.dark-mode .progress-thumb {
   background-color: #EBEBEB;
 }
@@ -1884,12 +1966,14 @@ body.dark-mode .progress-thumb:hover {
   background-color: #409eff;
 }
 
+/* 进度条滑块 hover */
 .progress-thumb:hover {
   transform: translate(-50%, -50%) scale(1.2);
   box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.2);
   background-color: #409eff;
 }
 
+/* 进度条滑块 active */
 .progress-thumb:active {
   cursor: grabbing;
   transform: translate(-50%, -50%) scale(1.3);
@@ -1897,6 +1981,7 @@ body.dark-mode .progress-thumb:hover {
   background-color: #409eff;
 }
 
+/* 进度文本容器 */
 .progress-text {
   margin-left: 8px;
   display: flex;
@@ -1910,17 +1995,19 @@ body.dark-mode .progress-thumb:hover {
   white-space: nowrap;
 }
 
+/* 进度时间文本 */
 .progress-time {
   min-width: 45px;
 }
 
+/* 进度帧数文本 */
 .progress-frames {
   min-width: 60px;
 }
 
 /* ==================== 通用按钮系统 ==================== */
 
-/* 中按钮通用样式（28px高度，8px圆角） */
+/* 中按钮通用样式 */
 .btn-primary,
 .btn-secondary {
   height: 28px;
@@ -2462,19 +2549,22 @@ body.dark-mode .zoom-btn[data-type="out"]:hover {
   background-position: 0px -120px;
 }
 
+/* 放大按钮 hover */
 .zoom-btn[data-type="in"]:hover {
   background-position: -40px -120px;
 }
 
+/* 放大按钮 - 暗黑模式 */
 body.dark-mode .zoom-btn[data-type="in"] {
   background-position: -160px -120px;
 }
 
+/* 放大按钮 hover - 暗黑模式 */
 body.dark-mode .zoom-btn[data-type="in"]:hover {
   background-position: -200px -120px;
 }
 
-/* 显示缩放百分比*/
+/* 显示缩放百分比文字 */
 .scale-percentage {
   width: 60px;
   font-family: 'Segoe UI', sans-serif;
@@ -2490,7 +2580,7 @@ body.dark-mode .scale-percentage {
   color: #999999;
 }
 
-/* 1:1按钮（默认状态：适应屏幕高度模式下显示） */
+/* 1:1按钮 */
 .reset-scale-btn {
   width: 28px;
   height: 28px;
@@ -2512,17 +2602,19 @@ body.dark-mode .scale-percentage {
   /* one2one_hover.png */
 }
 
+/* 1:1按钮 - 暗黑模式 */
 body.dark-mode .reset-scale-btn {
   background-position: 0px -160px;
   /* one2one_dark.png */
 }
 
+/* 1:1按钮 hover - 暗黑模式 */
 body.dark-mode .reset-scale-btn:hover {
   background-position: -40px -160px;
   /* one2one_hover_dark.png */
 }
 
-/* 适应屏幕高度按钮（当1:1模式下显示） */
+/* 适应屏幕高度按钮 */
 .reset-scale-btn.is-contain {
   background-position: -80px -160px;
   /* contain.png */
@@ -2533,11 +2625,13 @@ body.dark-mode .reset-scale-btn:hover {
   /* contain_hover.png */
 }
 
+/* 适应屏幕高度按钮 - 暗黑模式 */
 body.dark-mode .reset-scale-btn.is-contain {
   background-position: -160px -160px;
   /* contain_dark.png */
 }
 
+/* 适应屏幕高度按钮 hover - 暗黑模式 */
 body.dark-mode .reset-scale-btn.is-contain:hover {
   background-position: -200px -160px;
   /* contain_hover_dark.png */
@@ -2901,6 +2995,7 @@ body.dark-mode .clear-btn svg path {
   padding: 16px;
 } */
 
+/* 空状态底部提示主文字 */
 .footer-empty-tip-main {
   font-family: 'Segoe UI', sans-serif;
   font-weight: 400;
@@ -3250,6 +3345,7 @@ body.dark-mode .material-panel-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* 素材列表 */
 .material-list {
   display: contents;
 }
@@ -5807,6 +5903,7 @@ body.dark-mode .material-btn-edit:hover {
   border-color: #606060;
 }
 
+/* 编辑按钮上的红点标记 */
 .edit-dot {
   position: absolute;
   top: 2px;
@@ -5906,3 +6003,4 @@ body.dark-mode .text-align-center {
 body.dark-mode .text-align-right {
   background-position: -358px -318px;
 }
+

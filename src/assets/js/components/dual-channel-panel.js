@@ -269,9 +269,12 @@
         // 计算并保存宽高比（始终使用原始文件的比例，确保缩放时比例正确）
         var originalWidth = source.width || this.config.width;
         var originalHeight = source.height || this.config.height;
-        if (originalWidth > 0 && originalHeight > 0) {
-          this.aspectRatio = originalWidth / originalHeight;
-        } else {
+        // 确保宽高是有效数字
+        if (!isFinite(originalWidth) || originalWidth <= 0) originalWidth = 300;
+        if (!isFinite(originalHeight) || originalHeight <= 0) originalHeight = 300;
+        this.aspectRatio = originalWidth / originalHeight;
+        // 确保 aspectRatio 是有效数字
+        if (!isFinite(this.aspectRatio) || this.aspectRatio <= 0) {
           this.aspectRatio = 1;
         }
 

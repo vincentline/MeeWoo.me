@@ -18,6 +18,15 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-03-02 12:48:22] 【新增文件】 : src/assets/js/service/material-editor/text-renderer.js - 新增文字渲染服务，支持CSS样式过滤、渐变填充、文字阴影、文字描边等特效，返回PNG格式DataURL
+[2026-03-02 12:47:06] 【新增文件】 : src/assets/js/service/material-editor/image-transformer.js - 新增图片变换服务，支持 URL/Blob/Base64 图片加载，提供 cover/contain 两种填充模式的图片变换功能
+[2026-03-02 02:49:55] 【修改文件】 : src/assets/js/components/yyeva-key-panel.js - YYEVA key素材替换功能扩展：支持MP4视频上传，预览区显示中间帧，hover时自动播放视频，新增视频替换相关的数据管理和交互逻辑
+[2026-03-02 02:49:55] 【修改文件】 : src/assets/js/service/yyeva/yyeva-renderer.js - 新增视频渲染支持：实现 _renderVideo 和 _renderVideoWithMask 方法，支持视频帧渲染与蒙版透明度应用，保持与图片渲染相同的cover缩放模式和蒙版处理机制
+[2026-03-02 02:49:55] 【修改文件】 : src/assets/js/core/app.js - 新增替换视频的同步控制功能：实现视频元素生命周期管理（_createReplacedVideoElement、_cleanupReplacedVideos、_removeReplacedVideo）、播放状态同步（_syncReplacedVideosPlayState）、时间同步（_syncReplacedVideosTime）及相关的事件处理方法（handleYyevaVideoReplaced、handleYyevaVideoRestored），在模块清理时释放资源
+[2026-03-02 02:49:55] 【修改文件】 : src/assets/js/controllers/player-controller.js -双通道MP4播放适配器：在播放、暂停、进度跳转时同步控制所有替换视频元素，保持与主播放器完全一致的播放状态和时间进度
+[2026-03-02 02:49:55] 【修改文件】 : src/assets/css/panel.css - 新增YYEVA视频替换的预览样式：支持 .yyeva-key-thumb-video视频元素展示，添加 .yyeva-key-thumb-badge视频角标标识，优化 .yyeva-key-meta-video 类型信息文本样式，包含深色模式适配
+[2026-03-02 02:49:55] 【修改文件】 : src/index.html - 为 YYEVA Key面板组件新增属性绑定和事件处理：添加 replaced-videos 数据属性，增加 video-replaced 和 video-restored 事件监听器，实现完整视频替换功能的数据流传递
+[2026-03-02 02:49:55] 【修改文件】 : docs/index.html - 与 src/index.html 保持一致的修改
 [2026-03-02 14:30:00] 【修改文件】 : src/coi-serviceworker.js - 参考官方coi-serviceworker重写：credentialless模式不需要为资源设置CORP头，同时解决GIF Worker和FFmpeg wasm加载问题
 [2026-03-02 14:30:00] 【修改文件】 : src/index.html - Service Worker版本号升级到v=13
 [2026-03-02 14:00:00] 【修改文件】 : src/coi-serviceworker.js - 修复线上FFmpeg加载失败：对CDN请求改用显式fetch透传模式（而非跳过），解决COEP环境下跨域wasm加载问题

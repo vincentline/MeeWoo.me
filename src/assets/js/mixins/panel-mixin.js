@@ -421,23 +421,58 @@
           config.fps = fileInfo.fps || 25;
           config.aspectRatio = frames.originalWidth && frames.originalHeight ? (frames.originalWidth / frames.originalHeight) : 1;
           config.muted = true; // 序列帧无声
+        } else if (this.currentModule === 'yyeva') {
+          // 安全获取yyeva(双通道MP4)相关属性
+          var yyeva = this.yyeva || {};
+          var fileInfo = yyeva.fileInfo || {};
+          sourceInfo.name = fileInfo.name || '';
+          sourceInfo.sizeWH = fileInfo.sizeWH || '';
+          sourceInfo.duration = fileInfo.duration || '';
+          sourceInfo.fileSize = this.utils && fileInfo.size ? this.utils.formatBytes(fileInfo.size) : '';
+          sourceInfo.fps = fileInfo.fps || 30;
+          sourceInfo.typeLabel = '双通道MP4';
+
+          // 使用播放器的显示尺寸（而非原始视频尺寸），添加NaN和0检查
+          var yyevaObj = yyeva || {};
+          var displayW = yyevaObj.displayWidth;
+          var displayH = yyevaObj.displayHeight;
+          var origW = yyevaObj.originalWidth;
+          var origH = yyevaObj.originalHeight;
+          // 安全获取所有值
+          var finalWidth = (displayW && isFinite(displayW) && displayW > 0) ? displayW : ((origW && isFinite(origW) && origW > 0) ? origW : 300);
+          var finalHeight = (displayH && isFinite(displayH) && displayH > 0) ? displayH : ((origH && isFinite(origH) && origH > 0) ? origH : 300);
+          // 确保最终值是有效数字
+          finalWidth = isFinite(finalWidth) ? Math.round(finalWidth) : 300;
+          finalHeight = isFinite(finalHeight) ? Math.round(finalHeight) : 300;
+          config.width = finalWidth;
+          config.height = finalHeight;
+          config.fps = fileInfo.fps || 30;
+          sourceInfo.width = finalWidth;
+          sourceInfo.height = finalHeight;
+          var aspectRatio = finalWidth / finalHeight;
+          config.aspectRatio = isFinite(aspectRatio) ? aspectRatio : 1;
+          config.muted = this.yyevaHasAudio ? false : true;
         }
 
-        // 强制设置默认值，确保不会是undefined
+        // 强制设置默认值，确保不会是undefined或NaN
         sourceInfo.name = sourceInfo.name || '';
         sourceInfo.sizeWH = sourceInfo.sizeWH || '';
         sourceInfo.duration = sourceInfo.duration || '';
         sourceInfo.fileSize = sourceInfo.fileSize || '';
         sourceInfo.fps = sourceInfo.fps || 30;
         sourceInfo.typeLabel = sourceInfo.typeLabel || '未知';
+        // 确保宽高是有效数字
+        sourceInfo.width = isFinite(sourceInfo.width) ? sourceInfo.width : 300;
+        sourceInfo.height = isFinite(sourceInfo.height) ? sourceInfo.height : 300;
 
         config.channelMode = config.channelMode || 'color-left-alpha-right';
-        config.width = config.width || 300;
-        config.height = config.height || 300;
-        config.quality = config.quality || 80;
-        config.fps = config.fps || 30;
+        // 使用 Number() 确保返回有效数字
+        config.width = Number(config.width) || 300;
+        config.height = Number(config.height) || 300;
+        config.quality = Number(config.quality) || 80;
+        config.fps = Number(config.fps) || 30;
         config.muted = config.muted || false;
-        config.aspectRatio = config.aspectRatio || 1;
+        config.aspectRatio = Number(config.aspectRatio) || 1;
 
         this.dualChannelSourceInfo = sourceInfo;
         this.dualChannelConfig = config;
@@ -488,6 +523,9 @@
         } else if (this.currentModule === 'frames') {
           this.imagesToDualChannelConfig = Object.assign({}, this.imagesToDualChannelConfig || {}, config);
           this.startFramesToDualChannelConversion(config);
+        } else if (this.currentModule === 'yyeva') {
+          this.yyevaToDualChannelConfig = Object.assign({}, this.yyevaToDualChannelConfig || {}, config);
+          this.startYyevaToDualChannelConversion(config);
         }
       },
 
