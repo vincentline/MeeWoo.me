@@ -6,11 +6,12 @@
 """
 
 import os
+import shutil
 from PIL import Image
 import json
 
 # 配置
-IMG_DIR = 'docs/assets/img'
+IMG_DIR = 'src/assets/png'
 OUTPUT_SPRITE = 'docs/assets/img/controls-sprite.png'
 OUTPUT_CSS = 'docs/assets/css/sprite-generated.css'
 
@@ -224,9 +225,23 @@ def generate_sprite():
 
         print(f"  📍 {icon_name}: ({x}px, {y}px)")
 
+    # 确保输出目录存在
+    output_dir = os.path.dirname(OUTPUT_SPRITE)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+    
     # 保存雪碧图（不压缩，保持最高质量）
     sprite.save(OUTPUT_SPRITE, 'PNG', compress_level=0)
     print(f"✅ 雪碧图已保存: {OUTPUT_SPRITE}")
+
+    # 同时复制到 src/assets/img 目录，因为开发服务器用的也是雪碧图，不是原始图标
+    src_img_dir = 'src/assets/img'
+    if not os.path.exists(src_img_dir):
+        os.makedirs(src_img_dir, exist_ok=True)
+    
+    src_sprite_path = os.path.join(src_img_dir, os.path.basename(OUTPUT_SPRITE))
+    shutil.copy2(OUTPUT_SPRITE, src_sprite_path)
+    print(f"✅ 雪碧图已复制到: {src_sprite_path}")
 
     # 生成CSS
     generate_css(icon_positions, icon_width, icon_height)
@@ -236,6 +251,11 @@ def generate_sprite():
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(icon_positions, f, indent=2, ensure_ascii=False)
     print(f"✅ 位置信息已保存: {json_path}")
+    
+    # 同时复制JSON文件到 src/assets/img 目录，因为开发服务器用的也是雪碧图，不是原始图标
+    src_json_path = os.path.join(src_img_dir, os.path.basename(json_path))
+    shutil.copy2(json_path, src_json_path)
+    print(f"✅ 位置信息已复制到: {src_json_path}")
 
     return True
 
@@ -295,6 +315,11 @@ def generate_css(positions, width, height):
     ])
 
     css_content = '\n'.join(css_lines)
+
+    # 确保输出目录存在
+    css_output_dir = os.path.dirname(OUTPUT_CSS)
+    if not os.path.exists(css_output_dir):
+        os.makedirs(css_output_dir, exist_ok=True)
 
     with open(OUTPUT_CSS, 'w', encoding='utf-8') as f:
         f.write(css_content)

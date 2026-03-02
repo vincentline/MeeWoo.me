@@ -20,7 +20,7 @@ import sys
 # 全局定义排除规则
 # ==============================================
 # 要排除的文件名
-exclude_files = ['index.html', '404.html', 'drawer.css', 'panel.css', 'sprite-generated.css', 'style.css']
+exclude_files = ['index.html', '404.html', 'drawer.css', 'panel.css', 'sprite-generated.css', 'style.css', 'styles.css']
 # 要排除的文件夹名
 exclude_folders = ['gadgets', 'css']
 # 要排除的JS文件（已压缩的第三方库，避免二次压缩）
@@ -62,6 +62,56 @@ def copy_directory(source, destination):
                 if item in exclude_files:
                     print_info(f"跳过排除的文件: {item}")
                     continue  # 跳过当前文件，继续复制下一个
+                
+                # 对于img目录，只复制未包含在雪碧图中的图标
+                if "img" in source and item.endswith('.png'):
+                    # 动态从generate-sprite.py获取雪碧图图标列表
+                    import ast
+                    sprite_icons = set()
+                    try:
+                        # 读取generate-sprite.py文件
+                        with open('generate-sprite.py', 'r', encoding='utf-8') as f:
+                            tree = ast.parse(f.read(), filename='generate-sprite.py')
+                        
+                        # 遍历AST找到ICONS字典
+                        for node in ast.walk(tree):
+                            if isinstance(node, ast.Assign):
+                                for target in node.targets:
+                                    if isinstance(target, ast.Name) and target.id == 'ICONS':
+                                        if isinstance(node.value, ast.Dict):
+                                            # 解析字典内容
+                                            icons_dict = {}
+                                            for key, value in zip(node.value.keys, node.value.values):
+                                                # 处理键
+                                                if hasattr(ast, 'Constant') and isinstance(key, ast.Constant):
+                                                    category = key.value
+                                                elif hasattr(ast, 'Str') and isinstance(key, ast.Str):
+                                                    category = key.s
+                                                else:
+                                                    continue
+                                                
+                                                if isinstance(value, ast.List):
+                                                    icons = []
+                                                    for element in value.elts:
+                                                        # 处理值
+                                                        if hasattr(ast, 'Constant') and isinstance(element, ast.Constant):
+                                                            icons.append(element.value)
+                                                        elif hasattr(ast, 'Str') and isinstance(element, ast.Str):
+                                                            icons.append(element.s)
+                                                    icons_dict[category] = icons
+                                                
+                                            # 收集所有图标文件名
+                                            for category, icons in icons_dict.items():
+                                                for icon in icons:
+                                                    sprite_icons.add(icon)
+                                        break
+                    except Exception as e:
+                        print_error(f"获取雪碧图图标列表失败: {e}")
+                    
+                    if item in sprite_icons:
+                        print_info(f"跳过雪碧图中的图标: {item}")
+                        continue
+                
                 shutil.copy2(s, d)  # 不是排除文件才执行复制
         print_info(f"复制目录完成: {source} -> {destination}")
     except Exception as e:
@@ -144,6 +194,15 @@ def compress_js_files(directory):
 def main():
     """主函数"""
     print_info("===== 开始执行静态资源复制和压缩 =====")
+    
+    # 生成雪碧图
+    print_info("===== 开始生成雪碧图 =====")
+    try:
+        import subprocess
+        subprocess.run(['python', 'generate-sprite.py'], check=True, capture_output=False, text=True)
+        print_info("雪碧图生成成功")
+    except Exception as e:
+        print_error(f"生成雪碧图失败: {e}")
     
     # 定义源目录和目标目录
     src_dir = os.path.join(os.getcwd(), 'src')
