@@ -896,10 +896,14 @@
     <yyeva-key-panel :visible="activeRightPanel === 'yyeva-key' && currentModule === 'yyeva'" 
       :image-keys="yyevaImageKeys" :text-keys="yyevaTextKeys"
       :replaced-images="yyevaReplacedImages" :replaced-texts="yyevaReplacedTexts"
+      :replaced-videos="yyevaReplacedVideos"
       @close="closeRightPanel"
       @confirm="handleYyevaKeyConfirm"
       @image-replaced="handleYyevaImageReplaced"
       @image-restored="handleYyevaImageRestored"
+      @video-replaced="handleYyevaVideoReplaced"
+      @video-restored="handleYyevaVideoRestored"
+      @video-mute-changed="handleYyevaVideoMuteChanged"
       @text-restored="handleYyevaTextRestored"
       @text-input="handleYyevaTextInput"></yyeva-key-panel>
 
