@@ -192,7 +192,10 @@
     },
     'ffmpeg': {
       name: 'FFmpeg',
-      url: 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js',
+      url: 'assets/js/lib/ffmpeg.min.js',
+      fallbackUrls: [
+        'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js'
+      ],
       checkFn: function () { return typeof FFmpeg !== 'undefined'; },
       priority: 30
     },

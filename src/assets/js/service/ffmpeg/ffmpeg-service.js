@@ -68,9 +68,9 @@
          * @returns {Promise<string>}
          */
         _getBestCorePath: async function () {
-            // 固定使用unpkg CDN，不使用备用方案
-            var corePath = 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js';
-            console.log('[调试] 使用固定FFmpeg Core Path:', corePath);
+            // 使用腾讯云CDN加速（ffmpeg-core.worker.js 和 ffmpeg-core.wasm 会自动从同目录加载）
+            var corePath = 'https://blog-1258489735.cos.accelerate.myqcloud.com/other/lib/ffmpeg/ffmpeg-core.js';
+            console.log('[调试] 使用腾讯云CDN FFmpeg Core Path:', corePath);
             return corePath;
         },
 

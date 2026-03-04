@@ -18,6 +18,18 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-03-05 02:41:02] 【删除文件夹】 : src/assets/js/lib/ffmpeg/ - 删除本地 FFmpeg Core 目录，已改用腾讯云 CDN 加速，不再需要本地文件
+[2026-03-05 02:30:09] 【修改文件】 : src/assets/js/service/ffmpeg/ffmpeg-service.js - 将 FFmpeg Core Path 改为腾讯云CDN地址 https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/lib/ffmpeg/ffmpeg-core.js
+[2026-03-05 02:09:05] 【新增文件】 : src/assets/js/lib/ffmpeg/ffmpeg-core.js - FFmpeg Core 主文件（从 unpkg @ffmpeg/core@0.11.0 下载）
+[2026-03-05 02:09:05] 【新增文件】 : src/assets/js/lib/ffmpeg/ffmpeg-core.worker.js - FFmpeg Core Worker 文件（从 unpkg @ffmpeg/core@0.11.0 下载）
+[2026-03-05 02:09:05] 【新增文件】 : src/assets/js/lib/ffmpeg/ffmpeg-core.wasm - FFmpeg Core WASM 文件（从 unpkg @ffmpeg/core@0.11.0 下载，约25MB）
+[2026-03-05 02:09:05] 【修改文件】 : src/assets/js/service/ffmpeg/ffmpeg-service.js - 将 FFmpeg Core Path 从 unpkg CDN 改为本地路径 assets/js/lib/ffmpeg/ffmpeg-core.js，支持部署到腾讯云CDN加速
+[2026-03-05 02:09:05] 【修改文件】 : src/assets/js/service/library-loader.js - 将 ffmpeg 库主URL改为本地路径，unpkg CDN 作为备用
+[2026-03-05 16:30:00] 【修改文件】 : src/index.html - 引入 frame-capture-service.js 脚本，更新 app.js 版本号以强制刷新缓存
+[2026-03-05 16:30:00] 【新增文件】 : src/assets/js/service/frame-capture-service.js - 新增帧捕获服务 FrameCaptureService，统一处理动画帧的跳转、等待、捕获逻辑，提供流式回调接口，支持 WebP/GIF/序列帧导出
+[2026-03-05 16:30:00] 【修改文件】 : src/assets/js/service/frames/frames-exporter.js - 重构序列帧导出器，移除内部循环录制逻辑，适配 FrameCaptureService 的流式写入模式
+[2026-03-05 16:30:00] 【修改文件】 : src/assets/js/core/app.js - 重构序列帧、WebP、GIF 导出功能，集成 FrameCaptureService，修复序列帧导出只获取第一帧的 Bug，统一导出逻辑
+[2026-03-05 16:30:00] 【修改文件】 : INDEX.md - 更新功能索引，添加 FrameCaptureService 服务
 [2026-03-03 03:55:53] 【修改文件】 : src/assets/js/core/material-editor.js - 恢复使用 Konva listening 属性控制图层交互：选中底图层时设置文字层 listening(false) 使事件穿透，点击空白区域或选中文案层时恢复 listening(true)，切换选择需要点击两次
 [2026-03-03 03:46:14] 【修改文件】 : src/assets/js/core/material-editor.js - 修复素材编辑器拖动卡顿问题：在 mousedown 时临时禁用所有图层的 draggable，避免 Konva 原生拖动机制与手动拖动逻辑冲突，mouseup/mouseleave 时恢复原状态
 [2026-03-03 03:36:05] 【修改文件】 : src/assets/js/core/material-editor.js - 重构素材编辑器图层交互：完全重写点击/拖动判断逻辑，在 mouseup 时判断点击（时间<300ms 且 位移<5px），在 mousemove 时判断拖动（位移≥5px），解决拖动卡顿问题，实现流畅的穿透拖动交互

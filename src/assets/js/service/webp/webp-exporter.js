@@ -84,6 +84,94 @@
         },
 
         /**
+         * 从已捕获的 Blob 数组导出动画 WebP
+         * @param {Blob[]} blobs 帧数据数组
+         * @param {Object} config 配置对象 (width, height, fps)
+         * @param {Function} onProgress 进度回调
+         * @returns {Promise<Blob>} WebP文件Blob
+         */
+        exportFromBlobs: async function(blobs, config, onProgress) {
+            var _this = this;
+            var width = config.width || 300;
+            var height = config.height || 300;
+            var fps = config.fps || 30;
+            var onProgress = onProgress || function() {};
+
+            try {
+                // 1. 初始化webpxmux
+                onProgress(0.3, 'init', '初始化编码器...');
+                var xMux = await this.initWebPXMux();
+
+                // 2. 创建临时canvas用于解码Blob
+                var tempCanvas = document.createElement('canvas');
+                tempCanvas.width = width;
+                tempCanvas.height = height;
+                var tempCtx = tempCanvas.getContext('2d', {
+                    willReadFrequently: true,
+                    alpha: true
+                });
+
+                // 3. 处理帧数据
+                var framesArray = [];
+                var frameDuration = Math.round(1000 / fps);
+
+                for (var i = 0; i < blobs.length; i++) {
+                    onProgress(0.3 + (i / blobs.length) * 0.3, 'processing', '处理帧 ' + (i + 1) + '/' + blobs.length);
+                    
+                    // Blob -> ImageBitmap
+                    var bitmap = await createImageBitmap(blobs[i]);
+                    
+                    // 绘制到canvas
+                    tempCtx.clearRect(0, 0, width, height);
+                    tempCtx.drawImage(bitmap, 0, 0, width, height);
+                    bitmap.close();
+
+                    // 获取ImageData并转换为RGBA
+                    var imageData = tempCtx.getImageData(0, 0, width, height);
+                    var rgba = _this.imageDataToRGBA(imageData);
+
+                    framesArray.push({
+                        duration: frameDuration,
+                        isKeyframe: i === 0,
+                        rgba: rgba
+                    });
+                }
+
+                // 4. 构建Frames对象
+                onProgress(0.6, 'encoding', '编码WebP动画...');
+                var frames = {
+                    frameCount: framesArray.length,
+                    width: width,
+                    height: height,
+                    loopCount: 0,
+                    bgColor: 0x00000000,
+                    frames: framesArray
+                };
+
+                // 5. 编码
+                var webpData = await xMux.encodeFrames(frames);
+
+                if (!webpData || webpData.length === 0) {
+                    throw new Error('webpxmux编码失败');
+                }
+
+                // 6. 生成Blob
+                var blob = new Blob([webpData], { type: 'image/webp' });
+                console.log('[WebP导出] 输出大小:', _this.formatBytes(blob.size));
+
+                // 自动下载
+                _this.download(blob, 'animation.webp');
+
+                onProgress(1, 'completed', '导出完成');
+                return blob;
+
+            } catch (error) {
+                console.error('[WebP导出] 失败:', error);
+                throw error;
+            }
+        },
+
+        /**
          * 导出动画WebP（使用webpxmux编码）
          * @param {Object} config 配置对象
          * @param {Number} config.width 宽度
