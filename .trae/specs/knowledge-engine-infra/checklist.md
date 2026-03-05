@@ -1,0 +1,7 @@
+- [x] Directory structure `.trae/rules` created with subdirectories `core`, `modules`, `logs`
+- [x] `index.md` exists and links to all sub-documents
+- [x] `core/tech-stack.ts.md` contains valid TS Interface definition for tech stack
+- [x] `core/coding-style.ts.md` contains valid TS Interface definition for coding style
+- [x] `modules/canvas.ts.md` follows the structured format
+- [x] `logs/error-log.md` is created
+- [x] Skill definitions are created in `.trae/skills/`
