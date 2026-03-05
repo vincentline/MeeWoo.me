@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue2'
+import wasm from "vite-plugin-wasm";
+import topLevelAwait from "vite-plugin-top-level-await";
 import { resolve } from 'path'
 import { copyFileSync, existsSync, mkdirSync, cpSync, rmSync } from 'fs'
 import { execSync } from 'child_process'
@@ -111,7 +113,8 @@ export default defineConfig({
   },
   // 优化配置
   optimizeDeps: {
-    include: ['vue']
+    include: ['vue'],
+    exclude: ['tinypng-lib-wasm', 'tinypng-lib']
   },
   // 预览服务器配置
   preview: {
@@ -121,6 +124,8 @@ export default defineConfig({
   },
   // 插件
   plugins: [
+    wasm(),
+    topLevelAwait(),
     vue(),
     // 为所有资源添加CORP响应头（解决COEP策略下的加载问题）
     {
@@ -173,7 +178,10 @@ export default defineConfig({
   // 别名配置
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src')
+      '@': resolve(__dirname, 'src'),
+      'tinypng-lib': resolve(__dirname, 'src/assets/js/libs/tinypng-lib/index.js'),
+      'tinypng-lib-wasm': resolve(__dirname, 'src/assets/js/libs/tinypng-lib-wasm/tinypng_lib_wasm.js'),
+      'compressorjs': resolve(__dirname, 'src/assets/js/libs/compressorjs/dist/compressor.esm.js')
     }
   }
 })

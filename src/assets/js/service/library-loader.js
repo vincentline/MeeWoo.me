@@ -80,15 +80,15 @@
       checkFn: function () { return typeof Vue !== 'undefined'; },
       priority: 0 // 最高优先级
     },
-    'oxipng': {
-      name: 'oxipng',
-      url: 'assets/js/service/oxipng/codec/pkg/squoosh_oxipng_bg.wasm',
+    'tinypng': {
+      name: 'TinyPNG',
+      url: 'assets/js/libs/tinypng-lib-wasm/tinypng_lib_wasm_bg.wasm',
       checkFn: function () {
-        // 检查 ImageCompressionService 是否已初始化且 oxipng 模块可用
+        // 检查 ImageCompressionService 是否已初始化且 TinyPNG 模块可用
         return typeof window.MeeWoo !== 'undefined' &&
           typeof window.MeeWoo.Services !== 'undefined' &&
           typeof window.MeeWoo.Services.ImageCompressionService !== 'undefined' &&
-          window.MeeWoo.Services.ImageCompressionService.isOxipngReady();
+          window.MeeWoo.Services.ImageCompressionService.isTinyPNGReady();
       },
       priority: 25,
       disabled: true // 禁用自动预加载，由 image-compression-service 手动处理
@@ -150,6 +150,26 @@
       ],
       checkFn: function () { return typeof JSZip !== 'undefined'; },
       priority: 25
+    },
+    'pako': {
+      name: 'Pako',
+      url: 'assets/js/lib/pako.min.js',
+      fallbackUrls: [
+        'https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js',
+        'https://unpkg.com/pako@2.1.0/dist/pako.min.js'
+      ],
+      checkFn: function () { return typeof pako !== 'undefined'; },
+      priority: 26
+    },
+    'protobuf': {
+      name: 'Protobuf',
+      url: 'assets/js/lib/protobuf.min.js',
+      fallbackUrls: [
+        'https://cdn.jsdelivr.net/npm/protobufjs@7.2.5/dist/protobuf.min.js',
+        'https://unpkg.com/protobufjs@7.2.5/dist/protobuf.min.js'
+      ],
+      checkFn: function () { return typeof protobuf !== 'undefined'; },
+      priority: 27
     },
     'pngquant': {
       name: 'PNG Compressor (Pako)',

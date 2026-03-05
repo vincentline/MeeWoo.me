@@ -1,39 +1,28 @@
 ---
 name: knowledge-gardener
-description: 负责项目知识库的维护、更新和索引同步。自动提取开发经验，并确保文档与代码的一致性。
-version: 1.0.0
+description: 负责将开发经验快速提取并暂存到 Inbox（海马体）中。不直接修改长期规则库。
+version: 2.0.0
 ---
 
-# Knowledge Gardener Skill
+# Knowledge Gardener Skill (速记员)
 
-此技能用于在开发结束后，将隐性经验转化为显性的结构化文档，并维护知识库的健康度。
+此技能模仿人脑的“海马体”功能，用于在开发过程中快速捕捉、提取并暂存经验碎片。
 
 ## 核心指令 (Core Instructions)
 
-当用户请求总结经验或更新文档时，必须按以下步骤执行：
+当用户请求总结经验或你识别到有价值的经验时，按以下步骤执行：
 
 ### 1. 经验提取 (Extraction)
-分析当前对话历史，提取“问题-原因-解决方案”三元组。
+分析当前对话历史，提取“问题-原因-解决方案”三元组或“最佳实践”。
 
-### 2. 批评家模式 (Critic Mode)
-在写入文档前，必须进行自我反思：
-```text
-<critic>
-1. 拟更新内容：[简述]
-2. 查重结果：[是否已存在于 logs/error-log.md]
-3. 价值评估：[这条经验是否具备通用性？]
-4. 格式检查：[是否符合 TS Interface 格式？]
-</critic>
-```
+### 2. 碎片化存储 (Inbox Storage)
+- **生成文件名**: 使用 kebab-case 命名，格式为 `{模块}-{主题}-{类型}.md`。
+    - 示例: `canvas-drag-performance-fix.md`
+    - 示例: `ffmpeg-wasm-init-error.md`
+- **写入文件**: 将经验内容写入 `.trae/rules/inbox/<文件名>`。内容应简洁明了，包含上下文和核心结论。
 
-### 3. 文档更新 (Update)
-- **定位**：通过 `index.md` 找到目标文档（如 `modules/canvas.ts.md`）。
-- **写入**：将新经验追加到 `troubleshooting` 或相关字段中。
-- **格式**：必须使用 TypeScript Interface + 注释的格式。
-
-### 4. 健康度检查 (Health Check)
-- **检测**：检查目标文档行数是否超过 300 行。
-- **拆分**：如果超标，自动按语义拆分为子文件（如 `canvas/drag.ts.md`），并更新索引。
-
-### 5. 索引同步 (Indexing)
-如果创建了新文件，必须同步更新 `.trae/rules/index.md`。
+### 3. 索引同步 (Indexing)
+- **读取索引**: 读取 `.trae/rules/inbox/index.md`。
+- **追加条目**: 在表格末尾添加一行：
+    `| [<文件名>](<文件名>) | <关键词> | <简短摘要> | <今天日期> |`
+- **注意**: 不需要去修改 `modules/` 下的长期规则文件，那是 Librarian 的工作。

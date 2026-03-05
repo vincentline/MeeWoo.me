@@ -1,7 +1,7 @@
 /**
- * 图片压缩服务 - 使用 oxipng WASM 版本
+ * 图片压缩服务 - 使用 TinyPNG (tinypng-lib)
  * 功能：识别文件类型，对不同类型文件分别做压缩处理
- * - PNG: 首选 oxipng 压缩，失败则降级到 Pako，再失败则使用浏览器默认编码
+ * - PNG: 首选 TinyPNG 压缩，失败则降级到 Pako，再失败则使用浏览器默认编码
  * - JPG: 不压缩
  */
 (function (global) {
@@ -12,39 +12,36 @@
     window.MeeWoo.Services = window.MeeWoo.Services || {};
 
     const ImageCompressionService = {
-        oxipngModule: null,
+        tinypngModule: null,
         initialized: false,
         compressionFailed: false,
-        oxipngReady: false,
+        tinypngReady: false,
 
         /**
-         * 初始化 oxipng 模块
+         * 初始化 TinyPNG 模块
          */
         init: async function () {
             try {
-                // 动态导入 oxipng 模块
-                const { default: optimise, init } = await import('./oxipng/optimise.js');
+                // 动态导入 TinyPNG 服务适配器
+                const { default: TinyPNGService } = await import('./tinypng/index.js');
 
-                // 初始化 oxipng（会自动加载 wasm 文件）
-                await init();
-
-                this.oxipngModule = { optimise };
+                this.tinypngModule = TinyPNGService;
                 this.initialized = true;
-                this.oxipngReady = true;
-                console.log('ImageCompressionService initialized with oxipng wasm');
+                this.tinypngReady = true;
+                console.log('ImageCompressionService initialized with TinyPNG');
             } catch (error) {
-                console.error('Failed to load oxipng wasm:', error);
-                this.initialized = true; // 标记为已初始化，但 oxipng 不可用
-                this.oxipngReady = false;
+                console.error('Failed to load TinyPNG service:', error);
+                this.initialized = true; // 标记为已初始化，但 TinyPNG 不可用
+                this.tinypngReady = false;
                 console.log('ImageCompressionService initialized with fallback mode');
             }
         },
 
         /**
-         * 检查 oxipng 服务状态
+         * 检查 TinyPNG 服务状态
          */
-        isOxipngReady: function () {
-            return this.oxipngReady;
+        isTinyPNGReady: function () {
+            return this.tinypngReady;
         },
 
         /**
@@ -69,32 +66,30 @@
         },
 
         /**
-         * 使用 oxipng 压缩 PNG
+         * 使用 TinyPNG 压缩 PNG
          * @param {Uint8Array} pngData - PNG 数据
-         * @param {number} quality - 压缩质量（10-100）
+         * @param {number} quality - 压缩质量（0-100）
          * @returns {Promise<Uint8Array>} - 压缩后的 PNG 数据
          */
-        compressWithOxipng: async function (pngData, quality) {
+        compressWithTinyPNG: async function (pngData, quality) {
             if (!this.initialized) {
                 await this.init();
             }
 
-            if (!this.isOxipngReady()) {
-                throw new Error('oxipng not available');
+            if (!this.isTinyPNGReady()) {
+                throw new Error('TinyPNG not available');
             }
 
             try {
-                // 使用 oxipng 压缩 PNG
-                // quality 转换为 oxipng 的优化级别（1-6）
-                const optimizationLevel = Math.min(6, Math.max(1, Math.round(quality / 20)));
-                const compressedBuffer = await this.oxipngModule.optimise(pngData.buffer, {
-                    level: optimizationLevel,
-                    interlace: false,
-                    optimiseAlpha: true
+                // 使用 TinyPNG 压缩
+                // 质量参数直接传递 (0-100)
+                const compressedBuffer = await this.tinypngModule.compress(pngData, {
+                    quality: quality,
+                    minimumQuality: 30 // 默认最小质量
                 });
                 return new Uint8Array(compressedBuffer);
             } catch (error) {
-                console.error('oxipng compression failed:', error);
+                console.error('TinyPNG compression failed:', error);
                 throw error;
             }
         },
@@ -196,25 +191,25 @@
         /**
          * 压缩 PNG 数据（三级降级机制）
          * @param {Uint8Array} pngData - PNG 数据
-         * @param {number} quality - 压缩质量（10-100）
+         * @param {number} quality - 压缩质量（0-100）
          * @returns {Promise<Uint8Array>} - 压缩后的 PNG 数据
          */
         compressPNG: async function (pngData, quality = 80) {
             let compressedData;
 
-            // 首选：使用 oxipng 压缩
+            // 首选：使用 TinyPNG 压缩
             try {
                 // 先初始化（如果未初始化）
                 if (!this.initialized) {
                     await this.init();
                 }
 
-                if (this.isOxipngReady()) {
-                    compressedData = await this.compressWithOxipng(pngData, quality);
+                if (this.isTinyPNGReady()) {
+                    compressedData = await this.compressWithTinyPNG(pngData, quality);
                     return compressedData;
                 }
             } catch (error) {
-                console.error('oxipng compression failed:', error);
+                console.error('TinyPNG compression failed:', error);
             }
 
             // 降级：使用 pako 压缩
@@ -239,7 +234,7 @@
         /**
          * 从 Canvas 压缩为 PNG
          * @param {HTMLCanvasElement} canvas - Canvas 元素
-         * @param {number} quality - 压缩质量（10-100）
+         * @param {number} quality - 压缩质量（0-100）
          * @returns {Promise<Uint8Array>} - 压缩后的 PNG 数据
          */
         compressCanvas: async function (canvas, quality = 80) {
@@ -259,9 +254,9 @@
         /**
          * 压缩图片数据（主入口）
          * @param {Uint8Array} data - 图片数据
-         * @param {number} quality - 压缩质量（10-100）
-                 * @returns {Promise<Uint8Array>} - 压缩后的图片数据
-                 */
+         * @param {number} quality - 压缩质量（0-100）
+         * @returns {Promise<Uint8Array>} - 压缩后的图片数据
+         */
         compressImage: async function (data, quality = 80) {
             // 识别文件类型
             const fileType = this.detectFileType(data);

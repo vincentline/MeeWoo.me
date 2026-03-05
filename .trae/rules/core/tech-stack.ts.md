@@ -51,6 +51,19 @@ export interface TechStack {
     gifGeneration: "GIF.js";
     /** 音频播放 */
     audio: "Howler.js";
+    /** 图片压缩 (WebAssembly) */
+    imageCompression: "TinyPNG (tinypng-lib-wasm)";
+  };
+
+  /**
+   * 构建工具插件
+   * @description 用于支持特定功能的 Vite 插件
+   */
+  buildPlugins: {
+    /** WASM 模块支持 */
+    wasm: "vite-plugin-wasm";
+    /** 顶层 await 支持 (WASM 必需) */
+    topLevelAwait: "vite-plugin-top-level-await";
   };
 
   /**
