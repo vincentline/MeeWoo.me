@@ -18,6 +18,14 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-03-05 21:22:22] 【修改文件】 : docs/404.html - 同步更新 404 页面
+[2026-03-05 21:22:22] 【修改文件】 : docs/assets/index-DEbU6qBq.css - 同步更新构建后的样式文件
+[2026-03-05 21:22:22] 【修改文件】 : docs/assets/js/core/app.js - 同步更新构建后的核心应用文件
+[2026-03-05 21:22:22] 【修改文件】 : docs/assets/png_compression-CqcJW1Sj.css - 同步更新构建后的 PNG 压缩页面样式
+[2026-03-05 21:22:22] 【修改文件】 : docs/assets/styles-CxEh8Cq_.css - 同步更新构建后的主样式文件
+[2026-03-05 21:22:22] 【修改文件】 : docs/index.html - 同步更新构建后的主页面
+[2026-03-05 21:22:22] 【修改文件】 : src/index.html - 更新源文件
+[2026-03-05 21:22:22] 【新增文件】 : .trae/documents/svga_load_optimization_plan.md - 新增 SVGA 加载优化计划文档
 [2026-03-05 02:41:02] 【删除文件夹】 : src/assets/js/lib/ffmpeg/ - 删除本地 FFmpeg Core 目录，已改用腾讯云 CDN 加速，不再需要本地文件
 [2026-03-05 02:30:09] 【修改文件】 : src/assets/js/service/ffmpeg/ffmpeg-service.js - 将 FFmpeg Core Path 改为腾讯云CDN地址 https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/lib/ffmpeg/ffmpeg-core.js
 [2026-03-05 02:09:05] 【新增文件】 : src/assets/js/lib/ffmpeg/ffmpeg-core.js - FFmpeg Core 主文件（从 unpkg @ffmpeg/core@0.11.0 下载）

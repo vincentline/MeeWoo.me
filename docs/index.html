@@ -46,10 +46,14 @@
   <script src="coi-serviceworker.js?v=13"></script>
 
   <!-- 外部样式表（优先加载） -->
-  <link rel="stylesheet" href="assets/css/sprite-generated.css" />
+  <link rel="stylesheet" href="assets/css/sprite-generated.css" />
 
   <!-- 库加载管理器（优先加载，独立模块） -->
   <script src="assets/js/service/library-loader.js"></script>
+  <!-- Protobuf 库（SVGA音频解析用，同步引入避免动态加载延迟） -->
+  <script src="assets/js/lib/protobuf.min.js"></script>
+  <!-- Pako 库（SVGA解压缩用，同步引入避免动态加载延迟） -->
+  <script src="assets/js/lib/pako.min.js"></script>
   <!-- 资源管理器（管理 ObjectURL 生命周期） -->
   <script src="assets/js/service/resource-manager.js"></script>
   <!-- 图片压缩服务 -->
