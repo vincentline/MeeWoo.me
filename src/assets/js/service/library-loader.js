@@ -141,24 +141,7 @@
       checkFn: function () { return typeof GIF !== 'undefined'; },
       priority: 15
     },
-    'protobuf': {
-      name: 'Protobuf.js',
-      url: 'assets/js/lib/protobuf.min.js',
-      fallbackUrls: [
-        'https://cdn.jsdelivr.net/npm/protobufjs@7.2.5/dist/protobuf.min.js'
-      ],
-      checkFn: function () { return typeof protobuf !== 'undefined'; },
-      priority: 25
-    },
-    'pako': {
-      name: 'Pako',
-      url: 'assets/js/lib/pako.min.js',
-      fallbackUrls: [
-        'https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js'
-      ],
-      checkFn: function () { return typeof pako !== 'undefined'; },
-      priority: 25
-    },
+
     'jszip': {
       name: 'JSZip',
       url: 'assets/js/lib/jszip.min.js',

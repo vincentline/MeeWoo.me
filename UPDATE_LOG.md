@@ -18,6 +18,9 @@
 - 更新简述：如新增功能、修复问题、优化性能等，简单描述
 
 ## 更新记录
+[2026-03-05 21:33:23] 【修改文件】 : src/index.html - 同步引入 protobuf.min.js 和 pako.min.js，消除 SVGA 音频解析时的库动态加载延迟
+[2026-03-05 21:33:23] 【修改文件】 : src/assets/js/core/app.js - 优化 SVGA 加载性能：1) 移除 parseSvgaAudioData 中的库动态加载调用；2) 内联 svga.proto 定义，避免网络请求；3) 添加无音频 SVGA 的智能跳过逻辑
+[2026-03-05 21:33:23] 【新增文件】 : .trae/documents/svga_load_optimization_plan.md - SVGA 加载性能优化计划文档
 [2026-03-05 21:22:22] 【修改文件】 : docs/404.html - 同步更新 404 页面
 [2026-03-05 21:22:22] 【修改文件】 : docs/assets/index-DEbU6qBq.css - 同步更新构建后的样式文件
 [2026-03-05 21:22:22] 【修改文件】 : docs/assets/js/core/app.js - 同步更新构建后的核心应用文件

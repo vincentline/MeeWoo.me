@@ -1465,10 +1465,17 @@ function initApp() {
 
         // 使用 Promise.all 处理所有异步任务（音频解析等）
         // 如果音频解析很快，就不会有明显的延迟
-        var audioTask = file.arrayBuffer().then(function (arrayBuffer) {
-          if (taskId !== _this.currentLoadTaskId) return Promise.reject('task_cancelled');
-          return _this.parseSvgaAudioData(arrayBuffer);
-        });
+        var audioTask;
+        // 【优化】先检查 videoItem 是否有音频，无音频直接跳过解析
+        if (videoItem.audios && videoItem.audios.length > 0) {
+          audioTask = file.arrayBuffer().then(function (arrayBuffer) {
+            if (taskId !== _this.currentLoadTaskId) return Promise.reject('task_cancelled');
+            return _this.parseSvgaAudioData(arrayBuffer);
+          });
+        } else {
+          // 无音频，直接返回 null
+          audioTask = Promise.resolve(null);
+        }
 
         // 最小过渡时间（避免闪烁），但大大缩短
         var minTransition = new Promise(function (resolve) {
@@ -4533,69 +4540,176 @@ function initApp() {
       parseSvgaAudioData: function (arrayBuffer) {
         var _this = this;
         return new Promise(function (resolve, reject) {
-          // 动态加载 protobuf 和 pako
-          _this.loadLibrary(['protobuf', 'pako'], true).then(function () {
-            try {
-              var uint8Array = new Uint8Array(arrayBuffer);
-              var inflatedData = pako.inflate(uint8Array);
+          // protobuf 和 pako 已在 index.html 中同步引入，直接使用
+          try {
+            var uint8Array = new Uint8Array(arrayBuffer);
+            var inflatedData = pako.inflate(uint8Array);
 
-              protobuf.load('./svga.proto', function (err, root) {
-                if (err) {
-                  console.error('Protobuf load failed:', err);
-                  resolve(null); // 解析失败不阻断流程，返回null
+              // 内联 svga.proto 定义，避免网络请求
+              var protoContent = 'syntax = "proto3";\n' +
+                'package com.opensource.svga;\n' +
+                'option objc_class_prefix = "SVGAProto";\n' +
+                'option java_package = "com.opensource.svgaplayer.proto";\n' +
+                '\n' +
+                'message MovieParams {\n' +
+                '    float viewBoxWidth = 1;\n' +
+                '    float viewBoxHeight = 2;\n' +
+                '    int32 fps = 3;\n' +
+                '    int32 frames = 4;\n' +
+                '}\n' +
+                '\n' +
+                'message SpriteEntity {\n' +
+                '    string imageKey = 1;\n' +
+                '    repeated FrameEntity frames = 2;\n' +
+                '    string matteKey = 3;\n' +
+                '}\n' +
+                '\n' +
+                'message AudioEntity {\n' +
+                '    string audioKey = 1;\n' +
+                '    int32 startFrame = 2;\n' +
+                '    int32 endFrame = 3;\n' +
+                '    int32 startTime = 4;\n' +
+                '    int32 totalTime = 5;\n' +
+                '}\n' +
+                '\n' +
+                'message Layout {\n' +
+                '    float x = 1;\n' +
+                '    float y = 2;\n' +
+                '    float width = 3;\n' +
+                '    float height = 4;\n' +
+                '}\n' +
+                '\n' +
+                'message Transform {\n' +
+                '    float a = 1;\n' +
+                '    float b = 2;\n' +
+                '    float c = 3;\n' +
+                '    float d = 4;\n' +
+                '    float tx = 5;\n' +
+                '    float ty = 6;\n' +
+                '}\n' +
+                '\n' +
+                'message ShapeEntity {\n' +
+                '    enum ShapeType {\n' +
+                '        SHAPE = 0;\n' +
+                '        RECT = 1;\n' +
+                '        ELLIPSE = 2;\n' +
+                '        KEEP = 3;\n' +
+                '    }\n' +
+                '    message ShapeArgs {\n' +
+                '        string d = 1;\n' +
+                '    }\n' +
+                '    message RectArgs {\n' +
+                '        float x = 1;\n' +
+                '        float y = 2;\n' +
+                '        float width = 3;\n' +
+                '        float height = 4;\n' +
+                '        float cornerRadius = 5;\n' +
+                '    }\n' +
+                '    message EllipseArgs {\n' +
+                '        float x = 1;\n' +
+                '        float y = 2;\n' +
+                '        float radiusX = 3;\n' +
+                '        float radiusY = 4;\n' +
+                '    }\n' +
+                '    message ShapeStyle {\n' +
+                '        message RGBAColor {\n' +
+                '            float r = 1;\n' +
+                '            float g = 2;\n' +
+                '            float b = 3;\n' +
+                '            float a = 4;\n' +
+                '        }\n' +
+                '        enum LineCap {\n' +
+                '            LineCap_BUTT = 0;\n' +
+                '            LineCap_ROUND = 1;\n' +
+                '            LineCap_SQUARE = 2;\n' +
+                '        }\n' +
+                '        enum LineJoin {\n' +
+                '            LineJoin_MITER = 0;\n' +
+                '            LineJoin_ROUND = 1;\n' +
+                '            LineJoin_BEVEL = 2;\n' +
+                '        }\n' +
+                '        RGBAColor fill = 1;\n' +
+                '        RGBAColor stroke = 2;\n' +
+                '        float strokeWidth = 3;\n' +
+                '        LineCap lineCap = 4;\n' +
+                '        LineJoin lineJoin = 5;\n' +
+                '        float miterLimit = 6;\n' +
+                '        float lineDashI = 7;\n' +
+                '        float lineDashII = 8;\n' +
+                '        float lineDashIII = 9;\n' +
+                '    }\n' +
+                '    ShapeType type = 1;\n' +
+                '    oneof args {\n' +
+                '        ShapeArgs shape = 2;\n' +
+                '        RectArgs rect = 3;\n' +
+                '        EllipseArgs ellipse = 4;\n' +
+                '    }\n' +
+                '    ShapeStyle styles = 10;\n' +
+                '    Transform transform = 11;\n' +
+                '}\n' +
+                '\n' +
+                'message FrameEntity {\n' +
+                '    float alpha = 1;\n' +
+                '    Layout layout = 2;\n' +
+                '    Transform transform = 3;\n' +
+                '    string clipPath = 4;\n' +
+                '    repeated ShapeEntity shapes = 5;\n' +
+                '}\n' +
+                '\n' +
+                'message MovieEntity {\n' +
+                '    string version = 1;\n' +
+                '    MovieParams params = 2;\n' +
+                '    map<string, bytes> images = 3;\n' +
+                '    repeated SpriteEntity sprites = 4;\n' +
+                '    repeated AudioEntity audios = 5;\n' +
+                '}';
+
+              var root = protobuf.parse(protoContent).root;
+
+              try {
+                var MovieEntity = root.lookupType('com.opensource.svga.MovieEntity');
+                if (!MovieEntity) {
+                  console.error('Proto文件中未找到MovieEntity定义');
+                  resolve(null);
                   return;
                 }
+                var movieData = MovieEntity.decode(inflatedData);
+                _this.svgaMovieData = movieData;
 
-                try {
-                  var MovieEntity = root.lookupType('com.opensource.svga.MovieEntity');
-                  if (!MovieEntity) {
-                    console.error('Proto文件中未找到MovieEntity定义');
-                    resolve(null);
-                    return;
-                  }
-                  var movieData = MovieEntity.decode(inflatedData);
-                  _this.svgaMovieData = movieData;
-
-                  // 提取音频数据
-                  if (movieData.audios && movieData.audios.length > 0 && movieData.images) {
-                    var audioData = {};
-                    movieData.audios.forEach(function (audio) {
-                      var audioKey = audio.audioKey;
-                      // 尝试多种可能的key格式
-                      var possibleKeys = [
-                        audioKey,
-                        audioKey + '.mp3',
-                        audioKey + '.wav',
-                        'audio_' + audioKey,
-                        audioKey.replace(/\.[^.]+$/, '')
-                      ];
-                      possibleKeys.forEach(function (key) {
-                        if (movieData.images[key]) {
-                          audioData[audioKey] = movieData.images[key];
-                        }
-                      });
+                // 提取音频数据
+                if (movieData.audios && movieData.audios.length > 0 && movieData.images) {
+                  var audioData = {};
+                  movieData.audios.forEach(function (audio) {
+                    var audioKey = audio.audioKey;
+                    // 尝试多种可能的key格式
+                    var possibleKeys = [
+                      audioKey,
+                      audioKey + '.mp3',
+                      audioKey + '.wav',
+                      'audio_' + audioKey,
+                      audioKey.replace(/\.[^.]+$/, '')
+                    ];
+                    possibleKeys.forEach(function (key) {
+                      if (movieData.images[key]) {
+                        audioData[audioKey] = movieData.images[key];
+                      }
                     });
+                  });
 
-                    if (Object.keys(audioData).length > 0) {
-                      _this.svgaAudioData = audioData;
-
-                    }
+                  if (Object.keys(audioData).length > 0) {
+                    _this.svgaAudioData = audioData;
                   }
-
-                  resolve(movieData);
-                } catch (decodeErr) {
-                  console.error('SVGA Parser: Decode error', decodeErr);
-                  resolve(null);
                 }
-              });
+
+                resolve(movieData);
+              } catch (decodeErr) {
+                console.error('SVGA Parser: Decode error', decodeErr);
+                resolve(null);
+              }
             } catch (err) {
               console.error('Data processing error:', err);
               resolve(null);
             }
-          }).catch(function (err) {
-            console.error('Failed to load libraries for audio parsing:', err);
-            resolve(null);
-          });
         });
       },
 
