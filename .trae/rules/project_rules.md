@@ -1,19 +1,27 @@
-## 技术栈
-- **前端框架**：Vue 2.7.15
-- **构建工具**：Vite 5.0.0
-- **开发语言**：JavaScript
+# MeeWoo 项目最高指引 (Prime Directive)
 
-# 项目规则
-1. 项目结构和功能模块查阅`README.md`
-2. 定位文件/功能查阅`INDEX.md` ，索引文件找不到时再使用其他方式搜索
-3. 代码优先考虑不放app.js里的，例如单独的js文件实现还是放在对应的文件里，app.js已经太大了
+> 本文档是项目的**核心原则**与**知识引擎入口**。所有开发行为必须遵循以下规则，并优先查阅知识引擎中的具体规范。
 
-# 任务执行规则：
-1. 生成代码、生成注释前必须查阅代码规范`CODE_STYLE.md`，确保符合项目的代码规范
-2. 对文件和文件夹进行新增、删除、修改、重命名、移动的操作，必须查阅`UPDATE_LOG.md` 并按其中规范执行记录操作
-3. 测试前必须查阅`TESTING_RULES.md`，并按其中规范执行测试
-4. 主动搜索与官方文档查阅规范
-  - 在遇到不确定技术问题、第三方库 / 框架异常、需了解 API 最新用法 / 兼容性、复杂环境问题、验证技术方案成熟度时，主动搜索 / 查阅资料；
-  - 信息来源优先级为：官方文档 > 权威技术博客 > 开源项目 issues/PR > Stack Overflow 高质量回答；
-  - 搜索时需用精准技术关键词、组合 “技术栈 + 问题类型 + 错误信息” 检索，多角度尝试，失败时扩大范围；
-  - 核心原则：不猜测假设，基于明确信息操作，搜索无果则沟通用户，方案需结合项目验证可行性。
+## 1. 知识引擎指引 (Knowledge Engine Router)
+项目已全面启用“类脑知识引擎”，所有技术决策必须基于 `.trae/rules/` 下的最新规范。
+
+- **查阅代码规范**: 请移步 [.trae/rules/core/coding-style.ts.md](.trae/rules/core/coding-style.ts.md)
+- **查阅技术栈**: 请移步 [.trae/rules/core/tech-stack.ts.md](.trae/rules/core/tech-stack.ts.md)
+- **查阅工作流**: 请移步 [.trae/rules/core/workflows.ts.md](.trae/rules/core/workflows.ts.md) (含 Git 提交、更新日志、发布流程)
+- **查阅功能模块**: 请查阅 [.trae/rules/modules/](.trae/rules/modules/) 下的对应文档 (如 `canvas.ts.md`, `media.ts.md`)
+
+## 2. 行为准则 (Behavioral Guidelines)
+
+### 2.1 不猜测，重实证
+- **遇到问题时**: 严禁基于假设进行猜测。必须通过 `RunCommand` (grep/ls) 或 `SearchCodebase` 确认现状。
+- **遇到未知 API 时**: 严禁编造代码。必须查阅官方文档或使用 `WebSearch` 获取最新用法。
+- **信息来源优先级**: 官方文档 > 权威技术博客 > 开源项目 Issues > Stack Overflow 高票回答。
+
+### 2.2 遵守知识引擎工作流
+- **写代码前**: 必须调用 `/skill auto-coder` 或手动查阅 Rules 与 Inbox。
+- **有新经验时**: 必须调用 `/skill knowledge-gardener` 将经验记入 Inbox。
+- **提交代码前**: 必须调用 `/skill integrity-check` 确保 Inbox 覆盖率。
+
+### 2.3 变更管理
+- **文件操作**: 任何增删改移操作，必须同步记录到 `UPDATE_LOG.md`（遵循 `workflows.ts.md` 中的规范）。
+- **测试验证**: 任何代码变更必须经过测试验证（使用 `webapp-testing` 技能或手动测试）。

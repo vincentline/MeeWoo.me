@@ -14,12 +14,14 @@ version: 2.0.0
 
 ### 1. 经验提取 (Extraction)
 分析当前对话历史，提取“问题-原因-解决方案”三元组或“最佳实践”。
+- **读取模板**: 读取 `.trae/skills/knowledge-gardener/templates/inbox_note.md`。
 
 ### 2. 碎片化存储 (Inbox Storage)
 - **生成文件名**: 使用 kebab-case 命名，格式为 `{模块}-{主题}-{类型}.md`。
     - 示例: `canvas-drag-performance-fix.md`
     - 示例: `ffmpeg-wasm-init-error.md`
-- **写入文件**: 将经验内容写入 `.trae/rules/inbox/<文件名>`。内容应简洁明了，包含上下文和核心结论。
+- **生成内容**: 按照模板结构填充经验内容，保持简洁明了。
+- **写入文件**: 将内容写入 `.trae/rules/inbox/<文件名>`。
 
 ### 3. 索引同步 (Indexing)
 - **读取索引**: 读取 `.trae/rules/inbox/index.md`。
