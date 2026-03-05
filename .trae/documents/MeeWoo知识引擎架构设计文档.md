@@ -69,9 +69,11 @@ def execute_task(task):
 ```
 
 #### 2.1.2 文档格式规范 (Structured Documentation)
+
 推荐使用 **TS Interface + 注释** 的伪代码格式，以提升 AI 阅读效率并减少歧义。
 
 *示例：`modules/canvas.ts.md`*
+
 ```typescript
 // @module: CanvasInteraction
 // @description: Konva 画布交互逻辑规范
@@ -189,35 +191,47 @@ interface CanvasRules {
 ***
 
 #### Skill B+: `integrity-check` (自动闭环版)
+
 *定位：主动式一致性检查与自动修复*
 
 *触发场景*：用户输入“提交代码”时。
 
 *执行流程*：
-1.  **变更扫描**：AI 扫描 `git diff --cached`，判断是否涉及核心模块（如 Canvas, FFmpeg）。
-2.  **文档比对**：
-    *   检查对应的 `.trae/rules/modules/xxx.ts.md` 修改时间。
-    *   如果文档已更新 -> 执行 `git commit`。
-3.  **自修复 (Self-Healing)**：
-    *   如果文档未更新，自动调用 `knowledge-gardener`。
-    *   **提取变更意图**：分析代码 Diff，总结修改点。
-    *   **自动写入**：将变更追加到对应文档的 `changeLog` 或 `troubleshooting` 字段中。
-    *   **反馈**：*“检测到 Canvas 逻辑变更，已自动更新技术文档。”*
-4.  **最终提交**：将文档变更加入暂存区，一并提交。
 
----
+1. **变更扫描**：AI 扫描 `git diff --cached`，判断是否涉及核心模块（如 Canvas, FFmpeg）。
+2. **文档比对**：
+
+   * 检查对应的 `.trae/rules/modules/xxx.ts.md` 修改时间。
+
+   * 如果文档已更新 -> 执行 `git commit`。
+3. **自修复 (Self-Healing)**：
+
+   * 如果文档未更新，自动调用 `knowledge-gardener`。
+
+   * **提取变更意图**：分析代码 Diff，总结修改点。
+
+   * **自动写入**：将变更追加到对应文档的 `changeLog` 或 `troubleshooting` 字段中。
+
+   * **反馈**：*“检测到 Canvas 逻辑变更，已自动更新技术文档。”*
+4. **最终提交**：将文档变更加入暂存区，一并提交。
+
+***
 
 ## 4. 实施计划 (Implementation Plan)
 
 ### 第一步：基建搭建 (Infrastructure via Agent)
+
 *执行方式：由 Agent 手动执行以下操作，无需编写额外 Python 脚本。*
 
-1.  **全量扫描**：Agent 读取项目现有文档 (`README.md`, `UPDATE_LOG.md`) 及重构建议书。
-2.  **结构化迁移**：
-    *   创建 `.trae/rules/` 及其子目录。
-    *   提取核心规范，写入 `core/tech-stack.ts.md` 等文件。
-    *   生成 `index.md` 总索引。
-3.  **验证**：尝试读取 `index.md` 并根据指引找到 `tech-stack.ts.md`。
+1. **全量扫描**：Agent 读取项目现有文档 (`README.md`, `UPDATE_LOG.md`) 及重构建议书。
+2. **结构化迁移**：
+
+   * 创建 `.trae/rules/` 及其子目录。
+
+   * 提取核心规范，写入 `core/tech-stack.ts.md` 等文件。
+
+   * 生成 `index.md` 总索引。
+3. **验证**：尝试读取 `index.md` 并根据指引找到 `tech-stack.ts.md`。
 
 ### 第二步：技能配置 (Skill Configuration)
 
