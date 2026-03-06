@@ -17,17 +17,18 @@ version: 2.0.0
 - **解析输出**:
     - `✅ No staged files found`: 暂存区为空，提醒用户先 `git add`。
     - `✅ No core module changes detected`: 安全，直接通过。
-    - `✅ Inbox has been updated today`: 虽有变更但已记笔记，直接通过。
-    - `❌ WARNING`: 核心模块变更且无今日笔记，**必须触发警告**。
+    - `✅ Changes covered by Inbox notes`: 安全，直接通过。同时**提取** `__REF_NOTES__` 中的文件名。
+    - `❌ WARNING`: 核心模块变更且无匹配笔记，**触发交互式修复**。
 
-### 2. 强制补录 (Self-Healing)
+### 2. 交互式修复流 (Interactive Fix Flow)
 如果脚本返回 WARNING：
-- **警告**: 向用户报告“检测到核心模块变更，但未发现 Inbox 记录”。
-- **补救**: 自动调用 `knowledge-gardener` Skill。
-    - **输入**: 将 `git diff --cached` 的关键内容作为输入。
-    - **执行**: 生成一个新的经验碎片文件，并写入 Inbox。
-- **反馈**: 报告“已自动补录经验碎片：[文件名]”。
+- **Prompt**: “检测到核心模块变更，但未发现 Inbox 记录。是否立即调用 Gardener 补录？(Y/n)”
+- **Action (Y)**: 自动调用 `knowledge-gardener` Skill，将 `git diff --cached` 作为输入。
+- **Action (n)**: 终止流程，要求用户手动处理。
 
-### 3. 最终提交 (Commit)
-- 执行 `git add .`（将补录的碎片文件加入暂存区）。
-- 执行 `git commit -m "..."`。
+### 3. 自动提交 (Auto-Commit)
+当检查通过（或补录完成）后：
+- **生成消息**: 根据 `git diff` 摘要和 Inbox 笔记内容，生成符合 Angular 规范的 Commit Message。
+- **强制关联**: 在消息末尾追加 `Ref: .trae/rules/inbox/[Filename]`。
+- **静默提交**: 执行 `git commit -m "[Generated Message]"`，无需用户确认。
+
