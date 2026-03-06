@@ -1,5 +1,19 @@
 # 媒体处理规则
 
+/**
+ * MediaRules
+ * Auto-generated interface for legacy rule file.
+ */
+export interface MediaRules {
+  /** 
+   * 规则描述 
+   * @description 请将下方的 Markdown 内容逐步迁移到此结构化字段中
+   */
+  description: string;
+}
+
+
+
 ## 概述
 处理客户端媒体操作 (转码、合成) 的模块，利用 **FFmpeg.wasm** 和 Web Workers。
 服务位于 `MeeWoo.Service` 下，设计为单例模式。

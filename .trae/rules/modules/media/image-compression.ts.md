@@ -1,5 +1,19 @@
 # 图片压缩模块规范
 
+/**
+ * ImageCompressionRules
+ * Auto-generated interface for legacy rule file.
+ */
+export interface ImageCompressionRules {
+  /** 
+   * 规则描述 
+   * @description 请将下方的 Markdown 内容逐步迁移到此结构化字段中
+   */
+  description: string;
+}
+
+
+
 ## 概述
 处理客户端图片压缩的模块，支持多种压缩策略和降级机制。
 核心服务为 `ImageCompressionService`，目前主要集成 `TinyPNG` (WASM) 和 `Pako`。

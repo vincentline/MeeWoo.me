@@ -13,9 +13,10 @@
 | 领域 (Domain) | 目录入口 | 包含内容 |
 | :--- | :--- | :--- |
 | **图形与交互** | [modules/graphics/](modules/graphics/) | Canvas, Konva, WebGL, 3D |
-| **多媒体处理** | [modules/media/](modules/media/) | FFmpeg, Audio, Video, GIF, 压缩 |
+| **多媒体处理** | [modules/media/](modules/media/) | FFmpeg, YYEVA, Audio, Video, GIF, 压缩 |
 | **UI 与组件** | [modules/ui/](modules/ui/) | Vue 组件, 布局, 样式, Mixin |
-| **工程化** | [modules/engineering/](modules/engineering/) | Build, Deploy, CI/CD |
+| **工程化** | [modules/engineering/](modules/engineering/) | Build, Deploy, CI/CD, Web Worker |
+| **业务规则** | [modules/business/](modules/business/) | Figma Plugin, 业务逻辑 |
 
 > **Instruction for Coder**:
 > 1.  Identify the domain of the user request.

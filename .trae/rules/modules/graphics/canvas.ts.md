@@ -1,5 +1,19 @@
 # Canvas 交互规则
 
+/**
+ * CanvasRules
+ * Auto-generated interface for legacy rule file.
+ */
+export interface CanvasRules {
+  /** 
+   * 规则描述 
+   * @description 请将下方的 Markdown 内容逐步迁移到此结构化字段中
+   */
+  description: string;
+}
+
+
+
 ## 概述
 Canvas 交互由 **Konva.js** 驱动，并封装在 `MeeWoo.Core` 模块中。
 架构遵循 **命令模式 (Command Pattern)** 来支持撤销/重做，并分离了舞台管理、编辑器逻辑和命令执行。

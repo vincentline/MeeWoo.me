@@ -10,63 +10,66 @@ version: 1.0.0
 
 ## 核心指令 (Core Instructions)
 
-当用户请求“整理知识库”、“归档经验”或系统空闲时，按以下步骤执行：
+此技能采用 **Agent (大脑) + Script (手臂)** 协同工作模式。Agent 负责思考和决策，Script 负责执行和落地。
 
-### 1. 扫描 Inbox (Scan)
-- **读取索引**: 读取 `.trae/rules/inbox/index.md`，获取所有待处理条目。
-- **读取碎片**: 逐个读取 `.trae/rules/inbox/` 下的碎片文件内容。
+### 1. 扫描与决策 (Scan & Decision)
+- **全量扫描**: 读取 Inbox 索引 (`.trae/rules/inbox/index.md`)，默认对所有条目进行归档，遵循 **全量归档 (Archive All)** 原则。
+- **优先级**: Bug Fixes > Core Config > General Guide。
+- **分类标准**: 根据 **3.2 领域分类标准**，判断每个碎片属于哪个领域 (Graphics, Media, UI, Engineering, Core, Data, Business)。
 
-### 2. 知识加工 (Process)
-对于每个碎片文件：
-- **分类**: 判断其属于哪个核心领域（如 `graphics`, `media`, `ui`）。
-- **抽象**: 将具体的 Bug 或经验抽象为通用的规范或最佳实践。
-- **定位**: 在 `.trae/rules/modules/<domain>/` 中找到对应的规则文件。
-    - 如果没有对应模块，则在对应领域目录下新建一个模块文件（如 `modules/graphics/webgl.ts.md`）。
-    - **新建时必须根据内容类型选择合适的模板**:
-        - **接口/规范型**: `.trae/skills/knowledge-librarian/templates/new_module.md`
-        - **概念/原理型**: `.trae/skills/knowledge-librarian/templates/concept_module.md`
-        - **指南/教程型**: `.trae/skills/knowledge-librarian/templates/guide_module.md`
-        - **API/速查表**: `.trae/skills/knowledge-librarian/templates/reference_module.md`
-    - **注意**: 新建文件后，**无需**更新 `rules/index.md`（因为使用了动态检索）。仅当新建**领域目录**时才需更新索引。
+### 2. 执行归档 (Execute Archiving)
+调用核心脚本 `archiver.py` 进行结构化转换与文件写入。
 
-### 3. 批评家模式 (Critic Mode) - 分级实证
-在归档每个碎片前，必须进行**分级质量审查**，以确保知识与代码的一致性。
+- **脚本位置**: `.trae/skills/knowledge-librarian/scripts/archiver.py`
+- **新建模块 (Create)**:
+  - `python .trae/skills/knowledge-librarian/scripts/archiver.py create --source [SourcePath] --target [TargetPath] --template [TemplateType] --verify-cmd "[VerifyCmd]"`
+- **合并规则 (Merge)**:
+  - `python .trae/skills/knowledge-librarian/scripts/archiver.py merge --source [SourcePath] --target [TargetPath]`
+- **双重验证机制**:
+  - **Level 1 (纯文档)**: 直接归档。
+  - **Level 2 (代码相关)**: Agent **必须**先阅读相关代码，并在调用脚本时传入 `--verify-cmd` (e.g., `grep "xxx" file.js`) 进行自动化验证。
+
+### 3. 清理收尾 (Cleanup)
+归档完成后，调用脚本清理源文件。
+
+- **脚本位置**: `.trae/skills/knowledge-librarian/scripts/clean_inbox.py`
+- **指令**: `python .trae/skills/knowledge-librarian/scripts/clean_inbox.py [File1] [File2] ...`
+- **健康检查**: 归档结束后，建议运行 `check_health.py` 确保规则库健康。
+
+### 3.2 领域分类标准 (Classification Standard)
+- **Graphics**: 2D/3D 图形处理 (e.g., Canvas, Konva, WebGL, Shader, 坐标系统)。
+- **Media**: 多媒体处理 (e.g., 音视频编解码, FFmpeg, WASM, 图片压缩)。
+- **UI**: 界面与交互 (e.g., Vue 组件, 布局, CSS, 状态管理, 用户交互)。
+- **Engineering**: 工程化与构建 (e.g., Vite, Webpack, CI/CD, 脚本工具, 依赖管理)。
+- **Core**: 核心架构 (e.g., 系统设计, 核心接口, 插件机制, 错误处理)。
+- **Data**: 数据与协议 (e.g., JSON Schema, Protobuf, IndexedDB, Pinia/Vuex 数据模型)。
+- **Business**: 业务规则 (e.g., 计费逻辑, 权限控制, 埋点策略, 导出限制)。
+
+### 4. 批评家模式 (Critic Mode) - 风险评估
+在归档前，必须进行**分级质量审查**：
 
 ```text
 <critic>
 1. 拟归档碎片：[文件名]
 2. 风险评估 (Risk Assessment):
     - Level 0 (Pass): 纯文档、概念、架构图 -> 无需代码验证。
-    - Level 1 (Check): 业务逻辑、Bug 修复 -> 使用 Grep 确认相关组件存在。
-    - Level 2 (Verify): 核心接口、配置项、公共方法 -> 必须使用 SearchCodebase/Read 验证代码实现是否一致。
-3. 项目相关性检查 (Relevance Check):
-    - 对于“通用技术建议”（如使用 Flask/Django），**必须**查阅 `package.json` 或 `core/tech-stack.ts.md`。
-    - 若与项目技术栈不符（如在 Node.js 项目中推荐 Python 库），标记为 "仅参考" 或直接丢弃。
-4. 实证执行 (Execution):
-    - [针对 Level 1/2]: 执行验证命令 (e.g., `grep "interface Layer" src/`)
-    - [结果]: 一致 / 冲突 / 未找到
-5. 冲突处理 (Conflict Resolution):
+    - Level 1 (Check): 业务逻辑、Bug 修复 -> Script 辅助 grep 验证。
+    - Level 2 (Verify): 核心接口、配置项 -> Agent 阅读 + Script 验证。
+3. 冲突处理 (Conflict Resolution):
     - 一致 -> 归档。
-    - 冲突 -> 以**代码现状**为准，修正碎片内容后再归档。
-    - 未找到 -> 标记为 "待确认 (Pending)"，暂不归档，并在 Inbox 中添加 `[PENDING]` 前缀。
+    - 冲突 -> 以代码现状为准，修正后归档。
+    - 未找到 -> 标记为 "待确认 (Pending)"。
 </critic>
 ```
 
-### 4. 归档写入 (Archive)
-- **写入规则**: 将抽象后的内容写入上述定位到的目标规则文件 (位于 `.trae/rules/modules/<domain>/` 下)，并优先使用 TS Interface 格式。
-- **写入日志**:
-    - **重大决策 (ADR)**: 如果碎片涉及技术选型、架构调整或核心策略变更，必须追加到 `logs/decision-log.md`。
-        - **格式**: `### [日期] [决策标题] \n - 背景: ... \n - 决定: ... \n - 影响: ...`
-    - **错误反思**: 如果是生产事故或典型 Bug 复盘，追加到 `logs/error-log.md`。
-        - **格式参考**: `.trae/skills/knowledge-librarian/templates/error_entry.md`。
+### 5. 归档写入 (Archive)
+- **动作**: 严格调用 `archiver.py` 执行，禁止手动 Write。
+- **日志**: 重大决策 (ADR) 追加到 `logs/decision-log.md`。
 
-### 5. 健康度检查与裂变 (Health Check & Division)
-- **检测**: 运行脚本 `.trae/skills/knowledge-librarian/scripts/check_health.py` 扫描所有规则文件。
-- **拆分**: 对于脚本报告中超过 300 行的文件，自动按语义将文件拆分为子目录（如 `modules/graphics/canvas/index.ts.md`）。
-    - 拆分后，无需更新索引，因为 `LS` 可以递归或直接查阅。
-    - 确保新目录结构符合项目规范。
+### 6. 健康度检查与裂变 (Health Check & Division)
+- **检测**: 运行 `.trae/skills/knowledge-librarian/scripts/check_health.py`。
+- **拆分**: 超过 300 行的文件，提示 Agent 拆分为子目录。
 
-### 6. 清理 (Cleanup)
-- **执行清理**: 运行脚本 `.trae/skills/knowledge-librarian/scripts/clean_inbox.py`，传入已处理的文件名列表。
-    - 示例: `python .trae/skills/knowledge-librarian/scripts/clean_inbox.py file1.md file2.md`
-- **验证**: 确认 Inbox 目录下的文件已被删除，且 `index.md` 已更新。
+### 7. 清理 (Cleanup)
+- **执行清理**: 调用 `clean_inbox.py`。
+- **验证**: 确认文件删除且索引更新。

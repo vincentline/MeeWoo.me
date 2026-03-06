@@ -75,7 +75,7 @@ export interface KnowledgeEngine {
 ## 2. 领域索引 (Domain Index)
 | 领域 (Domain) | 目录入口 | 包含内容 |
 | :--- | :--- | :--- |
-| **图形与交互** | [modules/graphics/](modules/graphics/) | Canvas, Konva, WebGL |
+| **图形与交互** | [modules/graphics/](../graphics/) | Canvas, Konva, WebGL |
 ```
 
 ## 3. 技能适配
@@ -87,5 +87,5 @@ export interface KnowledgeEngine {
 - 对于超过 300 行的文件，自动按语义拆分为子目录。
 
 ## 5. 关联规则
-- 核心规范: [工作流规范](core/workflows.ts.md)
-- 技术栈: [技术栈规范](core/tech-stack.ts.md)"}}}
+- 核心规范: [工作流规范](../../core/workflows.ts.md)
+- 技术栈: [技术栈规范](../../core/tech-stack.ts.md)"}}}
