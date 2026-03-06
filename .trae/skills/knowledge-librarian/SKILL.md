@@ -22,17 +22,32 @@ version: 1.0.0
 - **抽象**: 将具体的 Bug 或经验抽象为通用的规范或最佳实践。
 - **定位**: 在 `.trae/rules/modules/` 中找到对应的规则文件。
     - 如果没有对应模块，则新建一个模块文件（如 `modules/3d-preview.ts.md`）并在主索引中注册。
-    - **新建时必须读取并填充模板**: `.trae/skills/knowledge-librarian/templates/new_module.md`。
+    - **新建时必须根据内容类型选择合适的模板**:
+        - **接口/规范型**: `.trae/skills/knowledge-librarian/templates/new_module.md`
+        - **概念/原理型**: `.trae/skills/knowledge-librarian/templates/concept_module.md`
+        - **指南/教程型**: `.trae/skills/knowledge-librarian/templates/guide_module.md`
+        - **API/速查表**: `.trae/skills/knowledge-librarian/templates/reference_module.md`
 
-### 3. 批评家模式 (Critic Mode)
-在归档每个碎片前，必须进行严格的质量审查：
+### 3. 批评家模式 (Critic Mode) - 分级实证
+在归档每个碎片前，必须进行**分级质量审查**，以确保知识与代码的一致性。
+
 ```text
 <critic>
 1. 拟归档碎片：[文件名]
-2. 查重手段：[使用 Grep 搜索目标规则文件中的相似内容]
-3. 价值评估：[这条经验是否具备通用性？是一次性 Bug 还是系统缺陷？]
-4. 格式检查：[是否已抽象为 TS Interface (规则) 或 Markdown List (日志)？]
-5. 冲突检测：[是否与现有规则（如 tech-stack.ts.md）存在冲突？]
+2. 风险评估 (Risk Assessment):
+    - Level 0 (Pass): 纯文档、概念、架构图 -> 无需代码验证。
+    - Level 1 (Check): 业务逻辑、Bug 修复 -> 使用 Grep 确认相关组件存在。
+    - Level 2 (Verify): 核心接口、配置项、公共方法 -> 必须使用 SearchCodebase/Read 验证代码实现是否一致。
+3. 项目相关性检查 (Relevance Check):
+    - 对于“通用技术建议”（如使用 Flask/Django），**必须**查阅 `package.json` 或 `core/tech-stack.ts.md`。
+    - 若与项目技术栈不符（如在 Node.js 项目中推荐 Python 库），标记为 "仅参考" 或直接丢弃。
+4. 实证执行 (Execution):
+    - [针对 Level 1/2]: 执行验证命令 (e.g., `grep "interface Layer" src/`)
+    - [结果]: 一致 / 冲突 / 未找到
+5. 冲突处理 (Conflict Resolution):
+    - 一致 -> 归档。
+    - 冲突 -> 以**代码现状**为准，修正碎片内容后再归档。
+    - 未找到 -> 标记为 "待确认 (Pending)"，暂不归档，并在 Inbox 中添加 `[PENDING]` 前缀。
 </critic>
 ```
 

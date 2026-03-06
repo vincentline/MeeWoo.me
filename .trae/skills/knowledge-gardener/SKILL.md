@@ -12,9 +12,12 @@ version: 2.0.0
 
 当用户请求总结经验或你识别到有价值的经验时，按以下步骤执行：
 
-### 1. 经验提取 (Extraction)
-分析当前对话历史，提取“问题-原因-解决方案”三元组或“最佳实践”。
-- **读取模板**: 读取 `.trae/skills/knowledge-gardener/templates/inbox_note.md`。
+### 1. 经验提取与切分 (Extraction & Pre-slicing)
+分析当前对话历史或输入文档。
+- **预切分 (Pre-slicing)**: 如果输入内容包含多个独立主题（如同时包含“规范”、“测试”和“部署”），**必须**将其拆分为多个独立的经验碎片。禁止将所有内容塞入一个文件。
+- **模板选择**:
+    - **问题/Bug 修复**: 读取 `.trae/skills/knowledge-gardener/templates/inbox_note.md`。
+    - **纯知识/通识**: 读取 `.trae/skills/knowledge-gardener/templates/inbox_knowledge.md`。
 
 ### 2. 碎片化存储 (Inbox Storage)
 - **生成文件名**: 使用 kebab-case 命名，格式为 `{模块}-{主题}-{类型}.md`。
