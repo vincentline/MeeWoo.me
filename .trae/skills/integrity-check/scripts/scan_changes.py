@@ -36,9 +36,11 @@ def get_staged_files():
             ["git", "diff", "--cached", "--name-only"],
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='replace',
             check=True
         )
-        files = result.stdout.strip().splitlines()
+        files = result.stdout.strip().splitlines() if result.stdout else []
         # 过滤掉被忽略的文件
         return [f for f in files if not any(p in f for p in IGNORE_PATTERNS)]
     except subprocess.CalledProcessError:
