@@ -1,7 +1,8 @@
 ---
 module_name: [ModuleName]
 type: concept
-description: [Short Description]
+domain: [graphics|media|ui|engineering|core|data|business]
+tags: [keywords]
 version: 1.0.0
 ---
 
@@ -34,9 +35,9 @@ graph TD
 - ✅ **适用**: [场景 A]
 - ❌ **不适用**: [场景 B]
 
-## 5. 限制与约束 (Constraints)
+## 6. 限制与约束 (Constraints)
 1. [Constraint 1]
 2. [Constraint 2]
 
-## 6. 关联模块 (Related Modules)
+## 7. 关联模块 (Related Modules)
 - [Module A](modules/module-a.ts.md)

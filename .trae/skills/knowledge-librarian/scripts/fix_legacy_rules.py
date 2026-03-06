@@ -2,6 +2,7 @@ import os
 import re
 
 RULES_DIR = r".trae/rules/modules"
+ALLOWED_DOMAINS = ["graphics", "media", "ui", "engineering", "core", "data", "business"]
 
 def to_pascal_case(kebab_str):
     return "".join(word.title() for word in kebab_str.split("-"))

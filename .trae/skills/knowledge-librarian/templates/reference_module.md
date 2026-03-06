@@ -1,7 +1,8 @@
 ---
 module_name: [ModuleName]
 type: reference
-description: [Short Description]
+domain: [graphics|media|ui|engineering|core|data|business]
+tags: [keywords]
 version: 1.0.0
 ---
 

@@ -33,5 +33,9 @@ version: 2.0.0
     - 根据 `git diff` 摘要和 Inbox 笔记内容，填充模板。
     - 确保 `[body]` 使用清晰的中文描述。
     - 确保 `Ref` 和 `Type` 字段准确无误。
-- **静默提交**: 执行 `git commit -m "[Generated Message]"`，无需用户确认。
+- **写入临时文件**: 将生成的消息写入 `.git/COMMIT_EDITMSG_TEMP`。
+- **静默提交**: 执行 `git commit -F .git/COMMIT_EDITMSG_TEMP`，无需用户确认。
+- **清理临时文件**: 提交成功后删除 `.git/COMMIT_EDITMSG_TEMP`。
+
+> **注意**: 由于终端环境 (trae-sandbox) 对多行/中文参数解析有限制，必须使用 `-F` 文件方式提交，避免参数解析错误。
 

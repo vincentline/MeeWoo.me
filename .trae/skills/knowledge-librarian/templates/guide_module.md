@@ -1,7 +1,8 @@
 ---
 module_name: [ModuleName]
 type: guide
-description: [Short Description]
+domain: [graphics|media|ui|engineering|core|data|business]
+tags: [keywords]
 version: 1.0.0
 ---
 
@@ -33,8 +34,6 @@ const config = { ... };
 ## 3. 验证方法 (Verification)
 - 如何确认操作成功？
 - 运行 `npm test` 或检查日志输出 `Success`。
-- [ ] [Practice 1]
-- [ ] [Practice 2]
 
 ## 4. 常见问题 (Troubleshooting)
 ### Q1: [常见报错信息]

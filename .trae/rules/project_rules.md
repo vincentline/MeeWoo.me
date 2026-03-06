@@ -7,8 +7,8 @@
 
 - **查阅代码规范**: 请移步 [.trae/rules/core/coding-style.ts.md](.trae/rules/core/coding-style.ts.md)
 - **查阅技术栈**: 请移步 [.trae/rules/core/tech-stack.ts.md](.trae/rules/core/tech-stack.ts.md)
-- **查阅工作流**: 请移步 [.trae/rules/core/workflows.ts.md](.trae/rules/core/workflows.ts.md) (含 Git 提交、更新日志、发布流程)
-- **查阅功能模块**: 请查阅 [.trae/rules/modules/](.trae/rules/modules/) 下的对应文档 (如 `canvas.ts.md`, `media.ts.md`)
+- **查阅工作流**: 请移步 [.trae/rules/core/workflows.ts.md](.trae/rules/core/workflows.ts.md)
+- **查阅功能模块**: 请使用 `LS .trae/rules/modules/` 查看领域索引，支持扁平文件 (`*.ts.md`) 和聚合目录 (`dir/index.ts.md`) 两种形式。
 
 ## 2. 行为准则 (Behavioral Guidelines)
 

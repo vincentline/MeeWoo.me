@@ -1,6 +1,8 @@
 ---
 module_name: [ModuleName]
-description: [Short Description]
+type: new
+domain: [graphics|media|ui|engineering|core|data|business]
+tags: [keywords]
 version: 1.0.0
 ---
 

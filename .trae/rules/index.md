@@ -16,13 +16,16 @@
 | **多媒体处理** | [modules/media/](modules/media/) | FFmpeg, YYEVA, Audio, Video, GIF, 压缩 |
 | **UI 与组件** | [modules/ui/](modules/ui/) | Vue 组件, 布局, 样式, Mixin |
 | **工程化** | [modules/engineering/](modules/engineering/) | Build, Deploy, CI/CD, Web Worker |
-| **业务规则** | [modules/business/](modules/business/) | Figma Plugin, 业务逻辑 |
+| **核心架构** | [modules/core/](modules/core/) | 系统设计, 错误处理, 插件机制 |
+| **数据与协议** | [modules/data/](modules/data/) | JSON Schema, Protobuf, Store, API |
+| **业务规则** | [modules/business/](modules/business/) | 计费, 权限, 埋点, 导出限制 |
 
 > **Instruction for Coder**:
 > 1.  Identify the domain of the user request.
 > 2.  Navigate to the corresponding `modules/<domain>/` directory.
-> 3.  Execute `LS` to list specific rule files.
-> 4.  Read the relevant `.ts.md` file.
+> 3.  Execute `LS` to list rule files and sub-directories.
+> 4.  **Index Pattern**: If you see a sub-directory (e.g. `canvas/`), read its `index.ts.md` entry point first.
+> 5.  Otherwise, read the relevant `.ts.md` file directly.
 
 ## 3. 日志与记录 (Logs)
 | 日志名称 | 文件路径 | 关键词 |

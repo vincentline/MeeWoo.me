@@ -82,7 +82,7 @@ export interface Workflows {
      */
     roles: {
       gardener: "速记员 (Knowledge-Gardener) - 负责将经验快速写入 Inbox",
-      librarian: "图书管理员 (Knowledge-Librarian) - 负责定期整理 Inbox 并归档到 Rules",
+      librarian: "图书管理员 (Knowledge-Librarian) - 负责定期批量归档 Inbox 并治理大文件 (>300行)",
       integrityCheck: "质检员 (Integrity-Check) - 负责提交代码前检查 Inbox 覆盖率",
       autoCoder: "老工匠 (Coder) - 负责查阅 Rules 和 Inbox 并生成代码"
     };
@@ -92,7 +92,7 @@ export interface Workflows {
      */
     storage: {
       inbox: ".trae/rules/inbox/ - 短期记忆缓冲区 (碎片化)",
-      rules: ".trae/rules/modules/ - 长期记忆存储 (结构化)"
+      rules: ".trae/rules/modules/ - 长期记忆存储 (Index Pattern: 原子文件 + 目录索引)"
     };
 
     /**
@@ -101,7 +101,7 @@ export interface Workflows {
     bestPractices: [
       "所有新经验必须先进入 Inbox，禁止直接修改 Rules (除非由 Librarian 操作)",
       "提交核心代码前，必须确保 Inbox 中有对应的经验记录",
-      "定期运行 Librarian 进行知识归档和 Inbox 清理"
+      "定期运行 Librarian 进行批量归档，并对臃肿规则进行物理拆分 (Split)"
     ];
   };
 

@@ -173,6 +173,67 @@ def command_merge(args):
             
     print(f"✅ Successfully merged into: {target_path}")
 
+def command_batch_merge(args):
+    """Handler for 'batch-merge' command."""
+    sources = [s.strip() for s in args.source.split(",")]
+    target_path = args.target
+    dry_run = args.dry_run
+    
+    print(f"🔄 Starting batch merge for {len(sources)} files into {target_path}")
+    
+    # 1. Validation
+    valid_sources = []
+    for src in sources:
+        if os.path.exists(src):
+            valid_sources.append(src)
+        else:
+            print(f"⚠️ Warning: Source file not found: {src}")
+            
+    if not valid_sources:
+        print("❌ No valid source files found. Aborting.")
+        sys.exit(1)
+
+    # 2. Dry Run Check
+    if dry_run:
+        print("\n[Dry Run Plan]")
+        print(f"Target: {target_path}")
+        print("Sources to merge:")
+        for src in valid_sources:
+            title, _ = parse_markdown_source(src)
+            print(f"  - {src} (Title: {title})")
+        return
+
+    # 3. Execution
+    # Create target if not exists
+    if not os.path.exists(target_path):
+        print(f"📄 Creating new target file: {target_path}")
+        # Use first file title as module title
+        first_title, _ = parse_markdown_source(valid_sources[0])
+        interface_block = generate_ts_interface(first_title, "Batch merged module")
+        with open(target_path, 'w', encoding='utf-8') as f:
+            f.write(f"# {first_title}\n\n{interface_block}\n")
+
+    # Read existing content for deduplication
+    with open(target_path, 'r', encoding='utf-8') as f:
+        existing_content = f.read()
+
+    merged_count = 0
+    for i, src in enumerate(valid_sources):
+        print(f"[{i+1}/{len(valid_sources)}] Processing {src}...")
+        title, body = parse_markdown_source(src)
+        
+        # Simple deduplication check (by title)
+        if f"## {title}" in existing_content:
+            print(f"  ℹ️ Skipping duplicate section: {title}")
+            continue
+            
+        # Append content
+        with open(target_path, 'a', encoding='utf-8') as f:
+            f.write(f"\n\n## {title}\n\n{body}\n")
+        merged_count += 1
+
+    print(f"\n✅ Batch merge complete. Merged {merged_count}/{len(valid_sources)} files.")
+
 def main():
     parser = argparse.ArgumentParser(description="Knowledge Librarian Archiver CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -190,12 +251,20 @@ def main():
     parser_merge.add_argument("--source", required=True, help="Path to inbox source file")
     parser_merge.add_argument("--target", required=True, help="Path to target rule file")
 
+    # Batch Merge Command
+    parser_batch = subparsers.add_parser("batch-merge", help="Batch merge multiple inbox notes")
+    parser_batch.add_argument("--source", required=True, help="Comma-separated list of source files")
+    parser_batch.add_argument("--target", required=True, help="Target rule file path")
+    parser_batch.add_argument("--dry-run", action="store_true", help="Show plan without executing")
+
     args = parser.parse_args()
     
     if args.command == "create":
         command_create(args)
     elif args.command == "merge":
         command_merge(args)
+    elif args.command == "batch-merge":
+        command_batch_merge(args)
 
 if __name__ == "__main__":
     main()
