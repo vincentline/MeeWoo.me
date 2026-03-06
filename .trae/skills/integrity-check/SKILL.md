@@ -22,9 +22,11 @@ version: 2.0.0
 
 ### 2. 交互式修复流 (Interactive Fix Flow)
 如果脚本返回 WARNING：
-- **Prompt**: “检测到核心模块变更，但未发现 Inbox 记录。是否立即调用 Gardener 补录？(Y/n)”
-- **Action (Y)**: 自动调用 `knowledge-gardener` Skill，将 `git diff --cached` 作为输入。
-- **Action (n)**: 终止流程，要求用户手动处理。
+- **使用 AskUserQuestion 工具**，提供以下 3 个选项：
+  - **选项 A**: 自动调用 `knowledge-gardener` Skill，将 `git diff --cached` 作为输入。
+  - **选项 B**: 终止流程，要求用户手动处理。
+  - **选项 C**: 忽略警告，继续下一步流程。
+- **根据用户选择执行对应操作**。
 
 ### 3. 自动提交与推送 (Auto-Commit & Push)
 当检查通过（或补录完成）后：
