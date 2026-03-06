@@ -72,5 +72,16 @@ export interface TechStack {
    * @todo 考虑引入 Pinia 或 Vuex 进行全局状态管理
    */
   stateManagement: "Component State" | "Event Bus";
+
+  /**
+   * 辅助工具
+   * @description 用于脚本和工具开发
+   */
+  tools: {
+    /** 脚本语言 */
+    scripting: "Python";
+    /** Python 版本 */
+    pythonVersion: "3.8+";
+  };
 }
 ```
