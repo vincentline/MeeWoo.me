@@ -289,24 +289,18 @@ function initApp() {
 
         materialList: [],
 
-        replacedImages: {},            // 用于预览的图片（放大后）
-        // 压缩素材的缩放信息（导出时用于替换图片数据）
-        // 结构: {imageKey: {scaledWidth, scaledHeight, originalWidth, originalHeight, compressedDataUrl}}
-        compressedScaleInfo: {},
+        replacedImages: {},
 
-        // 素材压缩相关状态
-        showCompressModal: false,           // 是否显示压缩弹窗
-        isCompressingMaterials: false,      // 是否正在压缩
-        compressProgress: 0,                // 压缩进度 0-100
+        showCompressModal: false,
+        isCompressingMaterials: false,
+        compressProgress: 0,
         compressConfig: {
-          scalePercent: 70,                 // 缩小比例 10-100%
-          pngQuality: 80,                   // PNG压缩质量 10-100%
-          exportMuted: false                // 是否导出静音SVGA（不包含音频）
+          pngQuality: 80,
+          exportMuted: false
         },
-        hasCompressedMaterials: false,      // 是否压缩过素材
-        preCompressMaterials: null,         // 压缩前的素材状态（用于撤销）
-        preCompressReplacedImages: null,    // 压缩前的replacedImages（用于撤销）
-        preCompressScaleInfo: null,         // 压缩前的compressedScaleInfo（用于撤销）
+        hasCompressedMaterials: false,
+        preCompressMaterials: null,
+        preCompressReplacedImages: null,
 
         // 音频数据（从原始SVGA文件提取）
         svgaAudioData: null, // { audioKey: Uint8Array }
@@ -5158,17 +5152,14 @@ function initApp() {
       /**
        * 开始压缩素材图
        * 
-       * 压缩流程：
-       * 1. 将图片缩小到指定比例（scalePercent）
-       * 2. 使用 Canvas 原生 PNG 编码（toDataURL）
-       * 3. 生成两份图片：
-       *    - 小图（compressedDataUrl）：用于导出，减小SVGA文件体积
-       *    - 放大图（previewDataUrl）：用于预览，因为SVGA播放器不会自动放大
-       * 4. 保存缩放信息到 compressedScaleInfo
+       * 压缩流程（简化版）：
+       * 1. 加载原始图片
+       * 2. 使用 TinyPNG 压缩 PNG 数据
+       * 3. 更新预览图和替换记录
        * 
        * 导出时处理（在 exportNewSVGA 中）：
-       * - 使用小图替换SVGA中的原图
-       * - 不修改layout和transform，SVGA播放器会自动拉伸小图到layout指定的尺寸
+       * - 直接使用压缩后的图片替换SVGA中的原图
+       * - 不修改 layout 和 transform
        */
       startCompressMaterials: async function () {
         var _this = this;
@@ -5178,30 +5169,25 @@ function initApp() {
           return;
         }
 
-        // 关闭弹窗，开始压缩
         this.showCompressModal = false;
         this.isCompressingMaterials = true;
         this.compressProgress = 0;
 
-        // 保存压缩前的状态（用于撤销）
         this.preCompressMaterials = JSON.parse(JSON.stringify(this.materialList));
         this.preCompressReplacedImages = Object.assign({}, this.replacedImages);
-        this.preCompressScaleInfo = Object.assign({}, this.compressedScaleInfo);
 
         var total = this.materialList.length;
         var processed = 0;
-        var scalePercent = this.compressConfig.scalePercent / 100;
 
         try {
-          // 重置压缩失败标志
           if (window.MeeWoo && window.MeeWoo.Services && window.MeeWoo.Services.ImageCompressionService) {
             window.MeeWoo.Services.ImageCompressionService.resetCompressionFailed();
+            window.MeeWoo.Services.ImageCompressionService.resetStats();
           }
 
           for (var i = 0; i < this.materialList.length; i++) {
             var material = this.materialList[i];
 
-            // 使用当前显示的图片（可能是替换过的）
             var sourceUrl = material.previewUrl;
             if (!sourceUrl) {
               processed++;
@@ -5209,32 +5195,22 @@ function initApp() {
               continue;
             }
 
-            // 加载图片
             var img = await this._loadImage(sourceUrl);
 
-            // 计算缩小后的尺寸
-            var newWidth = Math.round(img.width * scalePercent);
-            var newHeight = Math.round(img.height * scalePercent);
-
-            // 确保最小尺寸为1
-            newWidth = Math.max(1, newWidth);
-            newHeight = Math.max(1, newHeight);
-
-            // 缩小图片
             var canvas = document.createElement('canvas');
-            canvas.width = newWidth;
-            canvas.height = newHeight;
+            canvas.width = img.width;
+            canvas.height = img.height;
             var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, newWidth, newHeight);
+            ctx.drawImage(img, 0, 0);
 
             var compressedDataUrl;
+            var originalSize = img.width * img.height * 4;
+            var compressedSize = originalSize;
+
             if (window.MeeWoo && window.MeeWoo.Services && window.MeeWoo.Services.ImageCompressionService) {
               try {
-                // 使用ImageCompressionService压缩Canvas
                 var pngData = await window.MeeWoo.Services.ImageCompressionService.compressCanvas(canvas, this.compressConfig.pngQuality);
-                // 将Uint8Array转换为DataURL
                 var blob = new Blob([pngData], { type: 'image/png' });
-                // 使用FileReader将blob转换为DataURL，以便后续atob解码
                 compressedDataUrl = await new Promise(function (resolve, reject) {
                   var reader = new FileReader();
                   reader.onloadend = function () {
@@ -5243,75 +5219,46 @@ function initApp() {
                   reader.onerror = reject;
                   reader.readAsDataURL(blob);
                 });
+                compressedSize = pngData.length;
               } catch (e) {
                 console.error('PNG压缩失败，使用Canvas原生输出:', e);
                 compressedDataUrl = canvas.toDataURL('image/png');
               }
             } else {
-              // 降级：使用Canvas原生输出
               compressedDataUrl = canvas.toDataURL('image/png');
             }
 
-            // 放大到原尺寸用于预览（SVGA播放器不会自动放大）
-            var compressedImg;
-            try {
-              compressedImg = await this._loadImage(compressedDataUrl);
-            } catch (err) {
-              throw err;
-            }
-
-            var scaledCanvas = this.scaleImageToFill(compressedImg, material.originalWidth, material.originalHeight);
-            var previewDataUrl = scaledCanvas.toDataURL('image/png');
-
-            // 更新素材列表预览
-            material.previewUrl = previewDataUrl;
+            material.previewUrl = compressedDataUrl;
             material.isReplaced = true;
-            // 尺寸显示为压缩后的尺寸
-            material.sizeText = newWidth + 'px*' + newHeight + 'px';
+            material.sizeText = img.width + 'px*' + img.height + 'px';
+            material.fileSize = compressedSize;
+            material.fileSizeText = this.utils.formatBytes(compressedSize) + ' (压缩后)';
 
-            // 内存占用显示为缩小后的尺寸
-            var bytes = newWidth * newHeight * 4;
-            material.fileSize = bytes;
-            material.fileSizeText = this.utils.formatBytes(bytes) + ' (压缩后)';
-
-            // 更新 replacedImages（用于预览，放大后的图）
             var newReplacedImages = Object.assign({}, this.replacedImages);
-            newReplacedImages[material.imageKey] = previewDataUrl;
+            newReplacedImages[material.imageKey] = compressedDataUrl;
             this.replacedImages = newReplacedImages;
-
-            // 保存缩放信息和小图数据（用于导出）
-            var newCompressedScaleInfo = Object.assign({}, this.compressedScaleInfo);
-            newCompressedScaleInfo[material.imageKey] = {
-              scaledWidth: newWidth,
-              scaledHeight: newHeight,
-              originalWidth: material.originalWidth,
-              originalHeight: material.originalHeight,
-              compressedDataUrl: compressedDataUrl  // 小图数据用于导出
-            };
-            this.compressedScaleInfo = newCompressedScaleInfo;
 
             processed++;
             this.compressProgress = Math.round((processed / total) * 100);
           }
 
-          // 压缩完成
           this.hasCompressedMaterials = true;
           this.isCompressingMaterials = false;
 
-          // 重新计算总内存占用
           this._recalculateTotalMemory();
 
-          // 应用到播放器预览
           this.applyReplacedMaterials();
 
-          // 检查是否有压缩失败
-          var compressionFailed = false;
           if (window.MeeWoo && window.MeeWoo.Services && window.MeeWoo.Services.ImageCompressionService) {
-            compressionFailed = window.MeeWoo.Services.ImageCompressionService.hasCompressionFailed();
-          }
-
-          if (compressionFailed) {
-            this.utils.showToast('压缩完成，但部分图片使用了降级压缩方案');
+            window.MeeWoo.Services.ImageCompressionService.printStatsSummary();
+            var stats = window.MeeWoo.Services.ImageCompressionService.getStats();
+            if (stats.tinypngFailed > 0) {
+              this.utils.showToast('压缩完成，' + stats.tinypngSuccess + '/' + total + ' 使用TinyPNG，' + stats.tinypngFailed + ' 个降级');
+            } else if (stats.tinypngSuccess === total) {
+              this.utils.showToast('压缩完成！全部 ' + total + ' 个素材使用TinyPNG压缩');
+            } else {
+              this.utils.showToast('压缩完成，共 ' + total + ' 个素材');
+            }
           } else {
             this.utils.showToast('压缩完成，共压缩 ' + total + ' 个素材');
           }
@@ -5332,24 +5279,17 @@ function initApp() {
           return;
         }
 
-        // 恢复压缩前的状态
         this.materialList = JSON.parse(JSON.stringify(this.preCompressMaterials));
         this.replacedImages = Object.assign({}, this.preCompressReplacedImages);
-        this.compressedScaleInfo = Object.assign({}, this.preCompressScaleInfo || {});
 
-        // 清除撤销记录
         this.preCompressMaterials = null;
         this.preCompressReplacedImages = null;
-        this.preCompressScaleInfo = null;
         this.hasCompressedMaterials = false;
 
-        // 关闭弹窗
         this.showCompressModal = false;
 
-        // 重新计算总内存占用
         this._recalculateTotalMemory();
 
-        // 应用到播放器预览
         this.applyReplacedMaterials();
 
         this.utils.showToast('已撤销压缩');
@@ -5487,77 +5427,17 @@ function initApp() {
                     return;
                   }
 
-                  // 处理所有图片
                   imagesToProcess.forEach(function (item) {
-                    var scaleInfo = _this.compressedScaleInfo[item.imageKey];
-                    var base64Data;
-
-                    // 如果有压缩信息，直接使用保存的小图DataURL（Canvas原生PNG）
-                    if (scaleInfo && scaleInfo.compressedDataUrl) {
-                      base64Data = scaleInfo.compressedDataUrl;
-                    } else {
-                      // 没有压缩，使用原图
-                      base64Data = item.base64Data;
-                    }
-
-                    // 移除 data:image/xxx;base64, 前缀
+                    var base64Data = item.base64Data;
                     var base64String = base64Data.split(',')[1] || base64Data;
-                    // 转换为 Uint8Array
                     var binaryString = atob(base64String);
                     var bytes = new Uint8Array(binaryString.length);
                     for (var i = 0; i < binaryString.length; i++) {
                       bytes[i] = binaryString.charCodeAt(i);
                     }
-                    // 直接替换 protobuf 消息中的 bytes 字段
                     movieData.images[item.imageKey] = bytes;
                     replacedCount++;
                   });
-
-                  // ========== 处理压缩素材的transform（核心算法！） ==========
-                  // 算法原理：
-                  // 1. 压缩时：图片从原始尺寸（如324x321）缩小到指定比例（如50% = 162x161）
-                  // 2. 导出时：替换images中的图片数据为小图（162x161的PNG）
-                  // 3. 通过transform矩阵放大显示：
-                  //    - a/b/c/d 乘以scaleUp（控制缩放、旋转、斜切）
-                  //    - tx/ty 保持不变（相对于layout坐标系的绝对位置）
-                  // 4. layout完全不变（位置和尺寸保持原始值）
-                  //
-                  // 关键发现：
-                  // - transform的a/b/c/d控制图片的变换矩阵，必须同步缩放以保持旋转角度
-                  // - transform的tx/ty是画布坐标系下的绝对偏移，不受图片尺寸影响
-                  // - 错误做法：只缩放a/d会导致旋转角度错误（相差约15°）
-                  // - 错误做法：缩放tx/ty会导致位置大幅偏移
-                  //
-                  if (Object.keys(_this.compressedScaleInfo).length > 0 && movieData.sprites) {
-                    movieData.sprites.forEach(function (sprite) {
-                      var scaleInfo = _this.compressedScaleInfo[sprite.imageKey];
-                      if (scaleInfo && sprite.frames) {
-                        var scaleUp = scaleInfo.originalWidth / scaleInfo.scaledWidth;
-
-                        sprite.frames.forEach(function (frame) {
-                          if (!frame.transform) {
-                            frame.transform = { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 };
-                          }
-
-                          // 获取原有transform值
-                          var origA = frame.transform.a !== undefined ? frame.transform.a : 1;
-                          var origB = frame.transform.b !== undefined ? frame.transform.b : 0;
-                          var origC = frame.transform.c !== undefined ? frame.transform.c : 0;
-                          var origD = frame.transform.d !== undefined ? frame.transform.d : 1;
-                          var origTx = frame.transform.tx !== undefined ? frame.transform.tx : 0;
-                          var origTy = frame.transform.ty !== undefined ? frame.transform.ty : 0;
-
-                          // 核心：a/b/c/d乘以scaleUp，tx/ty保持不变
-                          frame.transform.a = origA * scaleUp;
-                          frame.transform.b = origB * scaleUp;
-                          frame.transform.c = origC * scaleUp;
-                          frame.transform.d = origD * scaleUp;
-                          frame.transform.tx = origTx;
-                          frame.transform.ty = origTy;
-                        });
-                      }
-                    });
-                  }
 
                   // 使用 SVGABuilder 编码
                   Services.SvgaBuilder.encode(movieData, {

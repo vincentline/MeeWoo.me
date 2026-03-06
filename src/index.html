@@ -955,21 +955,8 @@
           <h3>设置素材图压缩参数</h3>
         </div>
         <div class="center-modal-body">
-          <!-- 图片缩小比例 -->
-          <div class="svga-config-item">
-            <div class="svga-config-label">图片缩小比例：</div>
-            <div class="svga-value-container">
-              <div class="input-wrapper input-wrapper--lg svga-value-input-wrapper">
-                <input type="number" class="base-input" v-model.number="compressConfig.scalePercent"
-                  :disabled="isCompressingMaterials" min="10" max="100" />
-              </div>
-              <div class="input-unit">%</div>
-            </div>
-          </div>
-          <div class="compress-hint">缩小图片尺寸来降低内存和文件大小。</div>
-
           <!-- PNG压缩质量 -->
-          <div class="svga-config-item svga-config-item--mt">
+          <div class="svga-config-item">
             <div class="svga-config-label">PNG压缩质量：</div>
             <div class="svga-value-container">
               <div class="input-wrapper input-wrapper--lg svga-value-input-wrapper">

@@ -39,8 +39,22 @@ var __async = (__this, __arguments, generator) => {
 };
 
 // src/index.ts
-import { ImagequantImage, Imagequant } from "tinypng-lib-wasm";
-import CompressorJpeg from "compressorjs";
+import { ImagequantImage, Imagequant, init as initWasm, wasmPromise } from "../tinypng-lib-wasm/tinypng_lib_wasm.js";
+import CompressorJpeg from "../compressorjs/dist/compressor.esm.js";
+
+var _wasmInitialized = false;
+var _wasmInitPromise = null;
+
+async function ensureWasmInitialized() {
+  if (_wasmInitialized) return;
+  if (!_wasmInitPromise) {
+    _wasmInitPromise = initWasm().then(() => {
+      _wasmInitialized = true;
+    });
+  }
+  await _wasmInitPromise;
+}
+
 var canvastoFile = (canvas, type, quality) => {
   return new Promise(
     (resolve) => canvas.toBlob((blob) => resolve(blob), type, quality)
@@ -260,6 +274,9 @@ var TinyPNG = class {
     return __async(this, null, function* () {
       if (!imageData) throw new Error("imageData can not be null");
       if (!imageData.type.includes("image/png")) throw new Error("imageData must be png");
+      
+      yield ensureWasmInitialized();
+      
       const {
         buffer,
         width: imageDataWidth,

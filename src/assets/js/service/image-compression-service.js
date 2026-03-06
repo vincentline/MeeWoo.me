@@ -1,13 +1,21 @@
 /**
  * 图片压缩服务 - 使用 TinyPNG (tinypng-lib)
- * 功能：识别文件类型，对不同类型文件分别做压缩处理
- * - PNG: 首选 TinyPNG 压缩，失败则降级到 Pako，再失败则使用浏览器默认编码
+ * 
+ * 功能：
+ * - PNG: 使用 TinyPNG (tinypng-lib-wasm) 进行有损压缩
  * - JPG: 不压缩
+ * 
+ * 压缩策略：
+ * - 首选：TinyPNG 有损压缩（支持质量参数）
+ * - 降级：直接返回原始数据（因为图片可能已经缩小，体积已减小）
+ * 
+ * 注意：
+ * - 已移除 Pako 降级方案，因为 Pako 只是无损重编码，不会减小体积
+ * - 压缩前应先缩小图片尺寸，这是减小体积的主要手段
  */
 (function (global) {
     'use strict';
 
-    // Ensure namespace
     window.MeeWoo = window.MeeWoo || {};
     window.MeeWoo.Services = window.MeeWoo.Services || {};
 
@@ -16,24 +24,30 @@
         initialized: false,
         compressionFailed: false,
         tinypngReady: false,
+        compressionStats: {
+            total: 0,
+            tinypngSuccess: 0,
+            tinypngFailed: 0,
+            originalBytes: 0,
+            compressedBytes: 0
+        },
 
         /**
          * 初始化 TinyPNG 模块
          */
         init: async function () {
             try {
-                // 动态导入 TinyPNG 服务适配器
                 const { default: TinyPNGService } = await import('./tinypng/index.js');
 
                 this.tinypngModule = TinyPNGService;
                 this.initialized = true;
                 this.tinypngReady = true;
-                console.log('ImageCompressionService initialized with TinyPNG');
+                console.log('[ImageCompression] TinyPNG 模块初始化成功');
             } catch (error) {
-                console.error('Failed to load TinyPNG service:', error);
-                this.initialized = true; // 标记为已初始化，但 TinyPNG 不可用
+                console.error('[ImageCompression] TinyPNG 模块加载失败:', error);
+                this.initialized = true;
                 this.tinypngReady = false;
-                console.log('ImageCompressionService initialized with fallback mode');
+                console.log('[ImageCompression] 将使用无压缩模式');
             }
         },
 
@@ -50,7 +64,6 @@
          * @returns {string} - 文件类型（'png'或其他）
          */
         detectFileType: function (data) {
-            // PNG 签名：89 50 4E 47 0D 0A 1A 0A
             if (data.length >= 8) {
                 const pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
                 let isPNG = true;
@@ -80,155 +93,60 @@
                 throw new Error('TinyPNG not available');
             }
 
+            const startTime = performance.now();
+            const originalSize = pngData.length;
+
             try {
-                // 使用 TinyPNG 压缩
-                // 质量参数直接传递 (0-100)
                 const compressedBuffer = await this.tinypngModule.compress(pngData, {
                     quality: quality,
-                    minimumQuality: 30 // 默认最小质量
+                    minimumQuality: 30
                 });
-                return new Uint8Array(compressedBuffer);
+                const compressedData = new Uint8Array(compressedBuffer);
+                const elapsed = (performance.now() - startTime).toFixed(1);
+                const ratio = (compressedData.length / originalSize * 100).toFixed(1);
+
+                console.log('[ImageCompression] TinyPNG 压缩成功: ' +
+                    originalSize + ' → ' + compressedData.length + ' bytes (' +
+                    ratio + '%), 耗时 ' + elapsed + 'ms');
+
+                return compressedData;
             } catch (error) {
-                console.error('TinyPNG compression failed:', error);
+                const elapsed = (performance.now() - startTime).toFixed(1);
+                console.error('[ImageCompression] TinyPNG 压缩失败 (' + elapsed + 'ms):', error);
                 throw error;
             }
         },
 
         /**
-         * 使用 Pako 压缩 PNG
-         * @param {Uint8Array} pngData - PNG 数据
-         * @returns {Promise<Uint8Array>} - 压缩后的 PNG 数据
-         */
-        compressWithPako: async function (pngData) {
-            if (typeof pako === 'undefined') {
-                throw new Error('pako not available');
-            }
-
-            try {
-                // 获取图片尺寸
-                const view = new DataView(pngData.buffer);
-                const width = view.getUint32(16);
-                const height = view.getUint32(20);
-
-                // 创建 Canvas 并绘制图片
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-                const img = await new Promise((resolve, reject) => {
-                    const image = new Image();
-                    image.onload = () => resolve(image);
-                    image.onerror = () => reject(new Error('Image load failed'));
-                    image.src = URL.createObjectURL(new Blob([pngData], { type: 'image/png' }));
-                });
-
-                ctx.drawImage(img, 0, 0);
-
-                // 获取像素数据
-                const imageData = ctx.getImageData(0, 0, width, height);
-                const pixels = imageData.data;
-
-                // 准备未压缩的像素数据（每行前加filter byte 0）
-                const rawData = new Uint8Array(height * (1 + width * 4));
-                for (let y = 0; y < height; y++) {
-                    rawData[y * (1 + width * 4)] = 0;  // filter type 0
-                    for (let x = 0; x < width; x++) {
-                        const idx = (y * width + x) * 4;
-                        const pos = y * (1 + width * 4) + 1 + x * 4;
-                        rawData[pos] = pixels[idx];
-                        rawData[pos + 1] = pixels[idx + 1];
-                        rawData[pos + 2] = pixels[idx + 2];
-                        rawData[pos + 3] = pixels[idx + 3];
-                    }
-                }
-
-                // 使用 pako 压缩
-                const compressed = pako.deflate(rawData);
-
-                // 构建简单的 PNG 文件
-                return this._buildSimplePNG(width, height, compressed);
-            } catch (error) {
-                console.error('pako compression failed:', error);
-                throw error;
-            }
-        },
-
-        /**
-         * 使用浏览器默认 PNG 编码
-         * @param {Uint8Array} pngData - PNG 数据
-         * @returns {Promise<Uint8Array>} - 压缩后的 PNG 数据
-         */
-        compressWithBrowserDefault: async function (pngData) {
-            try {
-                // 创建 Canvas 并绘制图片
-                const img = await new Promise((resolve, reject) => {
-                    const image = new Image();
-                    image.onload = () => resolve(image);
-                    image.onerror = () => reject(new Error('Image load failed'));
-                    image.src = URL.createObjectURL(new Blob([pngData], { type: 'image/png' }));
-                });
-
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-
-                // 使用浏览器默认 PNG 编码
-                const blob = await new Promise(resolve => {
-                    canvas.toBlob(resolve, 'image/png');
-                });
-
-                const arrayBuffer = await blob.arrayBuffer();
-                return new Uint8Array(arrayBuffer);
-            } catch (error) {
-                console.error('Browser default compression failed:', error);
-                throw error;
-            }
-        },
-
-        /**
-         * 压缩 PNG 数据（三级降级机制）
+         * 压缩 PNG 数据
          * @param {Uint8Array} pngData - PNG 数据
          * @param {number} quality - 压缩质量（0-100）
          * @returns {Promise<Uint8Array>} - 压缩后的 PNG 数据
          */
         compressPNG: async function (pngData, quality = 80) {
-            let compressedData;
+            this.compressionStats.total++;
+            this.compressionStats.originalBytes += pngData.length;
 
-            // 首选：使用 TinyPNG 压缩
-            try {
-                // 先初始化（如果未初始化）
-                if (!this.initialized) {
-                    await this.init();
-                }
+            if (!this.initialized) {
+                await this.init();
+            }
 
-                if (this.isTinyPNGReady()) {
-                    compressedData = await this.compressWithTinyPNG(pngData, quality);
+            if (this.isTinyPNGReady()) {
+                try {
+                    const compressedData = await this.compressWithTinyPNG(pngData, quality);
+                    this.compressionStats.tinypngSuccess++;
+                    this.compressionStats.compressedBytes += compressedData.length;
                     return compressedData;
+                } catch (error) {
+                    this.compressionStats.tinypngFailed++;
+                    console.warn('[ImageCompression] TinyPNG 压缩失败，返回原始数据');
                 }
-            } catch (error) {
-                console.error('TinyPNG compression failed:', error);
+            } else {
+                console.warn('[ImageCompression] TinyPNG 不可用，跳过压缩');
             }
 
-            // 降级：使用 pako 压缩
-            try {
-                compressedData = await this.compressWithPako(pngData);
-                return compressedData;
-            } catch (error) {
-                this.compressionFailed = true;
-            }
-
-            // 降级：使用浏览器默认编码
-            try {
-                compressedData = await this.compressWithBrowserDefault(pngData);
-                return compressedData;
-            } catch (error) {
-                this.compressionFailed = true;
-                console.error('All compression methods failed, returning original data');
-                return pngData;
-            }
+            this.compressionStats.compressedBytes += pngData.length;
+            return pngData;
         },
 
         /**
@@ -238,16 +156,13 @@
          * @returns {Promise<Uint8Array>} - 压缩后的 PNG 数据
          */
         compressCanvas: async function (canvas, quality = 80) {
-            // 先将 Canvas 转换为 PNG Blob
             const blob = await new Promise(resolve => {
                 canvas.toBlob(resolve, 'image/png');
             });
 
-            // 读取 Blob 为 ArrayBuffer
             const arrayBuffer = await blob.arrayBuffer();
             const uint8Array = new Uint8Array(arrayBuffer);
 
-            // 压缩 PNG 数据
             return await this.compressPNG(uint8Array, quality);
         },
 
@@ -258,16 +173,13 @@
          * @returns {Promise<Uint8Array>} - 压缩后的图片数据
          */
         compressImage: async function (data, quality = 80) {
-            // 识别文件类型
             const fileType = this.detectFileType(data);
 
-            // 根据文件类型选择压缩方式
             if (fileType === 'png') {
                 return await this.compressPNG(data, quality);
-            } else {
-                // 非 PNG 格式不压缩，直接返回原始数据
-                return data;
             }
+
+            return data;
         },
 
         /**
@@ -285,93 +197,49 @@
         },
 
         /**
-         * 构建简单的 PNG 文件
-         * @private
+         * 获取压缩统计信息
+         * @returns {Object} 压缩统计
          */
-        _buildSimplePNG: function (width, height, idatData) {
-            // PNG 签名
-            const signature = new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
-
-            // IHDR 块 (13 bytes)
-            const ihdr = new Uint8Array(13);
-            const view = new DataView(ihdr.buffer);
-            view.setUint32(0, width);
-            view.setUint32(4, height);
-            ihdr[8] = 8;   // bit depth
-            ihdr[9] = 6;   // color type: RGBA
-            ihdr[10] = 0;  // compression
-            ihdr[11] = 0;  // filter
-            ihdr[12] = 0;  // interlace
-
-            const ihdrChunk = this._createPNGChunk('IHDR', ihdr);
-            const idatChunk = this._createPNGChunk('IDAT', idatData);
-            const iendChunk = this._createPNGChunk('IEND', new Uint8Array(0));
-
-            // 组合所有部分
-            const totalLength = signature.length + ihdrChunk.length + idatChunk.length + iendChunk.length;
-            const png = new Uint8Array(totalLength);
-            let offset = 0;
-
-            png.set(signature, offset); offset += signature.length;
-            png.set(ihdrChunk, offset); offset += ihdrChunk.length;
-            png.set(idatChunk, offset); offset += idatChunk.length;
-            png.set(iendChunk, offset);
-
-            return png;
+        getStats: function () {
+            const stats = Object.assign({}, this.compressionStats);
+            if (stats.originalBytes > 0) {
+                stats.compressionRatio = (stats.compressedBytes / stats.originalBytes * 100).toFixed(1) + '%';
+                stats.savedBytes = stats.originalBytes - stats.compressedBytes;
+            }
+            return stats;
         },
 
         /**
-         * 创建 PNG chunk
-         * @private
+         * 重置压缩统计
          */
-        _createPNGChunk: function (type, data) {
-            const length = data.length;
-            const chunk = new Uint8Array(12 + length);
-            const view = new DataView(chunk.buffer);
-
-            // 长度
-            view.setUint32(0, length);
-
-            // 类型
-            for (let i = 0; i < 4; i++) {
-                chunk[4 + i] = type.charCodeAt(i);
-            }
-
-            // 数据
-            chunk.set(data, 8);
-
-            // CRC
-            const crc = this._crc32(chunk.subarray(4, 8 + length));
-            view.setUint32(8 + length, crc);
-
-            return chunk;
+        resetStats: function () {
+            this.compressionStats = {
+                total: 0,
+                tinypngSuccess: 0,
+                tinypngFailed: 0,
+                originalBytes: 0,
+                compressedBytes: 0
+            };
         },
 
         /**
-         * 计算 CRC32
-         * @private
+         * 打印压缩统计摘要
          */
-        _crc32: function (data) {
-            // 懒初始化 CRC 表
-            if (!this._crc32Table) {
-                this._crc32Table = new Uint32Array(256);
-                for (let i = 0; i < 256; i++) {
-                    let c = i;
-                    for (let k = 0; k < 8; k++) {
-                        c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-                    }
-                    this._crc32Table[i] = c;
-                }
+        printStatsSummary: function () {
+            const stats = this.getStats();
+            console.log('[ImageCompression] 压缩统计摘要:');
+            console.log('  - 总处理图片: ' + stats.total);
+            console.log('  - TinyPNG 成功: ' + stats.tinypngSuccess);
+            console.log('  - TinyPNG 失败: ' + stats.tinypngFailed);
+            console.log('  - 原始大小: ' + (stats.originalBytes / 1024).toFixed(1) + ' KB');
+            console.log('  - 压缩后大小: ' + (stats.compressedBytes / 1024).toFixed(1) + ' KB');
+            if (stats.compressionRatio) {
+                console.log('  - 压缩率: ' + stats.compressionRatio);
             }
-
-            let crc = -1;
-            for (let i = 0; i < data.length; i++) {
-                crc = this._crc32Table[(crc ^ data[i]) & 0xff] ^ (crc >>> 8);
+            if (stats.savedBytes && stats.savedBytes > 0) {
+                console.log('  - 节省空间: ' + (stats.savedBytes / 1024).toFixed(1) + ' KB');
             }
-            return (crc ^ -1) >>> 0;
-        },
-
-        _crc32Table: null
+        }
     };
 
     window.MeeWoo.Services.ImageCompressionService = ImageCompressionService;

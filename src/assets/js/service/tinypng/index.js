@@ -1,8 +1,10 @@
 /**
  * Tinypng 服务适配器
  * 封装 tinypng-lib 库，提供统一的压缩接口
+ * 
+ * 注意：使用相对路径导入，确保在静态服务器上也能正常工作
  */
-import TinyPNG from 'tinypng-lib';
+import TinyPNG from '../../libs/tinypng-lib/index.js';
 
 /**
  * 压缩 PNG 数据
