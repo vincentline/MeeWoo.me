@@ -26,7 +26,7 @@ version: 2.0.0
 - **Action (Y)**: 自动调用 `knowledge-gardener` Skill，将 `git diff --cached` 作为输入。
 - **Action (n)**: 终止流程，要求用户手动处理。
 
-### 3. 自动提交 (Auto-Commit)
+### 3. 自动提交与推送 (Auto-Commit & Push)
 当检查通过（或补录完成）后：
 - **读取模板**: 读取 `.trae/skills/integrity-check/templates/commit_message.md`。
 - **生成消息**: 
@@ -36,6 +36,7 @@ version: 2.0.0
 - **写入临时文件**: 将生成的消息写入 `.git/COMMIT_EDITMSG_TEMP`。
 - **静默提交**: 执行 `git commit -F .git/COMMIT_EDITMSG_TEMP`，无需用户确认。
 - **清理临时文件**: 提交成功后删除 `.git/COMMIT_EDITMSG_TEMP`。
+- **推送到远程**: 执行 `git push`，将本地提交同步到远程仓库。
 
 > **注意**: 由于终端环境 (trae-sandbox) 对多行/中文参数解析有限制，必须使用 `-F` 文件方式提交，避免参数解析错误。
 
