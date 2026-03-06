@@ -1,27 +1,30 @@
 # 项目规则路由 (Rules Router)
 
-本文档作为项目开发规则的统一入口和智能路由表。
+> 本文档采用**混合索引 (Hybrid Indexing)**。Layer 1 仅展示核心规范和领域入口，Layer 2 规则请在对应领域目录下使用 `LS` 查找。
 
-## 核心规范 (Core Rules)
+## 1. 核心规范 (Core)
+| 规范名称 | 文件路径 | 关键词 |
+| :--- | :--- | :--- |
+| **技术栈** | [tech-stack.ts.md](core/tech-stack.ts.md) | `stack`, `vue`, `vite` |
+| **代码风格** | [coding-style.ts.md](core/coding-style.ts.md) | `style`, `naming` |
+| **工作流** | [workflows.ts.md](core/workflows.ts.md) | `git`, `commit`, `log` |
 
-| 规范名称 | 文件路径 | 关键词 (Keywords) | 描述 |
-| :--- | :--- | :--- | :--- |
-| **技术栈** | [tech-stack.ts.md](core/tech-stack.ts.md) | `stack`, `vue`, `konva`, `vite`, `lib` | 项目使用的框架、语言、库版本及用途说明 |
-| **代码风格** | [coding-style.ts.md](core/coding-style.ts.md) | `style`, `naming`, `comment`, `structure` | 命名规范、代码组织结构、注释要求等 |
-| **工作流** | [workflows.ts.md](core/workflows.ts.md) | `git`, `commit`, `log`, `release`, `test` | Git 提交、变更日志记录 (`UPDATE_LOG.md`)、发布与测试流程 |
+## 2. 领域索引 (Domain Index)
+| 领域 (Domain) | 目录入口 | 包含内容 |
+| :--- | :--- | :--- |
+| **图形与交互** | [modules/graphics/](modules/graphics/) | Canvas, Konva, WebGL, 3D |
+| **多媒体处理** | [modules/media/](modules/media/) | FFmpeg, Audio, Video, GIF, 压缩 |
+| **UI 与组件** | [modules/ui/](modules/ui/) | Vue 组件, 布局, 样式, Mixin |
+| **工程化** | [modules/engineering/](modules/engineering/) | Build, Deploy, CI/CD |
 
-## 模块规范 (Module Rules)
+> **Instruction for Coder**:
+> 1.  Identify the domain of the user request.
+> 2.  Navigate to the corresponding `modules/<domain>/` directory.
+> 3.  Execute `LS` to list specific rule files.
+> 4.  Read the relevant `.ts.md` file.
 
-| 模块名称 | 文件路径 | 关键词 (Keywords) | 描述 |
-| :--- | :--- | :--- | :--- |
-| **Canvas 交互** | [canvas.ts.md](modules/canvas.ts.md) | `canvas`, `drag`, `layer`, `performance` | Konva 画布交互、图层管理、性能优化规则 |
-| **媒体处理** | [media.ts.md](modules/media.ts.md) | `media`, `ffmpeg`, `video`, `audio`, `wasm` | FFmpeg 转码、SVGA/Lottie 渲染、素材合成规则 |
-| **图片压缩** | [image-compression.ts.md](modules/image-compression.ts.md) | `image`, `compress`, `tinypng`, `wasm` | TinyPNG 集成、WASM 配置、压缩策略 |
-| **UI 组件** | [ui.ts.md](modules/ui.ts.md) | `ui`, `panel`, `mixin`, `component` | 右侧面板交互、Mixin 复用、组件通信规范 |
-
-## 日志与记录 (Logs)
-
-| 日志名称 | 文件路径 | 关键词 (Keywords) | 描述 |
-| :--- | :--- | :--- | :--- |
-| **错误日志** | [error-log.md](logs/error-log.md) | `error`, `bug`, `fix`, `solution` | 记录复杂报错、根本原因及解决方案 |
-| **决策日志** | [decision-log.md](logs/decision-log.md) | `adr`, `decision`, `arch` | 记录重大架构决策 (ADR) 及其背景 |
+## 3. 日志与记录 (Logs)
+| 日志名称 | 文件路径 | 关键词 |
+| :--- | :--- | :--- |
+| **错误日志** | [error-log.md](logs/error-log.md) | `bug`, `fix` |
+| **决策日志** | [decision-log.md](logs/decision-log.md) | `adr`, `arch` |

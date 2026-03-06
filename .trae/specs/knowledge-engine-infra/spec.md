@@ -8,7 +8,7 @@ Currently, the project lacks a centralized, automated knowledge management syste
 - Create core documentation files (`tech-stack.ts.md`, `coding-style.ts.md`, `workflows.ts.md`) in a structured format (TS Interface + Comments).
 - Create module documentation files (`canvas.ts.md`, `media.ts.md`) for domain-specific knowledge.
 - Create log documentation (`error-log.md`) for troubleshooting.
-- Define Skills (`auto-coder`, `knowledge-gardener`, `integrity-check`) to automate knowledge retrieval and updates.
+- Define Skills (`coder`, `knowledge-gardener`, `integrity-check`) to automate knowledge retrieval and updates.
 
 ## Impact
 - **Affected specs**: None (New capability).
@@ -27,7 +27,7 @@ Documentation files SHALL use TypeScript Interface + Comments format for AI read
 - Example: `interface TechStack { ... }`
 
 ### Requirement: Skills Configuration
-- `auto-coder`: SHALL read rules before generating code.
+- `coder`: SHALL read rules before generating code.
 - `knowledge-gardener`: SHALL extract experience and update documentation.
 - `integrity-check`: SHALL verify documentation consistency before commit.
 

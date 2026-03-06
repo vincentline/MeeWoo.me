@@ -109,7 +109,7 @@ interface CanvasRules {
 
 我们定义两个核心 Skill，分别负责 **"写代码"** 和 **"记笔记"**。
 
-#### Skill A: `auto-coder` (开发模式)
+#### Skill A: `coder` (开发模式)
 
 *触发场景*：准备开发新功能或修复 Bug 时。
 *System Prompt 增强*：
@@ -159,9 +159,9 @@ interface CanvasRules {
 
 ### 场景：开发“无限画布”拖拽功能
 
-#### 阶段一：开发 (调用 `auto-coder`)
+#### 阶段一：开发 (调用 `coder`)
 
-1. **用户**：`/skill auto-coder 我要开发画布拖拽功能`
+1. **用户**：`/skill coder 我要开发画布拖拽功能`
 2. **AI**：
 
    * 读取 `index.md` -> 发现涉及 Canvas 模块。
@@ -235,7 +235,7 @@ interface CanvasRules {
 
 ### 第二步：技能配置 (Skill Configuration)
 
-* [ ] 编写 `auto-coder` 的 Prompt 模板（包含自动读取指令）。
+* [ ] 编写 `coder` 的 Prompt 模板（包含自动读取指令）。
 
 * [ ] 编写 `knowledge-gardener` 的 Prompt 模板（包含文档分析与写入指令）。
 
@@ -245,13 +245,13 @@ interface CanvasRules {
 
 * [ ] 使用新架构处理“MeeWoo 重构建议书”，将其拆解并归档到知识库中。
 
-* [ ] 验证 AI 是否能通过 `/skill auto-coder` 正确读取到重构建议书中的技术选型。
+* [ ] 验证 AI 是否能通过 `/skill coder` 正确读取到重构建议书中的技术选型。
 
 ***
 
 ## 5. 给用户的建议
 
-1. **习惯使用 Skill**：把 `/skill` 当作一个“模式切换开关”。写代码前开 `auto-coder`，做完后开 `knowledge-gardener`。
+1. **习惯使用 Skill**：把 `/skill` 当作一个“模式切换开关”。写代码前开 `coder`，做完后开 `knowledge-gardener`。
 2. **定期“除草”**：虽然 AI 会自动维护，但建议每隔一两个月手动浏览一遍 `index.md`，把过时的模块删掉。
 3. **多用自然语言**：在调用 Skill 时，多用自然语言描述背景（如“这个 Bug 是因为 FFmpeg 版本不兼容导致的”），能帮助 AI 更准确地记录经验。
 

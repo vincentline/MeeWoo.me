@@ -22,7 +22,7 @@
   - [x] SubTask 4.2: Create `.trae/rules/logs/decision-log.md` (Architecture decisions)
 
 - [x] Task 5: Create Skill Specifications (Placeholder)
-  - [x] SubTask 5.1: Create `.trae/skills/auto-coder/SKILL.md`
+  - [x] SubTask 5.1: Create `.trae/skills/coder/SKILL.md`
   - [x] SubTask 5.2: Create `.trae/skills/knowledge-gardener/SKILL.md`
   - [x] SubTask 5.3: Create `.trae/skills/integrity-check/SKILL.md`
 

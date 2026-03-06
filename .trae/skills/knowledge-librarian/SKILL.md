@@ -18,15 +18,16 @@ version: 1.0.0
 
 ### 2. 知识加工 (Process)
 对于每个碎片文件：
-- **分类**: 判断其属于哪个核心模块（如 `Canvas`, `Media`, `UI`）。
+- **分类**: 判断其属于哪个核心领域（如 `graphics`, `media`, `ui`）。
 - **抽象**: 将具体的 Bug 或经验抽象为通用的规范或最佳实践。
-- **定位**: 在 `.trae/rules/modules/` 中找到对应的规则文件。
-    - 如果没有对应模块，则新建一个模块文件（如 `modules/3d-preview.ts.md`）并在主索引中注册。
+- **定位**: 在 `.trae/rules/modules/<domain>/` 中找到对应的规则文件。
+    - 如果没有对应模块，则在对应领域目录下新建一个模块文件（如 `modules/graphics/webgl.ts.md`）。
     - **新建时必须根据内容类型选择合适的模板**:
         - **接口/规范型**: `.trae/skills/knowledge-librarian/templates/new_module.md`
         - **概念/原理型**: `.trae/skills/knowledge-librarian/templates/concept_module.md`
         - **指南/教程型**: `.trae/skills/knowledge-librarian/templates/guide_module.md`
         - **API/速查表**: `.trae/skills/knowledge-librarian/templates/reference_module.md`
+    - **注意**: 新建文件后，**无需**更新 `rules/index.md`（因为使用了动态检索）。仅当新建**领域目录**时才需更新索引。
 
 ### 3. 批评家模式 (Critic Mode) - 分级实证
 在归档每个碎片前，必须进行**分级质量审查**，以确保知识与代码的一致性。
@@ -52,14 +53,17 @@ version: 1.0.0
 ```
 
 ### 4. 归档写入 (Archive)
-- **写入规则**: 将抽象后的内容写入目标规则文件（使用 TS Interface 格式）。
-- **写入日志**: 如果是错误日志，追加到 `logs/error-log.md`。
-    - **格式参考**: `.trae/skills/knowledge-librarian/templates/error_entry.md`。
+- **写入规则**: 将抽象后的内容写入上述定位到的目标规则文件 (位于 `.trae/rules/modules/<domain>/` 下)，并优先使用 TS Interface 格式。
+- **写入日志**:
+    - **重大决策 (ADR)**: 如果碎片涉及技术选型、架构调整或核心策略变更，必须追加到 `logs/decision-log.md`。
+        - **格式**: `### [日期] [决策标题] \n - 背景: ... \n - 决定: ... \n - 影响: ...`
+    - **错误反思**: 如果是生产事故或典型 Bug 复盘，追加到 `logs/error-log.md`。
+        - **格式参考**: `.trae/skills/knowledge-librarian/templates/error_entry.md`。
 
 ### 5. 健康度检查与裂变 (Health Check & Division)
 - **检测**: 运行脚本 `.trae/skills/knowledge-librarian/scripts/check_health.py` 扫描所有规则文件。
-- **拆分**: 对于脚本报告中超过 300 行的文件，自动按语义将文件拆分为子目录（如 `modules/canvas/index.ts.md`）。
-    - 拆分后，必须更新 `.trae/rules/index.md` 中的路由路径。
+- **拆分**: 对于脚本报告中超过 300 行的文件，自动按语义将文件拆分为子目录（如 `modules/graphics/canvas/index.ts.md`）。
+    - 拆分后，无需更新索引，因为 `LS` 可以递归或直接查阅。
     - 确保新目录结构符合项目规范。
 
 ### 6. 清理 (Cleanup)

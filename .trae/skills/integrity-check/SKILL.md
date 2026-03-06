@@ -28,7 +28,10 @@ version: 2.0.0
 
 ### 3. 自动提交 (Auto-Commit)
 当检查通过（或补录完成）后：
-- **生成消息**: 根据 `git diff` 摘要和 Inbox 笔记内容，生成符合 Angular 规范的 Commit Message。
-- **强制关联**: 在消息末尾追加 `Ref: .trae/rules/inbox/[Filename]`。
+- **读取模板**: 读取 `.trae/skills/integrity-check/templates/commit_message.md`。
+- **生成消息**: 
+    - 根据 `git diff` 摘要和 Inbox 笔记内容，填充模板。
+    - 确保 `[body]` 使用清晰的中文描述。
+    - 确保 `Ref` 和 `Type` 字段准确无误。
 - **静默提交**: 执行 `git commit -m "[Generated Message]"`，无需用户确认。
 

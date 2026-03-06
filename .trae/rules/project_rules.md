@@ -18,7 +18,7 @@
 - **信息来源优先级**: 官方文档 > 权威技术博客 > 开源项目 Issues > Stack Overflow 高票回答。
 
 ### 2.2 遵守知识引擎工作流
-- **写代码前**: 必须调用 `/skill auto-coder` 或手动查阅 Rules 与 Inbox。
+- **写代码前**: 必须调用 `/skill coder` 或手动查阅 Rules 与 Inbox。
 - **有新经验时**: 必须调用 `/skill knowledge-gardener` 将经验记入 Inbox。
 - **提交代码前**: 必须调用 `/skill integrity-check` 确保 Inbox 覆盖率。
 

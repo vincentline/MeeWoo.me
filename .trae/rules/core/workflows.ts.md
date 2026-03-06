@@ -84,7 +84,7 @@ export interface Workflows {
       gardener: "速记员 (Knowledge-Gardener) - 负责将经验快速写入 Inbox",
       librarian: "图书管理员 (Knowledge-Librarian) - 负责定期整理 Inbox 并归档到 Rules",
       integrityCheck: "质检员 (Integrity-Check) - 负责提交代码前检查 Inbox 覆盖率",
-      autoCoder: "老工匠 (Auto-Coder) - 负责查阅 Rules 和 Inbox 并生成代码"
+      autoCoder: "老工匠 (Coder) - 负责查阅 Rules 和 Inbox 并生成代码"
     };
 
     /**
