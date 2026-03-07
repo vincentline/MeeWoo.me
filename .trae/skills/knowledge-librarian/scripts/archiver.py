@@ -243,6 +243,16 @@ def command_create(args):
     print(f"[1/4] 读取源文件: {source_path}...")
     title, body = parse_markdown_source(source_path)
 
+    # 自清理逻辑: 读取完源文件后立即尝试删除 (如果源文件在 .trae/temp 目录下)
+    try:
+        abs_src = os.path.abspath(source_path)
+        # 简单判断是否为临时文件 (包含 .trae/temp)
+        if ".trae" in abs_src and "temp" in abs_src and os.path.exists(abs_src):
+             os.remove(abs_src)
+             # print(f"Deleted temp source file: {abs_src}") # Debug
+    except OSError as e:
+        print(f"⚠️ Failed to delete temp source file: {e}")
+
     # ========================================
     # 步骤 2: 应用模板生成内容
     # ========================================
@@ -304,6 +314,14 @@ def command_merge(args):
     # ========================================
     print(f"[1/2] 读取源文件: {source_path}...")
     title, body = parse_markdown_source(source_path)
+
+    # 自清理逻辑: 读取完源文件后立即尝试删除 (如果源文件在 .trae/temp 目录下)
+    try:
+        abs_src = os.path.abspath(source_path)
+        if ".trae" in abs_src and "temp" in abs_src and os.path.exists(abs_src):
+             os.remove(abs_src)
+    except OSError:
+        pass
 
     if not os.path.exists(target_path):
         print(f"❌ 目标文件不存在: {target_path}")
@@ -397,6 +415,14 @@ def command_batch_merge(args):
     for i, src in enumerate(valid_sources):
         print(f"[{i+1}/{len(valid_sources)}] 处理 {src}...")
         title, body = parse_markdown_source(src)
+
+        # 自清理逻辑 (临时文件)
+        try:
+            abs_src = os.path.abspath(src)
+            if ".trae" in abs_src and "temp" in abs_src and os.path.exists(abs_src):
+                 os.remove(abs_src)
+        except OSError:
+            pass
 
         # 简单去重检查 (按标题)
         if f"## {title}" in existing_content:

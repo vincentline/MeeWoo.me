@@ -212,3 +212,6 @@
 [2026-03-07 15:01:01] 【修改文件】 : .trae/skills/coder/scripts/log_change.py - 为日志脚本添加详细的中文注释和文档说明
 [2026-03-07 15:05:00] 【修改文件】 : .trae/skills/coder/scripts/log_change.py - 修复 datetime.utcnow() 弃用警告
 [2026-03-07 15:14:42] 【修改文件】 : .trae/logs/UPDATE_LOG.md - 清理冗余的规则说明文档，仅保留日志数据记录。 相关规则已迁移至 .trae/rules/core/workflows.ts.md，日志维护完全由 Coder Skill 自动化接管。
+[2026-03-07 15:55:40] 【修改文件】 : .trae/skills/knowledge-gardener/scripts/gardener.py - 实现脚本自清理逻辑 (Self-Destruct)，读取完临时文件后自动删除，避免 Agent 显式调用 DeleteFile 触发 IDE 弹窗。
+[2026-03-07 15:58:06] 【修改文件】 : .trae/skills/coder/scripts/log_change.py - 修复脚本自清理逻辑，增加绝对路径解析和错误日志，确保临时文件被正确删除。
+[2026-03-07 16:02:06] 【修改文件】 : .trae/skills/coder/scripts/log_change.py - Final verification for script self-destruct logic.

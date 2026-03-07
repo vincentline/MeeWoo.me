@@ -195,7 +195,16 @@ def main():
                 
             append_log(action, file_path, desc)
             
-            # 可选：执行成功后删除临时文件 (Agent 可以自己决定是否删除，这里脚本不做假设，只负责读)
+            # 自清理逻辑: 读取完文件后立即尝试删除
+            try:
+                # 确保文件路径是绝对路径或正确的相对路径
+                abs_path = os.path.abspath(args.from_file)
+                if os.path.exists(abs_path):
+                    os.remove(abs_path)
+                    # print(f"Deleted temp file: {abs_path}") # Debug
+            except OSError as e:
+                # 打印错误以便调试 (后续稳定后可移除)
+                print(f"⚠️ Failed to delete temp file: {e}")
             
         except Exception as e:
             print(f"❌ Failed to read from file {args.from_file}: {e}")

@@ -75,3 +75,6 @@ figma-mcp-example.md
 
 # package-lock.json（可选，建议忽略避免冲突）
 package-lock.json
+
+# Trae Skill Temporary Files
+.trae/temp/
