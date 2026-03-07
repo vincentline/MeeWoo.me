@@ -32,3 +32,4 @@
 | :--- | :--- | :--- |
 | **错误日志** | [error-log.md](logs/error-log.md) | `bug`, `fix` |
 | **决策日志** | [decision-log.md](logs/decision-log.md) | `adr`, `arch` |
+| **变更日志** | [UPDATE_LOG.md](../logs/UPDATE_LOG.md) | `log`, `change` |

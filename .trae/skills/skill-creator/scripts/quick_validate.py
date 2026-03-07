@@ -1,6 +1,38 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Quick validation script for skills - minimal version
+Skill Creator - 技能快速验证工具
+================================
+
+功能说明:
+    对技能目录执行基本验证检查。
+    验证 SKILL.md 的结构和 frontmatter 格式。
+
+使用方式:
+    python quick_validate.py <skill_directory>
+
+验证项目:
+    1. SKILL.md 文件存在
+    2. YAML frontmatter 格式正确
+    3. 必需字段 (name, description) 存在
+    4. name 符合命名规范 (kebab-case)
+    5. description 不包含尖括号
+    6. name 长度不超过 64 字符
+    7. description 长度不超过 1024 字符
+
+允许的 frontmatter 属性:
+    - name: 技能名称
+    - description: 技能描述
+    - license: 许可证
+    - allowed-tools: 允许的工具列表
+    - metadata: 元数据字典
+
+返回值:
+    0: 验证通过
+    1: 验证失败
+
+
+
 """
 
 import sys
@@ -9,87 +41,125 @@ import re
 import yaml
 from pathlib import Path
 
+
 def validate_skill(skill_path):
-    """Basic validation of a skill"""
+    """
+    执行技能的基本验证。
+
+    验证步骤:
+        1. 检查 SKILL.md 存在
+        2. 检查 YAML frontmatter 格式
+        3. 检查必需字段
+        4. 检查命名规范
+        5. 检查字段长度限制
+
+    Args:
+        skill_path (str | Path): 技能目录路径
+
+    Returns:
+        tuple[bool, str]:
+            - bool: 验证是否通过
+            - str: 验证结果消息
+    """
     skill_path = Path(skill_path)
 
-    # Check SKILL.md exists
+    # ========================================
+    # 检查 1: SKILL.md 存在
+    # ========================================
     skill_md = skill_path / 'SKILL.md'
     if not skill_md.exists():
-        return False, "SKILL.md not found"
+        return False, "SKILL.md 未找到"
 
-    # Read and validate frontmatter
+    # ========================================
+    # 检查 2: 读取并验证 frontmatter
+    # ========================================
     content = skill_md.read_text(encoding='utf-8')
     if not content.startswith('---'):
-        return False, "No YAML frontmatter found"
+        return False, "未找到 YAML frontmatter"
 
-    # Extract frontmatter
+    # 提取 frontmatter
     match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
     if not match:
-        return False, "Invalid frontmatter format"
+        return False, "frontmatter 格式无效"
 
     frontmatter_text = match.group(1)
 
-    # Parse YAML frontmatter
+    # 解析 YAML frontmatter
     try:
         frontmatter = yaml.safe_load(frontmatter_text)
         if not isinstance(frontmatter, dict):
-            return False, "Frontmatter must be a YAML dictionary"
+            return False, "frontmatter 必须是 YAML 字典"
     except yaml.YAMLError as e:
-        return False, f"Invalid YAML in frontmatter: {e}"
+        return False, f"frontmatter 中的 YAML 无效: {e}"
 
-    # Define allowed properties
+    # ========================================
+    # 检查 3: 验证允许的属性
+    # ========================================
     ALLOWED_PROPERTIES = {'name', 'description', 'license', 'allowed-tools', 'metadata'}
 
-    # Check for unexpected properties (excluding nested keys under metadata)
+    # 检查意外属性 (排除 metadata 下的嵌套键)
     unexpected_keys = set(frontmatter.keys()) - ALLOWED_PROPERTIES
     if unexpected_keys:
         return False, (
-            f"Unexpected key(s) in SKILL.md frontmatter: {', '.join(sorted(unexpected_keys))}. "
-            f"Allowed properties are: {', '.join(sorted(ALLOWED_PROPERTIES))}"
+            f"SKILL.md frontmatter 中有意外的键: {', '.join(sorted(unexpected_keys))}。"
+            f"允许的属性: {', '.join(sorted(ALLOWED_PROPERTIES))}"
         )
 
-    # Check required fields
+    # ========================================
+    # 检查 4: 必需字段
+    # ========================================
     if 'name' not in frontmatter:
-        return False, "Missing 'name' in frontmatter"
-    if 'description' not in frontmatter:
-        return False, "Missing 'description' in frontmatter"
+        return False, "frontmatter 中缺少 'name'"
 
-    # Extract name for validation
+    if 'description' not in frontmatter:
+        return False, "frontmatter 中缺少 'description'"
+
+    # ========================================
+    # 检查 5: name 验证
+    # ========================================
     name = frontmatter.get('name', '')
     if not isinstance(name, str):
-        return False, f"Name must be a string, got {type(name).__name__}"
+        return False, f"name 必须是字符串，得到 {type(name).__name__}"
+
     name = name.strip()
     if name:
-        # Check naming convention (hyphen-case: lowercase with hyphens)
+        # 检查命名规范 (kebab-case: 小写字母、数字和连字符)
         if not re.match(r'^[a-z0-9-]+$', name):
-            return False, f"Name '{name}' should be hyphen-case (lowercase letters, digits, and hyphens only)"
-        if name.startswith('-') or name.endswith('-') or '--' in name:
-            return False, f"Name '{name}' cannot start/end with hyphen or contain consecutive hyphens"
-        # Check name length (max 64 characters per spec)
-        if len(name) > 64:
-            return False, f"Name is too long ({len(name)} characters). Maximum is 64 characters."
+            return False, f"name '{name}' 应为 kebab-case (仅限小写字母、数字和连字符)"
 
-    # Extract and validate description
+        # 检查连字符位置
+        if name.startswith('-') or name.endswith('-') or '--' in name:
+            return False, f"name '{name}' 不能以连字符开头/结尾或包含连续连字符"
+
+        # 检查长度 (规范要求最大 64 字符)
+        if len(name) > 64:
+            return False, f"name 过长 ({len(name)} 字符)。最大 64 字符。"
+
+    # ========================================
+    # 检查 6: description 验证
+    # ========================================
     description = frontmatter.get('description', '')
     if not isinstance(description, str):
-        return False, f"Description must be a string, got {type(description).__name__}"
+        return False, f"description 必须是字符串，得到 {type(description).__name__}"
+
     description = description.strip()
     if description:
-        # Check for angle brackets
+        # 检查尖括号 (可能包含敏感信息)
         if '<' in description or '>' in description:
-            return False, "Description cannot contain angle brackets (< or >)"
-        # Check description length (max 1024 characters per spec)
-        if len(description) > 1024:
-            return False, f"Description is too long ({len(description)} characters). Maximum is 1024 characters."
+            return False, "description 不能包含尖括号 (< 或 >)"
 
-    return True, "Skill is valid!"
+        # 检查长度 (规范要求最大 1024 字符)
+        if len(description) > 1024:
+            return False, f"description 过长 ({len(description)} 字符)。最大 1024 字符。"
+
+    return True, "技能验证通过！"
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python quick_validate.py <skill_directory>")
+        print("用法: python quick_validate.py <skill_directory>")
         sys.exit(1)
-    
+
     valid, message = validate_skill(sys.argv[1])
     print(message)
     sys.exit(0 if valid else 1)

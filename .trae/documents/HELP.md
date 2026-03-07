@@ -30,7 +30,7 @@
 | `README.md` | 项目主页，介绍项目背景、安装和启动方法。 |
 | `HELP.md` | **(本文档)** 项目目录结构与使用指南。 |
 | `INDEX.md` | 项目功能索引，帮助 AI 快速定位代码位置。 |
-| `UPDATE_LOG.md` | **变更日志**。记录每次代码修改的内容，AI 会自动维护。 |
+| `.trae/logs/UPDATE_LOG.md` | **变更日志**。记录每次代码修改的内容，AI 会自动维护。 |
 | `CODE_STYLE.md` | 原始代码风格指南 (已被 `.trae/rules/core/coding-style.ts.md` 增强)。 |
 | `package.json` | npm 包管理文件，定义了项目依赖和构建脚本。 |
 
@@ -49,13 +49,14 @@ MeeWoo 知识引擎模仿了人脑的记忆处理流程，分为三级存储：
     *   特点：写入快，未整理，碎片化。
 3.  **大脑皮层 (Cortex)** -> **Rules (`.trae/rules/modules/`)**
     *   **长期记忆区**。存放经过验证、结构化的项目规范。
+    *   **Index Pattern**: 采用原子文件 (`core.ts.md`) + 目录索引 (`index.ts.md`) 的结构，避免大文件臃肿。
     *   特点：读取快，结构严谨，永久有效。
 
 ### 3.2 运作机制：闭环进化
 
 1.  **感知 (Gardener)**：开发过程中，AI 将新经验快速记入 **Inbox**（海马体）。
 2.  **执行 (Coder)**：写代码时，AI 同时调取 **Rules**（皮层）和 **Inbox**（海马体），确保用到最新知识。
-3.  **睡眠整理 (Librarian)**：系统空闲时，AI 将 Inbox 的碎片整理、归档进 Rules，并清空 Inbox，完成记忆固化。
+3.  **睡眠整理 (Librarian)**：系统空闲时，AI 将 Inbox 的碎片批量归档进 Rules，并对大文件进行拆分治理，完成记忆固化。
 
 ### 3.3 Skill 角色图鉴 (Skill Roles)
 
@@ -65,8 +66,8 @@ MeeWoo 知识引擎模仿了人脑的记忆处理流程，分为三级存储：
 | :--- | :--- | :--- | :--- |
 | **`coder`** | **老工匠** | **前额叶 (执行)** | **写代码的**。干活前先查规矩 (Rules)，也会瞟一眼备忘录 (Inbox)，确保活儿做得漂亮且合规。 |
 | **`knowledge-gardener`** | **速记员** | **海马体 (感知)** | **记笔记的**。你随口说的经验、踩过的坑，它立马记在便利贴 (Inbox) 上，不让灵感溜走。 |
-| **`knowledge-librarian`** | **图书管理员** | **睡眠整理 (内化)** | **整理书架的**。趁你休息时，把便利贴分类、誊写进正式手册 (Rules)，把没用的扔掉。 |
-| **`integrity-check`** | **质检员** | **免疫系统 (防御)** | **守大门的**。提交代码前主动扫描变更，若发现未记经验会**自动帮你补录**，通过后**自动生成规范的提交信息**并提交。 |
+| **`knowledge-librarian`** | **图书管理员** | **睡眠整理 (内化)** | **整理书架的**。趁你休息时，把便利贴批量归档 (Batch Merge)，并把厚书拆分成小册子 (Split)，把没用的扔掉。 |
+| **`integrity-check`** | **质检员** | **免疫系统 (防御)** | **守大门的**。提交代码前主动扫描变更，自动生成规范的 Commit Message。**兼任发布员**，负责一键发版 (Release)。 |
 
 ### 3.4 知识引擎运转全流程 (The Flow)
 
@@ -81,12 +82,14 @@ graph TD
     Inbox[(Inbox 海马体)]
     Rules[(Rules 大脑皮层)]
     Git[Git Staging]
+    GH[GitHub Actions]
 
     %% 交互流程
     User -->|1. 提出需求| AC
     User -->|2. 总结经验| KG
     User -->|3. 提交代码| IC
     User -->|4. 整理归档| KL
+    User -->|5. 一键发版| IC
 
     %% 写入流
     KG -->|生成碎片| Inbox
@@ -97,13 +100,17 @@ graph TD
     Rules -.->|提供长期规范| AC
     
     %% 整理流
-    KL -->|读取| Inbox
-    KL -->|归档| Rules
+    KL -->|批量归档| Inbox
+    KL -->|物理拆分| Rules
     KL -->|清空| Inbox
     
     %% 检查流
     IC -->|扫描变更| Git
     IC -->|检查覆盖率| Inbox
+    
+    %% 发布流
+    IC -->|合并版本号| GH
+    GH -->|自动发版| User
 ```
 
 #### 环节详解
@@ -116,22 +123,22 @@ graph TD
         *   **选模板**: 修 Bug 用 `inbox_note`，学知识用 `inbox_knowledge`。
     *   **产物**: Inbox 中的碎片文件 (`.md`)。
 
-2.  **验证环节 (Verification)**
+2.  **验证与发布环节 (Verify & Release)**
     *   **负责人**: **Integrity-Check (质检员)**
-    *   **触发条件**: 用户执行 `git commit` 或请求提交代码。
+    *   **触发条件**: 用户执行 `git commit` 或请求发版。
     *   **执行标准**:
-        *   **未归档检查**: 必须有未被 Librarian 处理的 Inbox 笔记。
-        *   **相关性检查**: 笔记关键词必须覆盖代码变更模块。
-    *   **产物**: 规范的 Commit Message (含 `Ref` 链接)。
+        *   **Commit**: 严格遵循 Conventional Commits (`feat`, `fix`)。
+        *   **Release**: 调用 `release.py` 自动合并 Release PR。
+    *   **产物**: 规范的 Commit Message，GitHub Release Tag。
 
 3.  **归档环节 (Archiving)**
     *   **负责人**: **Librarian (图书管理员)**
     *   **触发条件**: 系统空闲时或用户主动请求。
     *   **执行标准**:
+        *   **批量处理**: 使用 `batch-merge` 提升效率。
+        *   **大文件治理**: 对 >300 行文件执行物理拆分 (Index Pattern)。
         *   **分级实证**: 核心规则必须查阅代码库验证真伪。
-        *   **项目相关性**: 通用建议必须符合 `package.json` 技术栈。
-        *   **模板匹配**: 自动选择 Concept/Guide/Reference 模板。
-    *   **产物**: Rules 中的结构化文档 (`.ts.md`)。
+    *   **产物**: Rules 中的结构化文档 (`index.ts.md` + 子文件)。
 
 ### 3.5 为什么需要它？
 
@@ -158,12 +165,16 @@ graph TD
 *   **AI 动作**：
     1.  **自动扫描**：检查代码变更是否已在 Inbox 有对应笔记。
     2.  **交互修复**：若无笔记，AI 会问你“要不要补录？”，确认后自动生成笔记。
-    3.  **自动提交**：生成符合 Angular 规范的 Commit Message（含 Inbox 关联链接），并静默提交。
+    3.  **自动提交**：生成符合 Conventional Commits 规范的 Commit Message，并静默提交。
 
 ### 场景 D：整理知识库 (睡眠整理)
 **指令**：`/skill knowledge-librarian`
 *   **示例**：“/skill knowledge-librarian 整理一下这周的 Inbox。”
-*   **AI 动作**：像图书管理员一样，把 Inbox 里的碎片文件分类、抽象、合并进长期规则库 (Rules)，并清空 Inbox。建议每周运行一次。
+*   **AI 动作**：像图书管理员一样，把 Inbox 里的碎片文件批量归档 (Batch Merge) 进长期规则库 (Rules)，并对大文件进行拆分治理，最后清空 Inbox。建议每周运行一次。
+
+### 场景 E：发布新版本
+**指令**：`帮我发版` 或 `合并版本号`
+*   **AI 动作**：调用 `release.py` 脚本，自动查找并合并 GitHub 上的 Release PR，触发自动化发版流程。
 
 ## 5. 常见问题 (Q&A)
 
@@ -175,4 +186,4 @@ graph TD
     *   A: 那些是第三方工具库（比如处理视频的 FFmpeg，画图的 Konva），通常不需要修改。
 
 ---
-*文档更新时间：2026-03-05*
+*文档更新时间：2026-03-07*

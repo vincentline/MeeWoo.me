@@ -1,194 +1,328 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Knowledge Gardener - 知识园丁
+=============================
+
+功能说明:
+    负责将开发经验快速提取并暂存到 Inbox (海马体) 中。
+    不直接修改长期规则库，仅负责经验碎片的收集和索引。
+
+使用方式:
+    # 创建新笔记
+    python gardener.py new --type bug --title "修复画布拖拽Bug" --tags "canvas,drag" --content "问题描述..."
+
+    # 从文件读取内容
+    python gardener.py new --type knowledge --title "Konva性能优化" --content-file ./notes.md
+
+    # 检查重复笔记
+    python gardener.py check --keywords "canvas,drag"
+
+命令说明:
+    new     创建新的经验笔记
+    check   检查是否存在重复笔记
+
+笔记类型:
+    bug         Bug 修复经验
+    knowledge   通用知识/最佳实践
+
+
+
+"""
+
 import argparse
 import os
 import re
 import datetime
 import sys
 
-# Constants
+# ============================================================================
+# 配置常量
+# ============================================================================
+
+# Inbox 目录路径 (海马体 - 临时经验存储)
 INBOX_DIR = r".trae/rules/inbox"
+
+# 模板目录路径
 TEMPLATES_DIR = r".trae/skills/knowledge-gardener/templates"
+
+# Inbox 索引文件路径
 INDEX_FILE = os.path.join(INBOX_DIR, "index.md")
 
-# Ensure directories exist
+# 确保目录存在
 os.makedirs(INBOX_DIR, exist_ok=True)
 os.makedirs(TEMPLATES_DIR, exist_ok=True)
 
+
 def to_kebab_case(s):
-    """Converts a string to kebab-case (URL friendly)."""
-    # Remove non-alphanumeric characters (except spaces)
+    """
+    将字符串转换为 kebab-case 格式。
+
+    用于生成 URL 友好的文件名。
+
+    Args:
+        s (str): 原始字符串
+
+    Returns:
+        str: kebab-case 格式的字符串
+
+    Example:
+        >>> to_kebab_case("修复画布拖拽Bug")
+        '修复画布拖拽bug'
+        >>> to_kebab_case("Konva Performance Tips")
+        'konva-performance-tips'
+    """
+    # 移除非字母数字字符 (保留空格和连字符)
     s = re.sub(r'[^\w\s-]', '', s).strip().lower()
-    # Replace spaces with hyphens
+    # 将空格替换为连字符
     s = re.sub(r'[-\s]+', '-', s)
     return s
 
+
 def get_template_content(type_name):
-    """Reads template content based on type."""
+    """
+    根据笔记类型读取模板内容。
+
+    Args:
+        type_name (str): 笔记类型 ('bug' 或 'knowledge')
+
+    Returns:
+        str: 模板内容字符串，如果文件不存在则返回默认模板
+
+    Template Files:
+        - bug: inbox_note.md
+        - knowledge: inbox_knowledge.md
+    """
     filename = "inbox_note.md" if type_name == "bug" else "inbox_knowledge.md"
     path = os.path.join(TEMPLATES_DIR, filename)
     try:
         with open(path, 'r', encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
-        # Fallback template if file missing
+        # 模板文件缺失时的后备模板
         return f"# {{title}}\n\n{{content}}\n"
 
+
 def update_index(filename, title, tags, summary):
-    """Atomically appends a new row to the index table."""
+    """
+    原子性地向索引表追加新行。
+
+    索引文件格式为 Markdown 表格:
+    | 文件名 | 关键词 | 摘要 | 创建日期 |
+
+    Args:
+        filename (str): 笔记文件名
+        title (str): 笔记标题
+        tags (str): 关键词标签 (逗号分隔)
+        summary (str): 内容摘要
+
+    Side Effects:
+        - 如果索引文件不存在，创建新文件
+        - 向索引文件追加新行
+    """
     today = datetime.datetime.now().strftime("%Y-%m-%d")
-    # Clean inputs for markdown table
+
+    # 清理输入中的 Markdown 表格特殊字符
     title = title.replace("|", "\\|")
     tags = tags.replace("|", "\\|")
     summary = summary.replace("|", "\\|").replace("\n", " ")
-    
+
+    # 构建新行
     new_row = f"| [{filename}]({filename}) | {tags} | {summary} | {today} |"
-    
+
     if not os.path.exists(INDEX_FILE):
-        # Create new index file if missing
+        # 创建新的索引文件
         with open(INDEX_FILE, 'w', encoding='utf-8') as f:
             f.write("# Inbox Index (海马体索引)\n\n> 存放尚未归档的临时经验碎片。\n\n| 文件名 | 关键词 | 摘要 | 创建日期 |\n| :--- | :--- | :--- | :--- |\n")
-    
+
     with open(INDEX_FILE, 'r+', encoding='utf-8') as f:
         content = f.read()
         if new_row not in content:
-            # Append to end of file, ensuring newline
+            # 追加到文件末尾，确保有换行符
             if not content.endswith("\n"):
                 f.write("\n")
             f.write(new_row + "\n")
-            print(f"✅ Updated index: {INDEX_FILE}")
+            print(f"✅ 已更新索引: {INDEX_FILE}")
         else:
-            print("ℹ️ Index already contains this entry.")
+            print("ℹ️ 索引中已存在此条目。")
+
 
 def command_new(args):
-    """Handler for 'new' command."""
+    """
+    处理 'new' 命令 - 创建新的经验笔记。
+
+    工作流程:
+        1. 获取笔记内容 (从参数或文件)
+        2. 准备模板和内容
+        3. 生成文件名 (kebab-case)
+        4. 写入文件
+        5. 更新索引
+
+    Args:
+        args: argparse 解析的命令行参数，包含:
+            - title: 笔记标题
+            - type: 笔记类型 (bug/knowledge)
+            - tags: 关键词标签
+            - content: 内容字符串
+            - content_file: 内容文件路径
+            - raw: 是否使用原始内容 (不添加头部)
+    """
     title = args.title
     type_name = args.type
     tags = args.tags or ""
-    
-    # 1. Get Content
+
+    # ========================================
+    # 步骤 1: 获取内容
+    # ========================================
     content = ""
     if args.content_file:
+        # 从文件读取内容
         try:
             with open(args.content_file, 'r', encoding='utf-8') as f:
                 content = f.read()
         except Exception as e:
-            print(f"❌ Error reading content file: {e}")
+            print(f"❌ 读取内容文件失败: {e}")
             sys.exit(1)
     elif args.content:
+        # 使用命令行参数中的内容
         content = args.content
     else:
-        # If no content provided, use placeholder
-        content = "(Content pending...)"
+        # 无内容时使用占位符
+        content = "(内容待补充...)"
 
-    # 2. Prepare Template & Content
+    # ========================================
+    # 步骤 2: 准备模板和内容
+    # ========================================
     final_file_content = ""
-    
+
     if args.raw:
-        # RAW Mode: Use content directly
+        # RAW 模式: 直接使用内容，不添加任何格式
         final_file_content = content
     else:
-        # Template Mode
-        template = get_template_content(type_name)
-        # Simple replacement - in reality, Agent should format content to fit template structure.
-        # Here we just append the content to the template or replace a generic placeholder if we had one.
-        # Since our templates are structured (Section 1, 2, 3), simply replacing {content} isn't enough.
-        # STRATEGY: 
-        # The Agent is expected to provide the FULLY FORMATTED content if it wants to fit the template perfectly.
-        # However, to support the "Simple Input" case, we can do a smart append.
-        
-        # Actually, the best way for the Agent is to generate the full markdown and pass it via --content-file or --content.
-        # But if the Agent uses --type bug, it expects the script to help.
-        # Let's assume for "simple" usage, we just replace {title} and append content.
-        # For "advanced" usage (Agent), the Agent should likely use --raw or provide formatted content.
-        
-        # Let's stick to the plan: Script helps with file creation and indexing. 
-        # We will put the title in the first line and the content below.
-        
-        # Re-reading plan: "Agent 提炼信息... 直接调用 python gardener.py".
-        # If Agent provides specific sections (Context, Root Cause), it's hard to pass via single string.
-        # DECISION: If --raw is NOT used, we try to inject title, but we rely on Agent to format the --content string 
-        # to match the template sections OR we just treat --content as the body.
-        
-        # Let's try to be smart: If content looks like it has headers, use it. 
-        # If not, wrap it in the template? No, that's too complex for script.
-        # SIMPLEST APPROACH: 
-        # 1. Read Template.
-        # 2. Replace [Title] or [Topic] in first line with actual title.
-        # 3. If --content is provided, we essentially want to fill the "body". 
-        #    But the template has specific sections. 
-        #    So, we will just Prepend Title and Append Content, unless --raw is used.
-        
-        # Improved Strategy for "Auto-Templating":
-        # We will use a generic header with metadata, then the content.
-        # The "Template" files in .trae are actually for the Human/Agent to READ to know WHAT to write.
-        # The Script should probably just create a clean file.
-        
-        # Let's use the content passed by Agent as the SOURCE OF TRUTH.
-        # If Agent passes "## 1. Context...", we write it.
-        # If Agent passes "Just a simple note", we write it.
-        # The script adds the YAML frontmatter or H1 header.
-        
+        # 模板模式: 添加标准头部
+        # 格式: 标题 + 标签 + 创建日期 + 正文
         final_file_content = f"# {title}\n> Tags: {tags}\n> Created: {datetime.datetime.now().strftime('%Y-%m-%d')}\n\n{content}"
 
-    # 3. Generate Filename
+    # ========================================
+    # 步骤 3: 生成文件名
+    # ========================================
     filename = f"{to_kebab_case(title)}.md"
     filepath = os.path.join(INBOX_DIR, filename)
-    
-    # 4. Write File
+
+    # ========================================
+    # 步骤 4: 写入文件
+    # ========================================
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(final_file_content)
-    print(f"✅ Created note: {filepath}")
-    
-    # 5. Update Index
-    # Generate a short summary from content (first 50 chars)
+    print(f"✅ 已创建笔记: {filepath}")
+
+    # ========================================
+    # 步骤 5: 更新索引
+    # ========================================
+    # 从内容生成摘要 (取前 50 字符)
     summary = content.split('\n')[0][:50] + "..." if len(content) > 50 else content
     update_index(filename, title, tags, summary)
 
+
 def command_check(args):
-    """Handler for 'check' command."""
+    """
+    处理 'check' 命令 - 检查重复笔记。
+
+    在索引文件中搜索包含指定关键词的笔记，
+    帮助避免创建重复的经验记录。
+
+    Args:
+        args: argparse 解析的命令行参数，包含:
+            - keywords: 要检查的关键词 (逗号分隔)
+
+    Output:
+        - 找到重复: 列出所有匹配的笔记文件名
+        - 未找到: 输出 "PASS: No duplicates found."
+    """
     keywords = [k.strip().lower() for k in args.keywords.split(',')]
     found = []
-    
+
     if os.path.exists(INDEX_FILE):
         with open(INDEX_FILE, 'r', encoding='utf-8') as f:
             for line in f:
                 if line.startswith("| ["):
                     lower_line = line.lower()
                     if any(k in lower_line for k in keywords):
-                        # Extract filename from markdown link
+                        # 从 Markdown 链接中提取文件名
                         match = re.search(r'\[(.*?)\]', line)
                         if match:
                             found.append(match.group(1))
-    
+
     if found:
-        print("WARN: Found potential duplicates:")
+        print("WARN: 发现潜在的重复笔记:")
         for item in found:
             print(f"  - {item}")
     else:
-        print("PASS: No duplicates found.")
+        print("PASS: 未发现重复笔记。")
+
 
 def main():
-    parser = argparse.ArgumentParser(description="Knowledge Gardener CLI")
-    subparsers = parser.add_subparsers(dest="command", required=True)
-    
-    # New Command
-    parser_new = subparsers.add_parser("new", help="Create a new knowledge note")
-    parser_new.add_argument("--type", choices=["bug", "knowledge"], required=True, help="Type of note")
-    parser_new.add_argument("--title", required=True, help="Title of the note")
-    parser_new.add_argument("--tags", help="Comma-separated tags")
-    parser_new.add_argument("--content", help="Content string")
-    parser_new.add_argument("--content-file", help="Path to file containing content")
-    parser_new.add_argument("--raw", action="store_true", help="Use content as-is without header injection")
-    
-    # Check Command
-    parser_check = subparsers.add_parser("check", help="Check for duplicates")
-    parser_check.add_argument("--keywords", required=True)
+    """
+    主函数入口 - CLI 命令路由。
 
+    支持的子命令:
+        new     创建新笔记
+        check   检查重复
+    """
+    parser = argparse.ArgumentParser(description="Knowledge Gardener CLI - 知识园丁命令行工具")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # ========================================
+    # new 命令配置
+    # ========================================
+    parser_new = subparsers.add_parser("new", help="创建新的经验笔记")
+    parser_new.add_argument(
+        "--type",
+        choices=["bug", "knowledge"],
+        required=True,
+        help="笔记类型: bug (Bug修复) 或 knowledge (通用知识)"
+    )
+    parser_new.add_argument(
+        "--title",
+        required=True,
+        help="笔记标题"
+    )
+    parser_new.add_argument(
+        "--tags",
+        help="关键词标签 (逗号分隔)"
+    )
+    parser_new.add_argument(
+        "--content",
+        help="笔记内容字符串"
+    )
+    parser_new.add_argument(
+        "--content-file",
+        help="笔记内容文件路径"
+    )
+    parser_new.add_argument(
+        "--raw",
+        action="store_true",
+        help="使用原始内容，不添加标准头部"
+    )
+
+    # ========================================
+    # check 命令配置
+    # ========================================
+    parser_check = subparsers.add_parser("check", help="检查是否存在重复笔记")
+    parser_check.add_argument(
+        "--keywords",
+        required=True,
+        help="要检查的关键词 (逗号分隔)"
+    )
+
+    # 解析参数并路由到对应命令
     args = parser.parse_args()
-    
+
     if args.command == "new":
         command_new(args)
     elif args.command == "check":
         command_check(args)
+
 
 if __name__ == "__main__":
     main()

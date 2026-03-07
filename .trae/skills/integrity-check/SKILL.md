@@ -36,12 +36,18 @@ version: 2.0.0
 - **读取模板**: 读取 `.trae/skills/integrity-check/templates/commit_message.md`。
 - **生成消息**: 
     - 根据 `git diff` 摘要和 Inbox 笔记内容，填充模板。
-    - 确保 `[body]` 使用清晰的中文描述。
-    - 确保 `Ref` 和 `Type` 字段准确无误。
+    - **严格遵循 Conventional Commits**: `type(scope): subject`。
+    - **Breaking Change**: 若有，在 type 后加 `!` 并在 footer 添加 `BREAKING CHANGE: ...`。
 - **写入临时文件**: 将生成的消息写入 `.git/COMMIT_EDITMSG_TEMP`。
-- **静默提交**: 执行 `git commit -F .git/COMMIT_EDITMSG_TEMP`，无需用户确认。
-- **清理临时文件**: 提交成功后删除 `.git/COMMIT_EDITMSG_TEMP`。
-- **推送到远程**: 执行 `git push`，将本地提交同步到远程仓库。
+- **静默提交**: 执行 `git commit -F .git/COMMIT_EDITMSG_TEMP`。
+- **推送到远程**: 执行 `git push`。
 
-> **注意**: 由于终端环境 (trae-sandbox) 对多行/中文参数解析有限制，必须使用 `-F` 文件方式提交，避免参数解析错误。
+### 4. 自动发版 (Auto Release)
+当用户请求“发布新版”、“合并版本号”或“发版”时：
+- **运行脚本**: 执行 `python .trae/skills/integrity-check/scripts/release.py`。
+- **行为**:
+    - 脚本会自动查找由 `release-please` 创建的 Release PR。
+    - 如果找到，通过 GitHub CLI 自动合并，触发 GitHub Actions 发布流程。
+    - 如果未找到，提示用户当前无可发布内容。
+
 

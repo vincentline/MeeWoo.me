@@ -83,5 +83,18 @@ export interface TechStack {
     /** Python 版本 */
     pythonVersion: "3.8+";
   };
+
+  /**
+   * 代码与版本管理
+   * @description 代码托管和版本控制
+   */
+  versionControl: {
+    /** 代码托管平台 */
+    platform: "GitHub";
+    /** 版本控制系统 */
+    system: "Git";
+    /** 分支策略 */
+    branchingStrategy: "Feature Branch" | "Git Flow";
+  };
 }
 ```

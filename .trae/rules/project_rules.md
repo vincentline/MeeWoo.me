@@ -23,5 +23,4 @@
 - **提交代码前**: 必须调用 `/skill integrity-check` 确保 Inbox 覆盖率。
 
 ### 2.3 变更管理
-- **文件操作**: 任何增删改移操作，必须同步记录到 `UPDATE_LOG.md`（遵循 `workflows.ts.md` 中的规范）。
 - **测试验证**: 任何代码变更必须经过测试验证（使用 `webapp-testing` 技能或手动测试）。
