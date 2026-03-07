@@ -1,4 +1,19 @@
 # SVGA素材压缩导出流程简化
+
+
+/**
+ * Svga素材压缩导出流程简化Rules
+ * @description Generated from svga素材压缩导出流程简化.md
+ */
+export interface Svga素材压缩导出流程简化Rules {
+  /** 
+   * 规则描述 
+   */
+  description: string;
+}
+
+
+# SVGA素材压缩导出流程简化
 > Tags: svga,compress,transform
 > Created: 2026-03-07
 

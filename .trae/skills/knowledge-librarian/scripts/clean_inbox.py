@@ -1,35 +1,35 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Knowledge Librarian - Inbox 清理工具
-====================================
+Knowledge Librarian - Inbox 清理工具 (v5.0 Soft Delete)
+===================================================
 
 功能说明:
     清理已归档的 Inbox 笔记文件，同时更新索引文件。
-    用于在知识归档完成后清理临时文件。
+    v5.0 更新: 采用“软删除”机制，将文件移动到 .trae/trash/ 目录，而非物理删除。
 
 使用方式:
     # 清理单个文件
     python clean_inbox.py note1.md
 
     # 清理多个文件
-    python clean_inbox.py note1.md note2.md note3.md
+    python clean_inbox.py note1.md note2.md
 
     # 使用完整路径
     python clean_inbox.py .trae/rules/inbox/note1.md
 
 特性:
-    - 支持文件名或完整路径
-    - 同时删除文件和更新索引
-    - 提供详细的操作反馈
-
-
+    - 软删除: 移动到 .trae/trash/ 并附加时间戳
+    - 索引更新: 自动移除 index.md 中的对应条目
+    - 安全: 防止误删，随时可恢复
 
 """
 
 import os
 import argparse
 import sys
+import shutil
+import datetime
 
 # ============================================================================
 # 配置常量
@@ -41,28 +41,44 @@ INBOX_DIR = r".trae/rules/inbox"
 # Inbox 索引文件路径
 INDEX_FILE = os.path.join(INBOX_DIR, "index.md")
 
+# 回收站目录路径
+TRASH_DIR = r".trae/trash"
+
+
+def get_trash_path(filename):
+    """
+    生成回收站中的目标路径（附加时间戳以防重名）。
+    
+    Args:
+        filename (str): 原始文件名
+        
+    Returns:
+        str: 回收站中的完整路径，例如 .trae/trash/note_20231027_100000.md
+    """
+    basename, ext = os.path.splitext(filename)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    new_name = f"{basename}_{timestamp}{ext}"
+    return os.path.join(TRASH_DIR, new_name)
+
 
 def clean_inbox(files_to_remove):
     """
-    清理已归档的 Inbox 文件。
+    清理已归档的 Inbox 文件（软删除）。
 
     工作流程:
-        1. 规范化文件名 (提取 basename)
-        2. 删除物理文件
-        3. 更新索引文件 (移除对应条目)
+        1. 规范化文件名
+        2. 移动文件到回收站
+        3. 更新索引文件
 
     Args:
         files_to_remove (list[str]): 要删除的文件列表
-            支持格式:
-            - 文件名: "note.md"
-            - 完整路径: ".trae/rules/inbox/note.md"
-
-    Output:
-        打印操作结果和统计信息
     """
     if not files_to_remove:
         print("没有需要删除的文件。")
         return
+
+    # 确保回收站存在
+    os.makedirs(TRASH_DIR, exist_ok=True)
 
     # 规范化文件名 (提取 basename)
     normalized_files = []
@@ -70,25 +86,25 @@ def clean_inbox(files_to_remove):
         basename = os.path.basename(f)
         normalized_files.append(basename)
 
-    print(f"开始清理 {len(normalized_files)} 个文件...")
+    print(f"开始清理 {len(normalized_files)} 个文件 (软删除 -> {TRASH_DIR})...")
 
     # ========================================
-    # 步骤 1: 删除物理文件
+    # 步骤 1: 移动文件到回收站 (软删除)
     # ========================================
     removed_count = 0
     failed_files = []
 
     for file_name in normalized_files:
-        file_path = os.path.join(INBOX_DIR, file_name)
-
-        # 尝试删除文件
-        if os.path.exists(file_path):
+        src_path = os.path.join(INBOX_DIR, file_name)
+        
+        if os.path.exists(src_path):
             try:
-                os.remove(file_path)
-                print(f"✅ 已删除文件: {file_name}")
+                dst_path = get_trash_path(file_name)
+                shutil.move(src_path, dst_path)
+                print(f"✅ 已移至回收站: {file_name} -> {os.path.basename(dst_path)}")
                 removed_count += 1
             except Exception as e:
-                print(f"❌ 删除失败 {file_name}: {e}")
+                print(f"❌ 移动失败 {file_name}: {e}")
                 failed_files.append(file_name)
         else:
             print(f"⚠️ 警告: 文件不存在: {file_name} (仍将尝试更新索引)")
@@ -141,22 +157,15 @@ def clean_inbox(files_to_remove):
     # 输出统计
     # ========================================
     print("-" * 30)
-    print(f"清理完成: {removed_count}/{len(normalized_files)} 个文件已删除。")
+    print(f"清理完成: {removed_count}/{len(normalized_files)} 个文件已移至回收站。")
     if failed_files:
-        print(f"删除失败: {', '.join(failed_files)}")
+        print(f"失败列表: {', '.join(failed_files)}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="清理已归档的 Inbox 文件",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-示例:
-  python clean_inbox.py file1.md file2.md
-  python clean_inbox.py .trae/rules/inbox/file1.md
-
-注意: 支持完整路径和文件名两种格式。
-        """
+        description="清理已归档的 Inbox 文件 (软删除)",
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
         "files",

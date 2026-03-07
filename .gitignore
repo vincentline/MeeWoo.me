@@ -78,3 +78,6 @@ package-lock.json
 
 # Trae Skill Temporary Files
 .trae/temp/
+
+# Trae Skill Trash
+.trae/trash/
