@@ -72,6 +72,7 @@ def get_staged_files():
     获取 Git 暂存区的文件列表。
 
     使用 `git diff --cached --name-only` 命令获取已暂存的文件。
+    如果暂存区为空，自动执行 `git add -A` 将所有变更加入暂存区。
     自动过滤掉忽略规则中的文件。
 
     Returns:
@@ -92,7 +93,26 @@ def get_staged_files():
             check=True
         )
         files = result.stdout.strip().splitlines() if result.stdout else []
-        # 过滤掉被忽略的文件
+        
+        if not files:
+            print("ℹ️  Staging area is empty. Running git add -A...")
+            subprocess.run(
+                ["git", "add", "-A"],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                check=True
+            )
+            result = subprocess.run(
+                ["git", "diff", "--cached", "--name-only"],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                check=True
+            )
+            files = result.stdout.strip().splitlines() if result.stdout else []
+        
         return [f for f in files if not any(p in f for p in IGNORE_PATTERNS)]
     except subprocess.CalledProcessError:
         return []
@@ -212,17 +232,17 @@ def main():
     主函数入口。
 
     执行完整的变更扫描流程:
-        1. 获取暂存文件
+        1. 获取暂存文件 (自动 git add -A 如果暂存区为空)
         2. 识别变更模块
         3. 检查笔记覆盖情况
         4. 输出结果
     """
     print("Running Integrity Check Scan...")
 
-    # 步骤 1: 获取暂存文件
+    # 步骤 1: 获取暂存文件 (自动 add 如果为空)
     staged_files = get_staged_files()
     if not staged_files:
-        print("✅ No staged files found.")
+        print("✅ No changes to commit.")
         return
 
     # 步骤 2: 识别变更模块

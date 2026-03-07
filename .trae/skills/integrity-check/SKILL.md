@@ -14,8 +14,9 @@ version: 2.0.0
 
 ### 1. 变更扫描与核查 (Scan & Verify)
 - **运行脚本**: 执行 `python .trae/skills/integrity-check/scripts/scan_changes.py`。
+- **自动暂存**: 脚本会自动检测暂存区，若为空则执行 `git add -A`。
 - **解析输出**:
-    - `✅ No staged files found`: 暂存区为空，**自动执行 `git add -A` 将所有变更加入暂存区**，然后重新扫描。
+    - `✅ No changes to commit`: 没有任何变更，流程结束。
     - `✅ No core module changes detected`: 安全，直接通过。
     - `✅ Changes covered by Inbox notes`: 安全，直接通过。同时**提取** `__REF_NOTES__` 中的文件名。
     - `❌ WARNING`: 核心模块变更且无匹配笔记，**触发交互式修复**。
