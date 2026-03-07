@@ -1,7 +1,7 @@
 ---
 name: knowledge-librarian
 description: 负责将 Inbox（海马体）中的经验碎片整理、归档到长期规则库（皮层）中。
-version: 1.0.0
+version: 4.0.0
 ---
 
 # Knowledge Librarian Skill (图书管理员)

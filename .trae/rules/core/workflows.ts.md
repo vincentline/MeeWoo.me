@@ -74,6 +74,23 @@
     2.  **Auto Merge**: 脚本自动合并 GitHub 上的 Release PR。
     3.  **CI/CD**: GitHub Actions 自动打 Tag、生成 Changelog 并发布 Release。
 
+### 2.5 自动化发布原理 (Automated Release Mechanics)
+> 基于 `release-please` 和 `integrity-check` 的协同工作机制。
+
+*   **前置条件 (Prerequisite)**:
+    *   **Git Tag**: 必须存在初始 Tag (e.g. `v1.0.0`) 作为基准。
+    *   **Commit**: 只有 Tag **之后** 的新 Commit 才会触发新版本。
+*   **触发机制 (Trigger)**:
+    *   **Patch**: `fix:` 提交 -> `1.0.1`
+    *   **Minor**: `feat:` 提交 -> `1.1.0`
+    *   **Force Release**: 若需强制发版（如无代码变更），需提交 Empty Commit: `git commit --allow-empty -m "fix: force release"`
+*   **执行流**:
+    1.  Push 代码到 `main`。
+    2.  GitHub Actions 运行，检测到变更。
+    3.  创建/更新 `chore: release x.x.x` 的 PR。
+    4.  用户调用 `integrity-check` 脚本合并该 PR。
+    5.  合并触发新 Action -> 打 Tag -> 发布 Release。
+
 ## 3. 存储架构 (Storage Architecture)
 
 *   **Inbox (海马体)**: `.trae/rules/inbox/`
