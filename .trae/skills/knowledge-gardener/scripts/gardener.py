@@ -180,7 +180,7 @@ def command_new(args):
         try:
             with open(args.content_file, 'r', encoding='utf-8') as f:
                 content = f.read()
-            
+
             # 自清理逻辑: 读取完文件后立即尝试删除
             try:
                 # 确保文件路径是绝对路径或正确的相对路径
@@ -191,7 +191,7 @@ def command_new(args):
             except OSError as e:
                 # 打印错误以便调试 (后续稳定后可移除)
                 print(f"⚠️ Failed to delete temp file: {e}")
-                
+
         except Exception as e:
             print(f"❌ 读取内容文件失败: {e}")
             sys.exit(1)

@@ -1,3 +1,10 @@
+---
+module_name: MediaProcessing
+type: guide
+description: 客户端媒体处理模块 (FFmpeg/WASM)
+version: 1.0.0
+---
+
 # 媒体处理规则
 
 /**

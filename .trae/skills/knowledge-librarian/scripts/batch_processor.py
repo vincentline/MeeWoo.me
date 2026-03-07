@@ -106,6 +106,15 @@ def process_plan(plan_path, dry_run=False):
             if "verify_cmd" in item:
                 cmd_archive.extend(["--verify-cmd", item["verify_cmd"]])
         
+        # [v6.0] 处理 content_file 参数 (智能结构化)
+        if "content_file" in item:
+            cmd_archive.extend(["--content-file", item["content_file"]])
+        
+        # [v6.0] merge 命令也支持 content_file
+        if action == "merge" and "content_file" in item:
+             # archiver.py 已经处理了，这里不需要额外做什么，extend 会自动追加
+             pass
+        
         # 处理 batch-merge (特殊情况，通常 Plan 中每个条目对应一个文件，但支持 batch-merge)
         if action == "batch-merge":
              # 此时 source 应该是逗号分隔的字符串

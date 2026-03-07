@@ -73,3 +73,35 @@ export interface CodingStyle {
   };
 }
 ```
+
+## 1. 缩进规范 (Indentation)
+- 使用 **2 个空格**缩进（禁止 Tab）
+- 多行延续缩进 2 个空格
+
+## 2. 命名规范 (Naming Conventions)
+
+| 类型 | 规范 | 示例 |
+|------|------|------|
+| 变量 | 驼峰命名法 | `userName`, `isLoading` |
+| 布尔值 | `is/has/can/should` 前缀 | `isValid`, `hasPermission` |
+| 函数 | 动词开头 | `openFile()`, `handleClick()` |
+| 常量 | 全大写 + 下划线 | `MAX_SIZE`, `API_URL` |
+| 组件/模块 | 名词形式 | `UserManager`, `DataParser` |
+
+## 3. 代码组织 (Code Organization)
+- 新功能独立模块化，避免全部写在 `app.js`
+- 保持模块代码行数适中
+- 每个文件必须有功能描述注释
+
+## 4. 注释规范 (Comments)
+- **必须使用中文注释**
+- 注释与代码同步更新
+- 空行不超过 1 行
+- 文件头部包含：职责简介、功能、模块索引
+- 每个函数/类必须有注释
+
+## 5. 代码生成原则 (Code Generation Principles)
+- 修改代码前先阅读注释了解原有逻辑
+- 新功能考虑可维护性和扩展性
+- 优先复用现有技术和方案
+- 使用新技术后总结文档

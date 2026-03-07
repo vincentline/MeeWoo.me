@@ -7,6 +7,50 @@ version: 1.0.0
 
 # Vite 操作指南 (How-to Guide)
 
+```typescript
+/**
+ * Vite 构建配置与优化指南
+ * Vite Build Configuration and Optimization Guide
+ */
+export interface ViteConfigurationGuide {
+  /**
+   * 1. 项目基础配置
+   * @description root, base, alias
+   */
+  projectSetup: boolean;
+  /**
+   * 2. 多页应用配置
+   * @description rollupOptions.input
+   */
+  mpaConfig: boolean;
+  /**
+   * 3. 开发服务器配置
+   * @description port, cors, headers
+   */
+  devServer: boolean;
+  /**
+   * 4. 静态资源管理
+   * @description assets, minify
+   */
+  assetsManagement: boolean;
+  /**
+   * 5. 构建优化
+   * @description sourcemap, terser, splitChunks
+   */
+  buildOptimization: boolean;
+  /**
+   * 6. 性能优化
+   * @description optimizeDeps
+   */
+  performance: boolean;
+  /**
+   * 7. 插件配置
+   * @description vue, custom plugins
+   */
+  plugins: boolean;
+}
+```
+
 > **目标**: 提供 Vite 构建工具的完整配置指南，包括项目配置、多页应用、开发服务器、静态资源管理、构建优化、性能优化、插件使用和常见问题排查
 
 ## 1. 前置条件 (Prerequisites)

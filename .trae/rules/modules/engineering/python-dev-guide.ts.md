@@ -1,3 +1,10 @@
+---
+module_name: PythonDevGuide
+type: guide
+description: Python 开发规范与最佳实践
+version: 1.0.0
+---
+
 # Python 开发指南 (Python Development Guide)
 
 ```typescript
@@ -114,3 +121,31 @@ def process_data(data: List[Dict[str, any]]) -> Optional[List[str]]:
 ## 6. 参考价值
 
 本指南主要作为项目中可能使用的 Python 脚本、工具或辅助功能的参考规范。由于项目核心技术栈为 JavaScript，Python 相关规范仅作为补充。
+## 4. VSCode 环境配置 (VSCode Environment)
+
+为了确保开发体验的一致性，建议在项目级配置 VSCode 的 Python 解释器。
+
+### 4.1 核心配置 (`.vscode/settings.json`)
+通过在项目根目录下的 `.vscode/settings.json` 中添加以下配置，可以指定项目级别的 Python 解释器路径，并自动激活虚拟环境。
+
+```json
+{
+  "python.defaultInterpreterPath": ".venv\\Scripts\\python.exe",
+  "python.terminal.activateEnvironment": true
+}
+```
+
+### 4.2 参数说明
+| 参数名 | 说明 |
+| :--- | :--- |
+| `python.defaultInterpreterPath` | 指定 Python 解释器的绝对或相对路径。推荐使用相对路径指向项目内的虚拟环境（如 `.venv`）。 |
+| `python.terminal.activateEnvironment` | 设置为 `true` 后，VSCode 在打开新的集成终端时会自动运行激活脚本（如 `Activate.ps1`），确保终端环境与解释器一致。 |
+
+### 4.3 适用场景
+- **多人协作项目**：确保所有成员使用统一的虚拟环境配置（需将 `.vscode/settings.json` 提交到版本控制，但注意路径兼容性）。
+- **多项目并行开发**：避免不同项目间的依赖冲突，无需手动切换环境。
+- **自动化脚本执行**：拖入 Python 文件到终端时，自动使用正确的环境执行。
+
+### 4.4 注意事项
+- **路径分隔符**：在 JSON 中 Windows 路径分隔符 `\` 需要转义为 `\\`。
+- **生效时机**：配置修改后，通常需要重启终端或重载窗口才能生效。

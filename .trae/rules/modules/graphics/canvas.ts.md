@@ -1,3 +1,10 @@
+---
+module_name: CanvasInteraction
+type: core
+description: Canvas 交互与架构规则 (Konva.js)
+version: 1.0.0
+---
+
 # Canvas 交互规则
 
 /**

@@ -1,3 +1,10 @@
+---
+module_name: SvgaOptimization
+type: guide
+description: SVGA 素材压缩与导出流程简化
+version: 1.0.0
+---
+
 # SVGA素材压缩导出流程简化
 
 

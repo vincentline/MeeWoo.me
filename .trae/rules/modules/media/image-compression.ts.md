@@ -1,3 +1,10 @@
+---
+module_name: ImageCompression
+type: guide
+description: 客户端图片压缩模块 (TinyPNG/WASM)
+version: 1.0.0
+---
+
 # 图片压缩模块规范
 
 /**

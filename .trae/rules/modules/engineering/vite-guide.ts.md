@@ -1,3 +1,10 @@
+---
+module_name: ViteGuide
+type: guide
+description: Vite 项目配置与开发规范
+version: 1.0.0
+---
+
 # Vite 开发指南 (Vite Development Guide)
 
 ```typescript
