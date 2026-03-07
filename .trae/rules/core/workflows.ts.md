@@ -1,132 +1,83 @@
-# 工作流规范 (Workflows)
+# 项目工作流协议 (Workflows Protocols)
 
-```typescript
-/**
- * 项目工作流与流程规范
- * Project Workflows & Process Guidelines
- */
-export interface Workflows {
-  /**
-   * Git 提交规范
-   * @standard Conventional Commits
-   * @link https://www.conventionalcommits.org/
-   */
-  gitCommit: {
-    /**
-     * 提交信息格式
-     * @format <type>(<scope>): <subject>
-     * @example feat(auth): add login page
-     */
-    format: "type(scope): subject";
-    
-    /**
-     * 允许的提交类型
-     */
-    types: [
-      "feat",     // New feature
-      "fix",      // Bug fix
-      "docs",     // Documentation only
-      "style",    // Formatting, missing semi colons, etc; no code change
-      "refactor", // Refactoring production code
-      "perf",     // Performance improvement
-      "test",     // Adding tests, refactoring test; no production code change
-      "chore"     // Updating build tasks, package manager configs, etc; no production code change
-    ];
-  };
+> **定位**: 本文档是项目的**元规则**，定义了核心协议标准（Protocols）和工作流路由（Router）。具体的操作指南请查阅对应 Skill 的文档。
 
-  /**
-   * 变更日志记录规范 (MANDATORY)
-   * @file UPDATE_LOG.md
-   * @description 所有文件变更必须同步记录到 UPDATE_LOG.md
-   */
-  changeLog: {
-    /**
-     * 记录格式
-     * @format [YYYY-MM-DD HH:MM:SS] 【操作类型】 : 路径信息 - 更新简述
-     * @timezone Asia/Shanghai (北京时间)
-     */
-    entryFormat: "[YYYY-MM-DD HH:MM:SS] 【<ActionType>】 : <RelativePath> - <Description>";
+## 1. 协议标准 (Core Protocols)
 
-    /**
-     * 操作类型枚举
-     */
-    actionTypes: [
-      "新增文件",
-      "新增文件夹",
-      "删除文件",
-      "删除文件夹",
-      "修改文件",
-      "重命名文件",
-      "重命名文件夹",
-      "移动文件",
-      "移动文件夹"
-    ];
+### 1.1 版本控制协议 (Versioning)
+*   **标准**: [Semantic Versioning 2.0.0](https://semver.org/)
+*   **格式**: `Major.Minor.Patch` (e.g., `1.2.3`)
+*   **自动化**: 由 `release-please` 基于 Git 提交信息自动计算。
+    *   `fix` -> Patch
+    *   `feat` -> Minor
+    *   `BREAKING CHANGE` -> Major
 
-    /**
-     * 验证规则
-     */
-    validation: {
-      timestamp: "必须是准确的北京时间";
-      path: "必须是相对路径";
-      completeness: "必须覆盖所有变更文件 (忽略文件除外)";
-    };
-  };
+### 1.2 提交信息协议 (Commit Message)
+*   **标准**: [Conventional Commits 1.0.0](https://www.conventionalcommits.org/)
+*   **格式**: `type(scope)!: subject`
+*   **类型 (Types)**:
+    *   `feat`: 新功能
+    *   `fix`: 修复 Bug
+    *   `docs`: 文档变更
+    *   `style`: 代码格式 (不影响逻辑)
+    *   `refactor`: 代码重构
+    *   `perf`: 性能优化
+    *   `test`: 测试相关
+    *   `build`: 构建系统/依赖
+    *   `ci`: CI 配置
+    *   `chore`: 杂项
+    *   `revert`: 回退
+*   **执行**: 必须使用 `/skill integrity-check` 生成规范消息。
 
-  /**
-   * 知识引擎工作流 (Knowledge Engine Workflows)
-   * @description 规范 AI 知识引擎的协作流程
-   */
-  knowledgeEngine: {
-    /**
-     * 角色分工
-     */
-    roles: {
-      gardener: "速记员 (Knowledge-Gardener) - 负责将经验快速写入 Inbox",
-      librarian: "图书管理员 (Knowledge-Librarian) - 负责定期批量归档 Inbox 并治理大文件 (>300行)",
-      integrityCheck: "质检员 (Integrity-Check) - 负责提交代码前检查 Inbox 覆盖率",
-      autoCoder: "老工匠 (Coder) - 负责查阅 Rules 和 Inbox 并生成代码"
-    };
+### 1.3 变更日志协议 (Change Log)
+*   **文件**: `.trae/logs/UPDATE_LOG.md`
+*   **定位**: 项目的“行车记录仪”，记录每一次文件变更。
+*   **格式**: `[YYYY-MM-DD HH:MM:SS] 【<ActionType>】 : <RelativePath> - <Description>`
+*   **时区**: Asia/Shanghai (UTC+8)
+*   **执行**: 代码修改时由 Coder 技能自动调用 `log_change.py` 记录，**禁止人工手写**。
 
-    /**
-     * 存储架构
-     */
-    storage: {
-      inbox: ".trae/rules/inbox/ - 短期记忆缓冲区 (碎片化)",
-      rules: ".trae/rules/modules/ - 长期记忆存储 (Index Pattern: 原子文件 + 目录索引)"
-    };
+## 2. 工作流路由 (Workflow Router)
 
-    /**
-     * 最佳实践
-     */
-    bestPractices: [
-      "所有新经验必须先进入 Inbox，禁止直接修改 Rules (除非由 Librarian 操作)",
-      "提交核心代码前，必须确保 Inbox 中有对应的经验记录",
-      "定期运行 Librarian 进行批量归档，并对臃肿规则进行物理拆分 (Split)"
-    ];
-  };
+### 2.1 开发流 (Development)
+> 我要写代码、修 Bug、加功能。
 
-  /**
-   * 发布流程
-   */
-  releaseProcess: {
-    steps: [
-      "1. 确保所有更改已提交并推送",
-      "2. 验证 UPDATE_LOG.md 是否最新",
-      "3. 按照 TESTING_RULES.md 运行测试",
-      "4. 构建项目 (npm run build)",
-      "5. 验证构建产物",
-      "6. 部署 (如适用)"
-    ];
-  };
+*   **Action**: 调用 `/skill coder`
+*   **流程**: 
+    1.  **Triage**: 评估任务复杂度。
+    2.  **Context**: 查阅 Rules 和 Inbox。
+    3.  **Execute**: 编写代码并实时更新 `UPDATE_LOG.md`。
+    4.  **Verify**: 自检与测试。
 
-  /**
-   * 测试流程
-   * @reference f:\my_tools\MeeWoo\MeeWoo\TESTING_RULES.md
-   */
-  testing: {
-    tool: "IDE 内置或 webapp-testing 技能";
-    browserMode: "真实浏览器 (非无头模式)";
-    requirement: "提交/发布前必须测试";
-  };
-}
-```
+### 2.2 提交流 (Commit)
+> 代码写完了，我要提交到 Git。
+
+*   **Action**: 调用 `/skill integrity-check`
+*   **流程**:
+    1.  **Scan**: 检查变更是否已在 Inbox 备案。
+    2.  **Fix**: 若无备案，交互式补录经验。
+    3.  **Commit**: 生成规范消息并提交。
+
+### 2.3 知识流 (Knowledge)
+> 我学到了新知识，或者要整理旧经验。
+
+*   **记录 (Input)**: 调用 `/skill knowledge-gardener`
+    *   用于快速捕捉碎片化经验。
+*   **整理 (Organize)**: 调用 `/skill knowledge-librarian`
+    *   用于批量归档 Inbox，拆分大文件，维护 Rules 结构。
+
+### 2.4 发布流 (Release)
+> 功能攒够了，我要发新版本。
+
+*   **Action**: 对 AI 说 "帮我发版" 或 "合并版本号"
+*   **流程**:
+    1.  **Release Script**: AI 运行 `release.py`。
+    2.  **Auto Merge**: 脚本自动合并 GitHub 上的 Release PR。
+    3.  **CI/CD**: GitHub Actions 自动打 Tag、生成 Changelog 并发布 Release。
+
+## 3. 存储架构 (Storage Architecture)
+
+*   **Inbox (海马体)**: `.trae/rules/inbox/`
+    *   短期记忆，碎片化，读写快。
+*   **Rules (皮层)**: `.trae/rules/modules/`
+    *   长期记忆，结构化。
+    *   **Index Pattern**: 采用 `dir/index.ts.md` 索引大文件。

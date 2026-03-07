@@ -1,23 +1,10 @@
-## 更新日志规则
-- 除忽略项外，所有文件/文件夹的新增、删除、修改、重命名、移动均需记录
-- 记录项：操作类型、路径、改动要点（功能/修复/优化等）
-- 忽略项：
-  - .gitignore过滤的文件和文件夹
-  - 本文件（UPDATE_LOG.md）
-- 更新日志后，必须自我验证：
-  - 时间戳是否为正确的北京时间
-  - 格式是否符合规范
-  - 记录是否完整（包含所有必需字段）
-- 更新记录默认保留60天，超过60天的记录可以根据需要删除
+## 更新日志 (UPDATE_LOG)
 
-## 记录格式
-时间戳 【操作类型】 : 路径信息 - 更新简述
-- 时间戳：必须使用北京时间，格式为 [YYYY-MM-DD HH:MM:SS]，精确到秒
-- 操作类型：新增文件、新增文件夹、删除文件、删除文件夹、修改文件、重命名文件、重命名文件夹、移动文件、移动文件夹
-- 路径信息：使用相对路径
-- 更新简述：如新增功能、修复问题、优化性能等，简单描述
+> 本日志由 Coder Skill 自动维护，禁止手动编辑。
+> 详细规则请参阅 [.trae/rules/core/workflows.ts.md](../rules/core/workflows.ts.md)
 
-## 更新记录
+## 记录列表
+
 [2026-03-05 21:33:23] 【修改文件】 : src/index.html - 同步引入 protobuf.min.js 和 pako.min.js，消除 SVGA 音频解析时的库动态加载延迟
 [2026-03-05 21:33:23] 【修改文件】 : src/assets/js/core/app.js - 优化 SVGA 加载性能：1) 移除 parseSvgaAudioData 中的库动态加载调用；2) 内联 svga.proto 定义，避免网络请求；3) 添加无音频 SVGA 的智能跳过逻辑
 [2026-03-05 21:33:23] 【新增文件】 : .trae/documents/svga_load_optimization_plan.md - SVGA 加载性能优化计划文档
@@ -222,3 +209,6 @@
 [2026-02-04 02:50:24] 【修改文件】 : README.md - 更新项目文档，添加 Vite 构建化相关信息
 [2026-02-04 02:50:24] 【修改文件】 : INDEX.md - 更新文件路径索引，从 docs/ 改为 src/
 [2026-01-01 09:30:00] 【新增文件】 : UPDATE_LOG.md - 新增文件
+[2026-03-07 15:01:01] 【修改文件】 : .trae/skills/coder/scripts/log_change.py - 为日志脚本添加详细的中文注释和文档说明
+[2026-03-07 15:05:00] 【修改文件】 : .trae/skills/coder/scripts/log_change.py - 修复 datetime.utcnow() 弃用警告
+[2026-03-07 15:14:42] 【修改文件】 : .trae/logs/UPDATE_LOG.md - 清理冗余的规则说明文档，仅保留日志数据记录。 相关规则已迁移至 .trae/rules/core/workflows.ts.md，日志维护完全由 Coder Skill 自动化接管。
