@@ -105,7 +105,7 @@ def process_plan(plan_path, dry_run=False):
             print("[Dry Run] Would execute action.")
             continue
 
-        # Handle Content Source
+        # 处理内容来源 (Handle Content Source)
         content = item.get("content")
         content_file = item.get("content_file")
         
@@ -117,7 +117,7 @@ def process_plan(plan_path, dry_run=False):
                 print(f"❌ Failed to read content file {content_file}: {e}")
                 continue
 
-        # Execute Actions
+        # 执行动作 (Execute Actions)
         if action == "delete":
             if soft_delete(target):
                 success_count += 1

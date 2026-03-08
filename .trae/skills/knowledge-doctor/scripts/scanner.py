@@ -80,7 +80,7 @@ def scan_file(file_path):
     except Exception as e:
         return [{"type": "error", "msg": f"Read failed: {e}"}]
 
-    # 1. Size Check
+    # 1. 大小检查 (Size Check)
     if len(lines) > 300:
         issues.append({
             "type": "warning", 
@@ -88,8 +88,8 @@ def scan_file(file_path):
             "msg": f"File has {len(lines)} lines (>300). Consider splitting."
         })
 
-    # 2. Format Check
-    # Check Frontmatter (--- ... ---)
+    # 2. 格式检查 (Format Check)
+    # 检查 Frontmatter (--- ... ---)
     if not content.startswith("---"):
         issues.append({
             "type": "critical", 
@@ -97,9 +97,9 @@ def scan_file(file_path):
             "msg": "Missing Frontmatter."
         })
     
-    # Check TS Interface (export interface ...)
-    # Special case: SKILL.md in skills dir might not need TS Interface strictly, 
-    # but having one is good practice. Let's enforce it to promote standardization.
+    # 检查 TS Interface (export interface ...)
+    # 特殊情况：skills 目录下的 SKILL.md 可能不需要严格的 TS Interface，
+    # 但拥有它是好的实践。让我们强制执行它以促进标准化。
     is_skill = SKILLS_DIR.replace("/", os.sep) in file_path
     if not is_skill and "export interface" not in content:
         issues.append({
@@ -108,7 +108,7 @@ def scan_file(file_path):
             "msg": "Missing TypeScript Interface definition."
         })
 
-    # 3. Tags Check
+    # 3. 标记检查 (Tags Check)
     todo_pattern = re.compile(r'\b(TODO|FIXME|\?{2,})\b')
     for i, line in enumerate(lines):
         if todo_pattern.search(line):
@@ -116,6 +116,17 @@ def scan_file(file_path):
                 "type": "info",
                 "code": "fact_check",
                 "msg": f"Found marker on line {i+1}: {line.strip()}"
+            })
+    
+    # 4. 索引检查 (Index Check)
+    # 如果是 index.ts.md，检查是否包含 export interface ModuleIndex
+    if file_path.endswith("index.ts.md"):
+        # 简单检查 content 中是否包含 interface *Index
+        if not re.search(r'export interface \w+Index', content):
+             issues.append({
+                "type": "critical", 
+                "code": "index_error", 
+                "msg": "Index file missing 'export interface XxxIndex'."
             })
 
     return issues
@@ -127,7 +138,7 @@ def main():
     
     args = parser.parse_args()
 
-    # Determine scan targets
+    # 确定扫描目标
     scan_dirs = []
     if args.target:
         scan_dirs.append(args.target)

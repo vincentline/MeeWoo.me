@@ -1,189 +1,165 @@
-# MeeWoo 项目使用帮助与目录指南 (HELP.md)
+# MeeWoo 知识引擎与开发指南 (v6.0)
 
-欢迎使用 MeeWoo！本文档旨在帮助你快速了解项目结构、各目录功能以及如何使用本项目的知识引擎。
+> **欢迎使用 MeeWoo！**
+> 本项目不仅仅是一套代码，更内置了一套**类脑知识引擎 (Brain-Inspired Knowledge Engine)**。
+> 本文档是您理解、使用和驾驭这套引擎的终极指南。
 
-## 1. 核心目录结构说明
+## 1. 什么是“知识引擎”？
 
-| 目录路径 | 中文名称 | 功能与用途 |
-| :--- | :--- | :--- |
-| **`.trae/`** | **Trae 配置与知识库** | **项目的“大脑”**。存放 AI 配置、知识库规则、技能包和设计文档。 |
-| ├── `rules/` | 规则库 | 存放项目的技术规范、代码风格和模块文档。AI 写代码前会查阅这里。 |
-| ├── `skills/` | 技能包 | 存放 AI 的能力扩展 (如 `coder`, `knowledge-gardener`)。 |
-| ├── `specs/` | 设计规范 | 存放功能开发的设计文档 (Spec, Tasks, Checklist)。 |
-| └── `documents/` | 项目文档 | 存放项目产生的各类技术文档和架构建议书。 |
-| **`src/`** | **源代码目录** | **项目的“躯干”**。存放所有前端代码、静态资源和业务逻辑。 |
-| ├── `assets/` | 静态资源 | 图片、CSS 样式表、演示用的 SVGA/PNG 素材。 |
-| ├── `js/` | JavaScript 源码 | 核心逻辑代码。 |
-| │   ├── `core/` | 核心模块 | 画布引擎 (Konva)、编辑器核心逻辑。 |
-| │   ├── `service/` | 服务模块 | 媒体处理 (FFmpeg)、格式转换 (GIF/MP4)、文件导出。 |
-| │   ├── `components/` | UI 组件 | 右侧面板、弹窗等 Vue 组件逻辑。 |
-| │   ├── `mixins/` | 混入逻辑 | Vue Mixins (如 `panel-mixin.js` 用于面板管理)。 |
-| │   └── `lib/` | 第三方库 | 存放本地化的依赖库 (ffmpeg.wasm, svga.min.js 等)。 |
-| └── `gadgets/` | 小工具 | 独立的小工具页面 (如 PNG 压缩、乱码修复)。 |
-| **`ai_protocol_hub/`** | **AI 协议中心** | (旧版/保留) 存放早期的 AI 协作规则和脚本，部分已被 `.trae/rules` 取代。 |
-| **`docs/`** | **文档/构建产物** | 通常用于 GitHub Pages 部署的静态文件输出目录。 |
+想象一下，如果您的 AI 助手拥有记忆，能记住上次踩的坑，能遵守团队的即时约定，还能随着项目发展自动进化——这就是 MeeWoo 知识引擎的核心愿景。
 
-## 2. 根目录关键文件说明
+它模仿人脑的**记忆-巩固-免疫**机制，构建了一套完整的研发闭环：
 
-| 文件名 | 用途 |
-| :--- | :--- |
-| `README.md` | 项目主页，介绍项目背景、安装和启动方法。 |
-| `HELP.md` | **(本文档)** 项目目录结构与使用指南。 |
-| `INDEX.md` | 项目功能索引，帮助 AI 快速定位代码位置。 |
-| `.trae/logs/UPDATE_LOG.md` | **变更日志**。记录每次代码修改的内容，AI 会自动维护。 |
-| `CODE_STYLE.md` | 原始代码风格指南 (已被 `.trae/rules/core/coding-style.ts.md` 增强)。 |
-| `package.json` | npm 包管理文件，定义了项目依赖和构建脚本。 |
-
-## 3. 知识引擎原理与机制
-
-MeeWoo 知识引擎采用 **“规则 (Rules) + 技能 (Skills)”** 的双引擎架构，旨在让 AI 像人类开发者一样“有记忆”、“守规矩”。
-
-### 3.1 核心原理：类脑记忆机制 (Brain-Inspired Memory)
-
-MeeWoo 知识引擎模仿了人脑的记忆处理流程，分为三级存储：
-
-1.  **工作记忆 (Working Memory)** -> **上下文窗口**
-    *   你正在和 AI 聊天的内容，容量有限，关掉就忘。
-2.  **海马体 (Hippocampus)** -> **Inbox (`.trae/rules/inbox/`)**
-    *   **短期记忆区**。存放当天产生的新经验、新 Bug 修复记录。
-    *   特点：写入快，未整理，碎片化。
-3.  **大脑皮层 (Cortex)** -> **Rules (`.trae/rules/modules/`)**
-    *   **长期记忆区**。存放经过验证、结构化的项目规范。
-    *   **Index Pattern**: 采用原子文件 (`core.ts.md`) + 目录索引 (`index.ts.md`) 的结构，避免大文件臃肿。
-    *   特点：读取快，结构严谨，永久有效。
-
-### 3.2 运作机制：闭环进化
-
-1.  **感知 (Gardener)**：开发过程中，AI 将新经验快速记入 **Inbox**（海马体）。
-2.  **执行 (Coder)**：写代码时，AI 同时调取 **Rules**（皮层）和 **Inbox**（海马体），确保用到最新知识。
-3.  **睡眠整理 (Librarian)**：系统空闲时，AI 将 Inbox 的碎片批量归档进 Rules，并对大文件进行拆分治理，完成记忆固化。
-
-### 3.3 Skill 角色图鉴 (Skill Roles)
-
-为了方便理解，我们将每个 Skill 比喻为一个特定的职业角色：
-
-| Skill 名称 | 中文代号 | 形象比喻 | 职责 (Job Description) |
+| 脑区 (Brain Region) | 对应组件 (Component) | 功能 (Function) | 状态 (State) |
 | :--- | :--- | :--- | :--- |
-| **`coder`** | **老工匠** | **前额叶 (执行)** | **写代码的**。干活前先查规矩 (Rules)，也会瞟一眼备忘录 (Inbox)，确保活儿做得漂亮且合规。 |
-| **`knowledge-gardener`** | **速记员** | **海马体 (感知)** | **记笔记的**。你随口说的经验、踩过的坑，它立马记在便利贴 (Inbox) 上，不让灵感溜走。 |
-| **`knowledge-librarian`** | **图书管理员** | **睡眠整理 (内化)** | **整理书架的**。趁你休息时，把便利贴批量归档 (Batch Merge)，并把厚书拆分成小册子 (Split)，把没用的扔掉。 |
-| **`integrity-check`** | **质检员** | **免疫系统 (防御)** | **守大门的**。提交代码前主动扫描变更，自动生成规范的 Commit Message。**兼任发布员**，负责一键发版 (Release)。 |
+| **海马体** (Hippocampus) | **Inbox (`.trae/rules/inbox/`)** | **短期记忆**。快速暂存碎片化经验、Bug 修复记录。 | 写入快，未整理 |
+| **大脑皮层** (Cortex) | **Rules (`.trae/rules/modules/`)** | **长期记忆**。存放经过结构化、验证的规范与知识。 | 读取快，结构化 |
+| **免疫系统** (Immune System) | **Doctor (`.trae/skills/`)** | **健康维护**。定期体检、去重、修复格式、清除垃圾。 | 自动化，自愈 |
 
-### 3.4 知识引擎运转全流程 (The Flow)
+---
+
+## 2. 技能角色图鉴 (Skill Roles)
+
+为了让这套引擎运转起来，我们配备了 5 位“数字员工”。请像指挥团队一样指挥它们：
+
+### 👨‍💻 Coder (老工匠)
+> **职责**: 写代码 (Coding)
+> **口头禅**: *"慢工出细活，干活先查书。"*
+
+- **行为**: 在写代码前，必先查阅 **Rules** (规范) 和 **Inbox** (新经验)。
+- **产出**: 高质量、合规的代码。
+- **触发**: `/skill coder` 或 "写一个..."
+
+### 📝 Knowledge Gardener (速记员)
+> **职责**: 记笔记 (Capture)
+> **口头禅**: *"好记性不如烂笔头。"*
+
+- **行为**: 快速将您随口说的经验、踩过的坑记录到 **Inbox** (海马体)。
+- **产出**: 碎片化的 Markdown 笔记。
+- **触发**: "把这个记下来" / "记录经验" / "生成笔记"
+
+### 📚 Knowledge Librarian (图书管理员)
+> **职责**: 整理归档 (Consolidate)
+> **口头禅**: *"把杂乱变有序，把短期变长期。"*
+
+- **行为**: 将 Inbox 里的碎片**智能结构化** (Smart Structuring)，归档进 **Rules** (皮层)，并执行静默清理。
+- **产出**: 标准化的 TypeScript Interface 规则模块。
+- **触发**: "整理 inbox" / "整理经验" / "归档笔记"
+
+### 🩺 Knowledge Doctor (知识医生)
+> **职责**: 诊断治疗 (Maintain)
+> **口头禅**: *"早发现，早治疗，拒绝知识腐烂。"*
+
+- **行为**: 对知识库进行全量体检，修复格式错误、去除重复内容、拆分过大文件 (Fission)。
+- **产出**: 健康、整洁的知识库目录。
+- **触发**: "整理知识库" / "检查知识库" / "知识体检"
+
+### 🛡️ Integrity Check (质检员)
+> **职责**: 守门与发布 (Verify & Release)
+> **口头禅**: *"无经验，不提交。"*
+
+- **行为**: 
+  1. **提交前**: 检查代码变更是否已在 Inbox 留下记录。若无，强制要求补录。
+  2. **提交时**: 自动生成符合规范的 Commit Message。
+  3. **发布时**: 一键合并 Release PR，触发发版。
+- **触发**: "帮我提交代码" / "帮我发版"
+
+---
+
+## 3. 标准工作流 (Workflows)
+
+### 3.1 知识引擎运转全景图 (The Big Picture)
 
 ```mermaid
 graph TD
     User((User))
-    AC[Coder 老工匠]
-    KG[Gardener 速记员]
-    IC[Integrity-Check 质检员]
-    KL[Librarian 图书管理员]
     
-    Inbox[(Inbox 海马体)]
-    Rules[(Rules 大脑皮层)]
-    Git[Git Staging]
-    GH[GitHub Actions]
+    subgraph "Skills (Digital Employees)"
+        Gardener[📝 Gardener<br>速记员]
+        Librarian[📚 Librarian<br>图书管理员]
+        Doctor[🩺 Doctor<br>知识医生]
+        Coder[👨‍💻 Coder<br>老工匠]
+        Integrity[🛡️ Integrity<br>质检员]
+    end
 
-    %% 交互流程
-    User -->|1. 提出需求| AC
-    User -->|2. 总结经验| KG
-    User -->|3. 提交代码| IC
-    User -->|4. 整理归档| KL
-    User -->|5. 一键发版| IC
+    subgraph "Storage (Brain)"
+        Inbox[(Inbox<br>海马体/短期)]
+        Rules[(Rules<br>皮层/长期)]
+        Trash[🗑️ Trash<br>回收站]
+    end
 
-    %% 写入流
-    KG -->|生成碎片| Inbox
-    IC -->|补录碎片| Inbox
+    %% Capture Flow
+    User -->|"1. 记录经验"| Gardener
+    Gardener -->|"Write (.md)"| Inbox
     
-    %% 读取流
-    Inbox -.->|提供最新经验| AC
-    Rules -.->|提供长期规范| AC
+    %% Coding Flow
+    User -->|"2. 写代码"| Coder
+    Inbox -.->|"Read"| Coder
+    Rules -.->|"Read"| Coder
+    Coder -->|"Code"| Src[Source Code]
+
+    %% Consolidate Flow
+    User -->|"3. 整理归档"| Librarian
+    Librarian -->|"Smart Structuring"| Rules
+    Librarian -.->|"Read"| Inbox
+    Librarian -->|"Silent Delete"| Trash
     
-    %% 整理流
-    KL -->|批量归档| Inbox
-    KL -->|物理拆分| Rules
-    KL -->|清空| Inbox
-    
-    %% 检查流
-    IC -->|扫描变更| Git
-    IC -->|检查覆盖率| Inbox
-    
-    %% 发布流
-    IC -->|合并版本号| GH
-    GH -->|自动发版| User
+    %% Maintain Flow
+    User -->|"4. 知识体检"| Doctor
+    Doctor -->|"Scan & Fix"| Rules
+    Doctor -->|"Silent Delete"| Trash
+
+    %% Verify Flow
+    User -->|"5. 提交代码"| Integrity
+    Integrity -.->|"Check Coverage"| Inbox
+    Integrity -->|"Commit"| Git
 ```
 
-#### 环节详解
+### 3.2 典型剧本 (Scenarios)
 
-1.  **输入环节 (Input)**
-    *   **负责人**: **Gardener (速记员)**
-    *   **触发条件**: 用户主动总结经验，或 Integrity-Check 发现漏记。
-    *   **执行标准**: 
-        *   **预切分**: 一个文件只讲一件事。
-        *   **选模板**: 修 Bug 用 `inbox_note`，学知识用 `inbox_knowledge`。
-    *   **产物**: Inbox 中的碎片文件 (`.md`)。
+跟随以下剧本，您将体验到最顺畅的 AI 辅助开发流程：
 
-2.  **验证与发布环节 (Verify & Release)**
-    *   **负责人**: **Integrity-Check (质检员)**
-    *   **触发条件**: 用户执行 `git commit` 或请求发版。
-    *   **执行标准**:
-        *   **Commit**: 严格遵循 Conventional Commits (`feat`, `fix`)。
-        *   **Release**: 调用 `release.py` 自动合并 Release PR。
-    *   **产物**: 规范的 Commit Message，GitHub Release Tag。
+### 剧本 A: 开发新功能 (Feature Dev)
+1.  **唤起工匠**: "我想开发一个 Canvas 拖拽功能。"
+    *   -> `Coder` 查阅 `modules/graphics/konva` 规则，开始编码。
+2.  **记录灵感**: (开发中发现一个性能坑) "注意，Konva 的 Layer 层级太深会卡顿。"
+    *   -> `Gardener` 迅速记入 Inbox，不打断您的思路。
+3.  **提交代码**: "功能写好了，提交吧。"
+    *   -> `Integrity Check` 扫描代码，发现您已记录了性能坑，验证通过，自动提交。
 
-3.  **归档环节 (Archiving)**
-    *   **负责人**: **Librarian (图书管理员)**
-    *   **触发条件**: 系统空闲时或用户主动请求。
-    *   **执行标准**:
-        *   **批量处理**: 使用 `batch-merge` 提升效率。
-        *   **大文件治理**: 对 >300 行文件执行物理拆分 (Index Pattern)。
-        *   **分级实证**: 核心规则必须查阅代码库验证真伪。
-    *   **产物**: Rules 中的结构化文档 (`index.ts.md` + 子文件)。
+### 剧本 B: 知识库维护 (Maintenance)
+1.  **闲暇整理**: (项目空闲时) "整理一下最近的经验。"
+    *   -> `Librarian` 启动，将 Inbox 里的零散笔记合并到 `graphics/konva.ts.md` 中，并清空 Inbox。
+2.  **定期体检**: "检查一下知识库健康度。"
+    *   -> `Doctor` 扫描全库，发现 `konva.ts.md` 超过 300 行，自动建议拆分为 `konva/core.ts.md` 和 `konva/events.ts.md`。
 
-### 3.5 为什么需要它？
+---
 
-*   **解决“AI 健忘”**：普通 AI 聊完就忘，知识引擎让它拥有“项目记忆”。
-*   **保证一致性**：无论你隔多久再开发，AI 都会遵守同一套代码风格。
-*   **经验复用**：以前踩过的坑，通过自动归档，以后永远不会再踩。
+## 4. 目录结构导航 (Directory Map)
 
-## 4. 如何使用 AI 知识引擎
+快速找到您需要的文件：
 
-本项目内置了强大的 AI 知识引擎，你可以通过以下指令让 AI 帮你干活：
+| 路径 | 说明 |
+| :--- | :--- |
+| **`.trae/`** | **引擎核心** |
+| ├── `rules/` | **知识存储区** |
+| │   ├── `inbox/` | 海马体 (Gardener 的工作区) |
+| │   └── `modules/` | 大脑皮层 (Librarian/Doctor 的管辖区) |
+| ├── `skills/` | **技能定义区** (存放各角色的指令与脚本) |
+| ├── `logs/` | **日志区** (UPDATE_LOG, error-log) |
+| └── `trash/` | **回收站** (所有“静默删除”的文件都在这里，安全第一) |
+| **`src/`** | **业务代码** (Vue, JS, Assets) |
 
-### 场景 A：我要写新功能 / 改 Bug
-**指令**：`/skill coder [你的需求]`
-*   **示例**：“/skill coder 我想优化一下 Canvas 的拖拽性能，有点卡顿。”
-*   **AI 动作**：自动查阅 **Rules (长期记忆)** 中的规范，并快速扫描 **Inbox (短期记忆)** 里的最新经验，确保代码既合规又避坑。
-
-### 场景 B：我想总结经验 / 记录 Bug
-**指令**：`/skill knowledge-gardener [你的总结]`
-*   **示例**：“/skill knowledge-gardener 刚才解决的那个 FFmpeg 内存泄漏问题，把解决方法记录下来。”
-*   **AI 动作**：快速提取经验，生成一个碎片文件暂存到 **Inbox** (海马体)，不打断你的开发心流。
-
-### 场景 C：提交代码前检查
-**指令**：`/skill integrity-check` (或者直接说“帮我提交代码”)
-*   **AI 动作**：
-    1.  **自动扫描**：检查代码变更是否已在 Inbox 有对应笔记。
-    2.  **交互修复**：若无笔记，AI 会问你“要不要补录？”，确认后自动生成笔记。
-    3.  **自动提交**：生成符合 Conventional Commits 规范的 Commit Message，并静默提交。
-
-### 场景 D：整理知识库 (睡眠整理)
-**指令**：`/skill knowledge-librarian`
-*   **示例**：“/skill knowledge-librarian 整理一下这周的 Inbox。”
-*   **AI 动作**：像图书管理员一样，把 Inbox 里的碎片文件批量归档 (Batch Merge) 进长期规则库 (Rules)，并对大文件进行拆分治理，最后清空 Inbox。建议每周运行一次。
-
-### 场景 E：发布新版本
-**指令**：`帮我发版` 或 `合并版本号`
-*   **AI 动作**：调用 `release.py` 脚本，自动查找并合并 GitHub 上的 Release PR，触发自动化发版流程。
+---
 
 ## 5. 常见问题 (Q&A)
 
-*   **Q: 我看不懂代码，怎么知道文件放哪了？**
-    *   A: 直接问 AI：“xxx 功能的代码在哪里？” 它会查阅 `INDEX.md` 告诉你。
-*   **Q: `.trae` 目录下的文件我可以删吗？**
-    *   A: **最好不要删**。那是 AI 的记忆库，删了它就变“笨”了。
-*   **Q: `src/js/lib/` 里的文件是干嘛的？**
-    *   A: 那些是第三方工具库（比如处理视频的 FFmpeg，画图的 Konva），通常不需要修改。
+*   **Q: 我可以直接修改 `.trae/rules` 下的文件吗？**
+    *   A: 可以，但建议通过 `Doctor` 或 `Librarian` 来维护，以保证格式统一 (Frontmatter + TS Interface)。
+*   **Q: 为什么提交代码时会报错？**
+    *   A: 可能是 `Integrity Check` 发现您修改了核心代码但没有记录经验。请按提示选择“自动补录”。
+*   **Q: 文件被 AI 删除了怎么办？**
+    *   A: 别慌！去 `.trae/trash/` 看看，所有被技能删除的文件都会在那里保留备份（带时间戳）。
 
 ---
-*文档更新时间：2026-03-07*
+*MeeWoo Knowledge Engine v6.0 | Powered by Trae AI*

@@ -1,17 +1,32 @@
 ---
 name: coder
 display_name: 老工匠 (Auto Coder)
-description: 专注于生成符合项目技术栈和代码规范的高质量代码。在编写代码前强制查阅规则文档，并在完成后进行自检。
-version: 3.0.0
+description: 当用户请求编写代码、修改功能、修复 Bug、重构代码、添加新特性、或涉及任何代码变更时，必须立即调用此技能。此技能确保代码符合项目规范，强制查阅知识库规则。
+version: 3.1.0
 ---
 
-# Coder Skill （老工匠） v3.0
+# Coder Skill （老工匠） v3.1
 
-此技能用于指导 AI 在编写代码时遵循项目的“类脑知识引擎”规范，确保代码质量和一致性。
+此技能用于指导 AI 在编写代码时遵循项目的"类脑知识引擎"规范，确保代码质量和一致性。
+
+## ⚡ 触发条件 (Trigger Conditions)
+
+**必须立即调用此技能的场景：**
+
+| 触发关键词 | 示例请求 |
+|:---|:---|
+| **编写/创建代码** | "帮我写一个..."、"创建一个组件..." |
+| **修改功能** | "修改这个功能..."、"更新..." |
+| **修复 Bug** | "修复这个 bug"、"报错了..." |
+| **重构代码** | "重构这个模块"、"优化这段代码" |
+| **添加特性** | "添加一个新功能"、"实现..." |
+| **代码相关问答** | "这段代码什么意思"、"为什么这样写" |
+
+**判断原则：** 凡是涉及 `.ts`, `.vue`, `.js`, `.py` 等代码文件的新增、修改、删除操作，都必须触发此技能。
 
 ## 核心指令 (Core Instructions)
 
-当用户请求编写代码、修改功能或修复 Bug 时，按以下 **Plan - Act - Log - Verify** 闭环流程执行：
+按以下 **Plan - Act - Log - Verify** 闭环流程执行：
 
 ### 0. 任务评估 (Triage)
 在开始前，先评估任务规模：
@@ -34,7 +49,7 @@ version: 3.0.0
     - **推荐方式 (Template Mode)**: 
         1. 使用 `Write` 工具生成日志JSON文件：`.trae/logs/temp_log.json` (参考 `.trae/skills/coder/templates/log_entry.json`)
         2. 执行脚本读取：`python .trae/skills/coder/scripts/log_change.py --from-file .trae/logs/temp_log.json`
-        3. (可选) 删除临时文件。
+        3. 脚本会自动删除临时文件。
     - **备用方式 (CLI Mode)**: 仅适用于短描述。
         - `python .trae/skills/coder/scripts/log_change.py --action [修改文件/新增文件] --file [相对路径] --desc [简短中文描述]`
 
