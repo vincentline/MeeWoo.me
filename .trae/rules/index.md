@@ -1,3 +1,6 @@
+---
+alwaysApply: true
+---
 # 项目规则路由 (Rules Router)
 
 > 本文档采用**混合索引 (Hybrid Indexing)**。Layer 1 仅展示核心规范和领域入口，Layer 2 规则请在对应领域目录下使用 `LS` 查找。

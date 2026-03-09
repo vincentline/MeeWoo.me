@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Git 推送脚本 - Python 版本
 避免编码问题，使用基本功能

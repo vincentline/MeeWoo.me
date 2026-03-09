@@ -36,7 +36,7 @@ version: 3.1.0
 ### 1. 获取上下文 (Context)
 - **查阅规则 (Rules)**: 
     - 读取 `.trae/rules/index.md` 定位领域。
-    - 读取相关领域的 `.ts.md` 规则文件。
+    - 读取相关领域的 `.ts.md` 文件。
 - **查阅经验 (Inbox)**: 浏览 `.trae/rules/inbox/` 查找最新经验。
 - **查阅代码 (Codebase)**: 
     - **兜底策略**: 若找不到明确的规则文档，**必须**使用 `SearchCodebase` 或 `Read` 查找项目中的相似代码，并**模仿**其风格（命名、注释、结构）。

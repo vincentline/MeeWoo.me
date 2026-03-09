@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # 发布脚本：将 docs 目录部署到 gh-pages 分支
 # 功能：关闭 Node 进程，检查并提交 Git 更改，将 docs 发布到 gh-pages 分支
 # 注意：此脚本使用 UTF-8 编码，确保中文显示正常

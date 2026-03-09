@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 GET_TIME.py - 获取准确北京时间的Python脚本
 功能：获取北京标准时间，输出格式为 [YYYY-MM-DD HH:MM:SS]
