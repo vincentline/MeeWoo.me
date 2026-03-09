@@ -23,12 +23,12 @@ alwaysApply: true
 | **数据与协议** | [modules/data/](modules/data/) | JSON Schema, Protobuf, Store, API |
 | **业务规则** | [modules/business/](modules/business/) | 计费, 权限, 埋点, 导出限制 |
 
-> **Instruction for Coder**:
-> 1.  Identify the domain of the user request.
-> 2.  Navigate to the corresponding `modules/<domain>/` directory.
-> 3.  Execute `LS` to list rule files and sub-directories.
-> 4.  **Index Pattern**: If you see a sub-directory (e.g. `canvas/`), read its `index.ts.md` entry point first.
-> 5.  Otherwise, read the relevant `.ts.md` file directly.
+> **Coder 指引**:
+> 1.  识别用户请求所属的领域。
+> 2.  导航到对应的 `modules/<domain>/` 目录。
+> 3.  执行 `LS` 列出规则文件和子目录。
+> 4.  **索引模式**: 如果看到子目录（如 `canvas/`），先读取其 `index.ts.md` 入口文件。
+> 5.  否则，直接读取相关的 `.ts.md` 文件。
 
 ## 3. 日志与记录 (Logs)
 | 日志名称 | 文件路径 | 关键词 |

@@ -4738,6 +4738,11 @@ function initApp() {
         var _this = this;
         this.materialList = [];
         this.replacedImages = {};
+        
+        // 清空压缩相关状态（修复：拖入新文件时未清空导致撤销按钮仍可见）
+        this.hasCompressedMaterials = false;
+        this.preCompressMaterials = null;
+        this.preCompressReplacedImages = null;
 
         if (!videoItem || !videoItem.images) return;
 
