@@ -69,8 +69,11 @@ def copy_directory(source, destination):
                     import ast
                     sprite_icons = set()
                     try:
-                        # 读取generate-sprite.py文件
-                        with open('generate-sprite.py', 'r', encoding='utf-8') as f:
+                        # 读取generate-sprite.py文件（在项目根目录）
+                        script_dir = os.path.dirname(os.path.abspath(__file__))
+                        project_root = os.path.dirname(script_dir)
+                        generate_sprite_path = os.path.join(project_root, 'generate-sprite.py')
+                        with open(generate_sprite_path, 'r', encoding='utf-8') as f:
                             tree = ast.parse(f.read(), filename='generate-sprite.py')
                         
                         # 遍历AST找到ICONS字典
@@ -195,18 +198,23 @@ def main():
     """主函数"""
     print_info("===== 开始执行静态资源复制和压缩 =====")
     
+    # 获取项目根目录（脚本在 scripts/ 目录下）
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)
+    
     # 生成雪碧图
     print_info("===== 开始生成雪碧图 =====")
     try:
         import subprocess
-        subprocess.run(['python', 'generate-sprite.py'], check=True, capture_output=False, text=True)
+        generate_sprite_path = os.path.join(project_root, 'generate-sprite.py')
+        subprocess.run(['python', generate_sprite_path], check=True, capture_output=False, text=True)
         print_info("雪碧图生成成功")
     except Exception as e:
         print_error(f"生成雪碧图失败: {e}")
     
     # 定义源目录和目标目录
-    src_dir = os.path.join(os.getcwd(), 'src')
-    docs_dir = os.path.join(os.getcwd(), 'docs')
+    src_dir = os.path.join(project_root, 'src')
+    docs_dir = os.path.join(project_root, 'docs')
     
     # 复制 CSS 文件
     css_source = os.path.join(src_dir, 'assets', 'css')
