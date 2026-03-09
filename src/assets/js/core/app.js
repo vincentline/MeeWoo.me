@@ -1462,6 +1462,10 @@ function initApp() {
         var audioTask;
         // 【优化】先检查 videoItem 是否有音频，无音频直接跳过解析
         if (videoItem.audios && videoItem.audios.length > 0) {
+          // 【修复】如果有音频，预加载 Howler 库
+          if (window.MeeWoo && window.MeeWoo.Core && window.MeeWoo.Core.libraryLoader) {
+            window.MeeWoo.Core.libraryLoader.load(['howler'], true);
+          }
           audioTask = file.arrayBuffer().then(function (arrayBuffer) {
             if (taskId !== _this.currentLoadTaskId) return Promise.reject('task_cancelled');
             return _this.parseSvgaAudioData(arrayBuffer);

@@ -674,6 +674,10 @@
   SvgaPlayerAdapter.prototype.getHowlInstance = function (audioKey) {
     if (this.audioCache[audioKey]) return this.audioCache[audioKey];
 
+    if (typeof Howl === 'undefined') {
+      return null;
+    }
+
     // 优先从 svgaAudioData (app.js 手动解析的数据) 中获取
     var audioDataMap = this.state.svgaAudioData || {};
     var videoItem = this.state.videoItem;
