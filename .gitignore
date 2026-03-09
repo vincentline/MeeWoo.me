@@ -21,8 +21,8 @@ Personal habits.txt
 node_modules/
 
 # 构建产物（按你项目情况调整）
-dist/
-build/
+/dist/
+/build/
 .tmp/
 .temp/
 
