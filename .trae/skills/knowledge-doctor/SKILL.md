@@ -20,6 +20,7 @@ version: 1.0.0
 - **禁止猜测**: 修正知识点时，必须有明确的证据（WebSearch 结果或代码库现状）。
 - **禁止过度治疗**: 如果文件没有明显问题，不要为了“优化”而随意修改。
 - **禁止越界治疗**: 严禁修改 `.trae/rules/modules` 以外的文件（如项目源码、配置文件、Skill定义文件等）。技能文件 (`SKILL.md`) 仅接受只读检查，不得进行格式化重写。
+- **禁止手动重命名**: 所有文件重命名操作必须通过 `treatment.py` 脚本执行，确保操作可追溯。
 
 ## 标准作业程序 (SOP)
 
@@ -83,10 +84,25 @@ Agent 调用 `scanner.py` 获取诊断报告。
 *动作*:
 1. **Plan**: 提出拆分方案。
 2. **Split**: 创建新的子文件。
-3. **Plan Action**: 
+3. **命名规则**: 拆分后的文件（除 index 外）必须包含原大文件的文件名作为前缀。
+   - 原文件: `123.ts.md`
+   - 拆分后:
+     - `123-main-feature.ts.md`（核心功能）
+     - `123-sub-feature-a.ts.md`（子功能A）
+     - `123-sub-feature-b.ts.md`（子功能B）
+     - `index.ts.md`（索引文件）
+4. **Plan Action**: 
    - `"create"` (target: 新子文件)
    - `"rewrite"` (target: 原文件或 Index 文件)
    - `"delete"` (target: 原大文件，如果已完全拆分)
+
+#### E. 命名规范修复 (Naming Convention Fix)
+*症状*: 拆分文件不符合命名规则（缺少原文件名前缀）。
+*动作*:
+1. **Analyze**: 分析文件命名问题，确定原文件和正确的命名格式。
+2. **Rename**: 按照命名规则重命名文件。
+3. **Plan Action**: 
+   - `"rename"` (old_path: 原文件路径, target: 新文件路径)
 
 ### 3. 执行治疗 (Execute Treatment)
 执行生成的计划文件。

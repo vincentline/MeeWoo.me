@@ -15,6 +15,14 @@ Knowledge Doctor Scanner - 知识体检仪
 
 输出:
     JSON 格式的诊断报告。
+
+拆分文件命名策略:
+    原文件: 123.ts.md
+    拆分后:
+    - 123-main-feature.ts.md
+    - 123-sub-feature-a.ts.md
+    - 123-sub-feature-b.ts.md
+    - index.ts.md
 """
 
 import os
@@ -24,8 +32,39 @@ import json
 import subprocess
 import re
 
-RULES_DIR = r".trae/rules/modules"
-SKILLS_DIR = r".trae/skills"
+# ============================================================================
+# 工具函数
+# ============================================================================
+
+def find_project_root():
+    """
+    查找项目根目录（包含 .trae 目录的目录）
+    
+    Returns:
+        str: 项目根目录的绝对路径，如果未找到则返回 None
+    """
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    while current_dir != os.path.dirname(current_dir):  # 到达文件系统根目录时停止
+        if os.path.exists(os.path.join(current_dir, '.trae')):
+            return current_dir
+        current_dir = os.path.dirname(current_dir)
+    return None
+
+# ============================================================================
+# 配置常量
+# ============================================================================
+
+# 项目根目录
+PROJECT_ROOT = find_project_root()
+if not PROJECT_ROOT:
+    print("❌ 错误：未找到项目根目录（.trae 目录）")
+    exit(1)
+
+# 规则目录路径
+RULES_DIR = os.path.join(PROJECT_ROOT, ".trae", "rules", "modules")
+
+# 技能目录路径
+SKILLS_DIR = os.path.join(PROJECT_ROOT, ".trae", "skills")
 
 def get_git_changed_files():
     """获取 Git 暂存区和最近一次提交的变更文件列表"""
@@ -69,6 +108,77 @@ def get_git_changed_files():
             filtered.append(f)
     
     return filtered
+
+def check_naming_convention(file_path):
+    """检查文件命名是否符合拆分文件命名规则
+    
+    规则：
+    1. 子目录中的文件（非 index.ts.md）必须包含父目录名作为前缀
+    2. 格式：{父目录名}-{功能名}.ts.md
+    3. 示例：konva/coordinates.ts.md 应命名为 konva-coordinates.ts.md
+    
+    注意：此规则适用于 modules 目录下的所有子目录文件
+    """
+    issues = []
+    
+    # 跳过 index 文件
+    if file_path.endswith("index.ts.md") or file_path.endswith("index.md"):
+        return issues
+    
+    dir_path = os.path.dirname(file_path)
+    basename = os.path.basename(file_path)
+    
+    # 处理 .ts.md 复合扩展名
+    if basename.endswith('.ts.md'):
+        name = basename[:-6]  # 移除 .ts.md
+        ext = '.ts.md'
+    else:
+        name, ext = os.path.splitext(basename)
+    
+    # 获取父目录名
+    parent_dir = os.path.basename(dir_path)
+    
+    # 检查是否在 modules 目录下
+    normalized_rules_dir = RULES_DIR.replace("/", os.sep).rstrip(os.sep)
+    normalized_file_path = file_path.replace("/", os.sep)
+    
+    if normalized_rules_dir in normalized_file_path:
+        # 计算文件相对于 modules 目录的深度
+        rel_path = os.path.relpath(file_path, RULES_DIR)
+        depth = rel_path.count(os.sep)
+        
+        # 如果文件在 modules 的子目录中（depth >= 1），则需要前缀
+        if depth >= 1:
+            expected_prefix = parent_dir + "-"
+            if not name.startswith(expected_prefix):
+                issues.append({
+                    "type": "warning",
+                    "code": "naming_convention",
+                    "msg": f"File '{basename}' should be named '{parent_dir}-{name}.ts.md' to include parent directory prefix."
+                })
+    
+    return issues
+
+def is_independent_file(file_path):
+    """判断文件是否为独立文件（包含完整的 Frontmatter 和 TypeScript Interface）
+    
+    独立文件特征：
+    1. 包含 Frontmatter（以 --- 开始）
+    2. 包含 TypeScript Interface 定义
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # 检查是否包含 Frontmatter
+        has_frontmatter = content.startswith("---")
+        
+        # 检查是否包含 TypeScript Interface 定义
+        has_interface = "export interface" in content
+        
+        return has_frontmatter and has_interface
+    except Exception:
+        return False
 
 def scan_file(file_path):
     """扫描单个文件，返回问题列表"""
@@ -128,6 +238,10 @@ def scan_file(file_path):
                 "code": "index_error", 
                 "msg": "Index file missing 'export interface XxxIndex'."
             })
+    
+    # 5. 命名规则检查 (Naming Convention Check)
+    naming_issues = check_naming_convention(file_path)
+    issues.extend(naming_issues)
 
     return issues
 
@@ -141,7 +255,12 @@ def main():
     # 确定扫描目标
     scan_dirs = []
     if args.target:
-        scan_dirs.append(args.target)
+        # 处理相对路径：如果是简单名称如 'modules'，转换为完整路径
+        if not os.path.isabs(args.target) and not os.path.sep in args.target:
+            target_path = os.path.join(os.path.dirname(RULES_DIR), args.target)
+        else:
+            target_path = args.target
+        scan_dirs.append(target_path)
     else:
         scan_dirs.append(RULES_DIR)
         scan_dirs.append(SKILLS_DIR)

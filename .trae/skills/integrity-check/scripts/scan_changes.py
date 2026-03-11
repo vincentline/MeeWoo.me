@@ -19,8 +19,8 @@ Integrity Check - 变更扫描工具
     5. 输出检查结果
 
 输出格式:
-    - 成功: "✅ Changes covered by Inbox notes: xxx.md"
-    - 警告: "❌ WARNING: Core changes in xxx are NOT covered!"
+    - 成功: "✅ 变更已被 Inbox 笔记覆盖: xxx.md"
+    - 警告: "❌ 警告: 核心模块 xxx 的变更未被覆盖!"
 
 
 
@@ -32,11 +32,35 @@ import re
 from datetime import datetime
 
 # ============================================================================
+# 工具函数
+# ============================================================================
+
+def find_project_root():
+    """
+    查找项目根目录（包含 .trae 目录的目录）
+    
+    Returns:
+        str: 项目根目录的绝对路径，如果未找到则返回 None
+    """
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    while current_dir != os.path.dirname(current_dir):  # 到达文件系统根目录时停止
+        if os.path.exists(os.path.join(current_dir, '.trae')):
+            return current_dir
+        current_dir = os.path.dirname(current_dir)
+    return None
+
+# ============================================================================
 # 配置常量
 # ============================================================================
 
+# 项目根目录
+PROJECT_ROOT = find_project_root()
+if not PROJECT_ROOT:
+    print("❌ 错误：未找到项目根目录（.trae 目录）")
+    exit(1)
+
 # Inbox 目录路径 (存放未归档的经验笔记)
-INBOX_DIR = r".trae/rules/inbox/"
+INBOX_DIR = os.path.join(PROJECT_ROOT, ".trae", "rules", "inbox")
 
 # Inbox 索引文件路径 (记录所有笔记的元数据)
 INBOX_INDEX_PATH = os.path.join(INBOX_DIR, "index.md")
@@ -71,19 +95,28 @@ def get_staged_files():
     """
     获取 Git 暂存区的文件列表。
 
-    使用 `git diff --cached --name-only` 命令获取已暂存的文件。
-    如果暂存区为空，自动执行 `git add -A` 将所有变更加入暂存区。
+    执行 `git add -A` 将所有变更加入暂存区，然后使用 `git diff --cached --name-only` 命令获取已暂存的文件。
     自动过滤掉忽略规则中的文件。
 
-    Returns:
+    返回:
         list[str]: 暂存文件路径列表 (已过滤)
 
-    Example:
+    示例:
         >>> files = get_staged_files()
         >>> print(files)
         ['src/assets/js/core/main.js', 'package.json']
     """
     try:
+        # 总是执行 git add -A 以确保所有变更都被暂存
+        print("ℹ️  正在执行 git add -A 暂存所有变更...")
+        subprocess.run(
+            ["git", "add", "-A"],
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            check=True
+        )
+        
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only"],
             capture_output=True,
@@ -93,25 +126,6 @@ def get_staged_files():
             check=True
         )
         files = result.stdout.strip().splitlines() if result.stdout else []
-        
-        if not files:
-            print("ℹ️  Staging area is empty. Running git add -A...")
-            subprocess.run(
-                ["git", "add", "-A"],
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                check=True
-            )
-            result = subprocess.run(
-                ["git", "diff", "--cached", "--name-only"],
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                errors='replace',
-                check=True
-            )
-            files = result.stdout.strip().splitlines() if result.stdout else []
         
         return [f for f in files if not any(p in f for p in IGNORE_PATTERNS)]
     except subprocess.CalledProcessError:
@@ -125,13 +139,13 @@ def identify_changed_modules(files):
     根据文件路径匹配 CORE_MODULES_MAP 中的规则，
     判断文件属于哪个模块。
 
-    Args:
+    参数:
         files (list[str]): 文件路径列表
 
-    Returns:
+    返回:
         list[str]: 涉及的模块名列表 (去重)
 
-    Example:
+    示例:
         >>> modules = identify_changed_modules(['src/assets/js/core/main.js'])
         >>> print(modules)
         ['core']
@@ -153,12 +167,12 @@ def get_unarchived_notes():
     解析 Inbox 索引文件，提取所有笔记的文件名和关键词。
     通过检查文件是否存在来判断是否已归档。
 
-    Returns:
+    返回:
         list[dict]: 笔记信息列表，每项包含:
             - file: 文件名
             - keys: 关键词 (小写)
 
-    Example:
+    示例:
         >>> notes = get_unarchived_notes()
         >>> print(notes)
         [{'file': 'fix-canvas-bug.md', 'keys': 'canvas, bug'}]
@@ -190,16 +204,16 @@ def check_coverage(changed_modules, notes):
     通过关键词匹配判断笔记是否覆盖了变更模块。
     匹配规则: 笔记关键词或文件名包含模块名。
 
-    Args:
+    参数:
         changed_modules (list[str]): 变更模块列表
         notes (list[dict]): Inbox 笔记列表
 
-    Returns:
+    返回:
         tuple[bool, list]:
             - bool: 是否完全覆盖
             - list: 覆盖时返回相关笔记文件名，未覆盖时返回缺失模块名
 
-    Example:
+    示例:
         >>> is_covered, result = check_coverage(['core'], notes)
         >>> if is_covered:
         ...     print(f"覆盖笔记: {result}")
@@ -232,27 +246,27 @@ def main():
     主函数入口。
 
     执行完整的变更扫描流程:
-        1. 获取暂存文件 (自动 git add -A 如果暂存区为空)
+        1. 获取暂存文件 (执行 git add -A 暂存所有变更)
         2. 识别变更模块
         3. 检查笔记覆盖情况
         4. 输出结果
     """
-    print("Running Integrity Check Scan...")
+    print("正在运行完整性检查扫描...")
 
-    # 步骤 1: 获取暂存文件 (自动 add 如果为空)
+    # 步骤 1: 获取暂存文件 (执行 git add -A 暂存所有变更)
     staged_files = get_staged_files()
     if not staged_files:
-        print("✅ No changes to commit.")
+        print("✅ 没有需要提交的变更。")
         return
 
     # 步骤 2: 识别变更模块
     changed_modules = identify_changed_modules(staged_files)
 
     if not changed_modules:
-        print("✅ No core module changes detected. (Safe to commit)")
+        print("✅ 未检测到核心模块变更。(可以安全提交)")
         return
 
-    print(f"ℹ️  Detected changes in modules: {', '.join(changed_modules)}")
+    print(f"ℹ️  检测到模块变更: {', '.join(changed_modules)}")
 
     # 步骤 3: 获取未归档笔记
     notes = get_unarchived_notes()
@@ -261,12 +275,12 @@ def main():
     is_covered, result = check_coverage(changed_modules, notes)
 
     if is_covered:
-        print(f"✅ Changes covered by Inbox notes: {', '.join(result)}")
+        print(f"✅ 变更已被 Inbox 笔记覆盖: {', '.join(result)}")
         # 输出给 Skill 解析用的特殊标记
         print(f"__REF_NOTES__:{','.join(result)}")
     else:
-        print(f"\n❌ WARNING: Core changes in {', '.join(result)} are NOT covered by any active Inbox note!")
-        print("   Please run /skill knowledge-gardener to record your changes.")
+        print(f"\n❌ 警告: 核心模块 {', '.join(result)} 的变更未被任何活跃的 Inbox 笔记覆盖!")
+        print("   请运行 /skill knowledge-gardener 记录您的变更。")
         # 抛出异常状态码，供 Skill 捕获
         # exit(1)
 

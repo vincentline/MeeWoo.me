@@ -32,17 +32,41 @@ import shutil
 import datetime
 
 # ============================================================================
+# 工具函数
+# ============================================================================
+
+def find_project_root():
+    """
+    查找项目根目录（包含 .trae 目录的目录）
+    
+    Returns:
+        str: 项目根目录的绝对路径，如果未找到则返回 None
+    """
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    while current_dir != os.path.dirname(current_dir):  # 到达文件系统根目录时停止
+        if os.path.exists(os.path.join(current_dir, '.trae')):
+            return current_dir
+        current_dir = os.path.dirname(current_dir)
+    return None
+
+# ============================================================================
 # 配置常量
 # ============================================================================
 
+# 项目根目录
+PROJECT_ROOT = find_project_root()
+if not PROJECT_ROOT:
+    print("❌ 错误：未找到项目根目录（.trae 目录）")
+    exit(1)
+
 # Inbox 目录路径
-INBOX_DIR = r".trae/rules/inbox"
+INBOX_DIR = os.path.join(PROJECT_ROOT, ".trae", "rules", "inbox")
 
 # Inbox 索引文件路径
 INDEX_FILE = os.path.join(INBOX_DIR, "index.md")
 
 # 回收站目录路径
-TRASH_DIR = r".trae/trash"
+TRASH_DIR = os.path.join(PROJECT_ROOT, ".trae", "trash")
 
 
 def get_trash_path(filename):

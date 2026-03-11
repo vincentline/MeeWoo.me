@@ -33,15 +33,33 @@ version: 2.0.0
 > **Prompt 示例**: "检测到核心模块变更，但未发现 Inbox 记录。请选择处理方式："
 
 ### 3. 自动提交与推送 (Auto-Commit & Push)
-当检查通过（或补录完成）后：
-- **读取模板**: 读取 `.trae/skills/integrity-check/templates/commit_message.md`。
-- **生成消息**: 
-    - 根据 `git diff` 摘要和 Inbox 笔记内容，填充模板。
-    - **严格遵循 Conventional Commits**: `type(scope): subject`。
-    - **Breaking Change**: 若有，在 type 后加 `!` 并在 footer 添加 `BREAKING CHANGE: ...`。
-- **写入临时文件**: 将生成的消息写入 `.git/COMMIT_EDITMSG_TEMP`。
-- **静默提交**: 执行 `git commit -F .git/COMMIT_EDITMSG_TEMP`。
-- **推送到远程**: 执行 `git push`。
+
+当检查通过（或补录完成）后，按以下步骤执行：
+
+| 步骤 | 操作 | 命令 | 说明 |
+|:---|:---|:---|:---|
+| 1 | **同步远程** | `git pull origin main` | **必须**执行，确保本地代码与远程同步，避免冲突 |
+| 2 | **暂存所有变更** | `git add -A` | **必须**执行，确保所有变更（包括暂存区和非暂存区）都被暂存 |
+| 3 | **读取模板** | - | 读取 `.trae/skills/integrity-check/templates/commit_message.md` |
+| 4 | **生成消息** | - | 根据 `git diff` 摘要和 Inbox 笔记内容填充模板，严格遵循 Conventional Commits 规范 |
+| 5 | **写入临时文件** | - | 将生成的消息写入 `.git/COMMIT_EDITMSG_TEMP` |
+| 6 | **静默提交** | `git commit -F .git/COMMIT_EDITMSG_TEMP` | 使用临时文件中的消息进行提交 |
+| 7 | **推送到远程** | `git push origin main` | 将本地提交推送到远程仓库 |
+
+**提交消息生成规范：**
+
+1. **[type]**: 选择变更类型 (feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert)
+   - **Breaking Change**: 若包含破坏性变更，在 type 后加 `!` (e.g., `feat!: ...`)
+2. **[scope]**: 影响的模块名 (如 canvas, media, core)
+3. **[subject]**: 简短的中文描述 (不超过 60 字)
+4. **[body]**:
+   - **只写功能/业务更新，不写具体文件列表**（Git 历史已有）
+   - 将复杂的变更归纳为几点核心功能点
+   - 使用无序列表
+5. **[footer]**:
+   - `Ref: [inbox_file]` (必填，关联的 Inbox 文件名，逗号分隔)
+   - `BREAKING CHANGE: ...` (如有)
+   - `Closes #IssueID` (如有)
 
 ### 4. 自动发版 (Auto Release)
 当用户请求“发布新版”、“合并版本号”或“发版”时：

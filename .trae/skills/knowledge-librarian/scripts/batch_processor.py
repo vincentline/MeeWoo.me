@@ -34,6 +34,34 @@ import argparse
 import subprocess
 import sys
 
+# ============================================================================
+# 工具函数
+# ============================================================================
+
+def find_project_root():
+    """
+    查找项目根目录（包含 .trae 目录的目录）
+    
+    Returns:
+        str: 项目根目录的绝对路径，如果未找到则返回 None
+    """
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    while current_dir != os.path.dirname(current_dir):  # 到达文件系统根目录时停止
+        if os.path.exists(os.path.join(current_dir, '.trae')):
+            return current_dir
+        current_dir = os.path.dirname(current_dir)
+    return None
+
+# ============================================================================
+# 配置常量
+# ============================================================================
+
+# 项目根目录
+PROJECT_ROOT = find_project_root()
+if not PROJECT_ROOT:
+    print("❌ 错误：未找到项目根目录（.trae 目录）")
+    exit(1)
+
 # 脚本路径配置
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 ARCHIVER_SCRIPT = os.path.join(CURRENT_DIR, "archiver.py")
@@ -160,6 +188,21 @@ def process_plan(plan_path, dry_run=False):
     print(f"Success    : {stats['success']}")
     print(f"Failed     : {stats['failed']}")
     print(f"Skipped    : {stats['skipped']}")
+    
+    # Call Knowledge Doctor for diagnosis after archiving
+    print("\n" + "="*30)
+    print("Calling Knowledge Doctor for diagnosis...")
+    print("="*30)
+    
+    # Path to Knowledge Doctor scanner script
+    doctor_scanner = os.path.join(os.path.dirname(os.path.dirname(CURRENT_DIR)), "knowledge-doctor", "scripts", "scanner.py")
+    
+    if os.path.exists(doctor_scanner):
+        print(f"Executing: {sys.executable} {doctor_scanner} --full")
+        doctor_result = subprocess.run([sys.executable, doctor_scanner, "--full"])
+        print(f"Knowledge Doctor completed with exit code: {doctor_result.returncode}")
+    else:
+        print("⚠️ Knowledge Doctor scanner script not found.")
     
     if stats["failed"] > 0:
         sys.exit(1)
