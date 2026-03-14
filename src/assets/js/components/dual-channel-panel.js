@@ -204,7 +204,7 @@
           height: 300,
           fps: 30,
           quality: 80,
-          muted: false
+          muted: true
         },
         // 宽高比例（用于联动计算）
         aspectRatio: 1,
@@ -290,7 +290,7 @@
         // 3. 其他配置初始化
         if (this.initialConfig) {
           this.config.quality = Math.min(100, Math.max(1, this.initialConfig.quality || 80));
-          this.config.muted = this.initialConfig.muted || false;
+          this.config.muted = this.initialConfig.muted !== undefined ? this.initialConfig.muted : true;
           this.config.channelMode = this.initialConfig.channelMode || 'color-left-alpha-right';
         }
       },
