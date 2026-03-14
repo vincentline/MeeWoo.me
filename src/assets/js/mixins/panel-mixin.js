@@ -45,7 +45,7 @@
           height: 0,
           quality: 80,
           fps: 30,
-          muted: false,
+          muted: true,
           aspectRatio: 1
         },
         dualChannelSourceInfo: {
