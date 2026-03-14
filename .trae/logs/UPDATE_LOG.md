@@ -5,6 +5,7 @@
 
 ## 记录列表
 
+[2026-03-14 18:42:32] 【修改文件】 : src/assets/js/core/app.js - 修复双通道MP4弹窗静音默认值：在所有入口点(SVGA/MP4/Lottie/序列帧)初始化时重置muted为true
 [2026-03-14 18:29:31] 【修改文件】 : src/assets/js/mixins/panel-mixin.js - 修复双通道MP4弹窗静音默认值：父组件 dualChannelConfig.muted 改为 true
 [2026-03-14 17:49:28] 【修改文件】 : src/assets/js/components/dual-channel-panel.js - SVGA转双通道MP4弹窗，静音开关默认打开（muted默认值改为true）
 [2026-03-05 21:33:23] 【修改文件】 : src/index.html - 同步引入 protobuf.min.js 和 pako.min.js，消除 SVGA 音频解析时的库动态加载延迟

@@ -7518,6 +7518,7 @@ function initApp() {
         this.dualChannelConfig.width = videoItem.videoSize.width;
         this.dualChannelConfig.height = videoItem.videoSize.height;
         this.dualChannelConfig.aspectRatio = videoItem.videoSize.width / videoItem.videoSize.height;
+        this.dualChannelConfig.muted = true;
 
         // 默认使用SVGA原始帧率
         var originalFps = videoItem.FPS || videoItem.fps || 30;
@@ -7602,6 +7603,7 @@ function initApp() {
         this.dualChannelConfig.width = this.mp4.originalWidth;
         this.dualChannelConfig.height = this.mp4.originalHeight;
         this.dualChannelConfig.aspectRatio = this.mp4.originalWidth / this.mp4.originalHeight;
+        this.dualChannelConfig.muted = true;
 
         // 使用视频帧率
         var videoFps = this.mp4.fileInfo.fps || 30;
@@ -8105,6 +8107,7 @@ function initApp() {
         this.dualChannelConfig.width = this.lottie.originalWidth || 300;
         this.dualChannelConfig.height = this.lottie.originalHeight || 300;
         this.dualChannelConfig.aspectRatio = this.dualChannelConfig.width / this.dualChannelConfig.height;
+        this.dualChannelConfig.muted = true;
 
         this.dualChannelConfig.fps = Math.min(120, Math.max(1, Math.round(fr)));
 
@@ -9250,6 +9253,7 @@ function initApp() {
         this.dualChannelConfig.width = this.frames.originalWidth;
         this.dualChannelConfig.height = this.frames.originalHeight;
         this.dualChannelConfig.fps = fps;
+        this.dualChannelConfig.muted = true;
         if (this.dualChannelConfig.height > 0) {
           this.dualChannelConfig.aspectRatio = this.dualChannelConfig.width / this.dualChannelConfig.height;
         } else {
