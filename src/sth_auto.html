@@ -1474,6 +1474,8 @@
     <script src="assets/js/lib/pako.min.js"></script>
     <!-- Protobuf.js (用于解析proto) -->
     <script src="assets/js/lib/protobuf.min.js"></script>
+    <!-- JSZip (用于打包导出) -->
+    <script src="assets/js/lib/jszip.min.js"></script>
 
     <script>
       new Vue({
@@ -1611,6 +1613,14 @@
             var _this = this;
             setTimeout(function () { _this.toastVisible = false; }, 2000);
           },
+          downloadBlobFile: function (blob, fileName) {
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+          },
           getTimestampFilename: function (baseName, ext) {
             var now = new Date();
             var y = now.getFullYear();
@@ -1660,47 +1670,66 @@
           },
 
           // 通用导出SVGA方法
-          exportSVGA: function (module, baseName) {
+          exportSVGA: function (module, baseName, options) {
             var _this = this;
-            if (!module.svgaFile || Object.keys(module.replacedImages).length === 0) {
-              _this.showToast('请先替换至少一个素材'); return;
-            }
-            _this.showToast('正在导出...');
-            var reader = new FileReader();
-            reader.onload = function (e) {
-              try {
-                var arrayBuffer = e.target.result;
-                var uint8Array = new Uint8Array(arrayBuffer);
-                var inflatedData = pako.inflate(uint8Array);
-                protobuf.load('svga.proto', function (err, root) {
-                  if (err) { _this.showToast('Proto加载失败'); return; }
-                  try {
-                    var MovieEntity = root.lookupType('com.opensource.svga.MovieEntity');
-                    var movieData = MovieEntity.decode(inflatedData);
-                    for (var imageKey in module.replacedImages) {
-                      if (module.replacedImages.hasOwnProperty(imageKey) && movieData.images[imageKey]) {
-                        var base64Data = module.replacedImages[imageKey];
-                        var base64String = base64Data.split(',')[1] || base64Data;
-                        var binaryString = atob(base64String);
-                        var bytes = new Uint8Array(binaryString.length);
-                        for (var i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-                        movieData.images[imageKey] = bytes;
-                      }
+            var exportOptions = options || {};
+            var shouldDownload = exportOptions.download !== false;
+            var isSilent = exportOptions.silent === true;
+            return new Promise(function (resolve) {
+              if (!module.svgaFile || Object.keys(module.replacedImages).length === 0) {
+                _this.showToast('请先替换至少一个素材');
+                resolve(null);
+                return;
+              }
+              if (!isSilent) _this.showToast('正在导出...');
+              var reader = new FileReader();
+              reader.onload = function (e) {
+                try {
+                  var arrayBuffer = e.target.result;
+                  var uint8Array = new Uint8Array(arrayBuffer);
+                  var inflatedData = pako.inflate(uint8Array);
+                  protobuf.load('svga.proto', function (err, root) {
+                    if (err) {
+                      _this.showToast('Proto加载失败');
+                      resolve(null);
+                      return;
                     }
-                    var buffer = MovieEntity.encode(movieData).finish();
-                    var deflatedData = pako.deflate(buffer);
-                    var fileName = _this.getTimestampFilename(baseName, 'svga');
-                    var blob = new Blob([deflatedData], { type: 'application/octet-stream' });
-                    var url = URL.createObjectURL(blob);
-                    var a = document.createElement('a');
-                    a.href = url; a.download = fileName; a.click();
-                    URL.revokeObjectURL(url);
-                    _this.showToast('导出成功！');
-                  } catch (decodeErr) { _this.showToast('编码失败'); }
-                });
-              } catch (err) { _this.showToast('处理失败'); }
-            };
-            reader.readAsArrayBuffer(module.svgaFile);
+                    try {
+                      var MovieEntity = root.lookupType('com.opensource.svga.MovieEntity');
+                      var movieData = MovieEntity.decode(inflatedData);
+                      for (var imageKey in module.replacedImages) {
+                        if (module.replacedImages.hasOwnProperty(imageKey) && movieData.images[imageKey]) {
+                          var base64Data = module.replacedImages[imageKey];
+                          var base64String = base64Data.split(',')[1] || base64Data;
+                          var binaryString = atob(base64String);
+                          var bytes = new Uint8Array(binaryString.length);
+                          for (var i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                          movieData.images[imageKey] = bytes;
+                        }
+                      }
+                      var buffer = MovieEntity.encode(movieData).finish();
+                      var deflatedData = pako.deflate(buffer);
+                      var fileName = _this.getTimestampFilename(baseName, 'svga');
+                      var blob = new Blob([deflatedData], { type: 'application/octet-stream' });
+                      if (shouldDownload) _this.downloadBlobFile(blob, fileName);
+                      if (!isSilent) _this.showToast('导出成功！');
+                      resolve({ blob: blob, fileName: fileName });
+                    } catch (decodeErr) {
+                      _this.showToast('编码失败');
+                      resolve(null);
+                    }
+                  });
+                } catch (err) {
+                  _this.showToast('处理失败');
+                  resolve(null);
+                }
+              };
+              reader.onerror = function () {
+                _this.showToast('读取文件失败');
+                resolve(null);
+              };
+              reader.readAsArrayBuffer(module.svgaFile);
+            });
           },
 
           // 通用应用到SVGA方法
@@ -1991,33 +2020,67 @@
             this.showToast('已恢复 ' + key);
           },
 
-          darExportSVGA: function () {
+          darExportSVGA: async function () {
             this.dar.isExporting = true;
-            var _this = this;
-            this.exportSVGA(this.dar, this.dar.currentFrame.name);
-            setTimeout(function () {
-              _this.darExportFrame5PNG();
-              _this.dar.isExporting = false;
-            }, 50);
+            try {
+              if (!window.JSZip) {
+                this.showToast('打包库加载失败');
+                return;
+              }
+              this.showToast('正在打包...');
+              var svgaResult = await this.exportSVGA(this.dar, this.dar.currentFrame.name, { download: false, silent: true });
+              if (!svgaResult) return;
+              var pngBlob = await this.darCaptureFrame5PNGBlob();
+              var zipBaseName = svgaResult.fileName.replace(/\.svga$/i, '');
+              var zip = new JSZip();
+              zip.file(svgaResult.fileName, svgaResult.blob);
+              zip.file(zipBaseName + '_frame5.png', pngBlob);
+              var zipBlob = await zip.generateAsync({ type: 'blob' });
+              this.downloadBlobFile(zipBlob, zipBaseName + '.zip');
+              this.showToast('导出成功！');
+            } catch (err) {
+              this.showToast('打包导出失败');
+            } finally {
+              this.dar.isExporting = false;
+            }
           },
 
-          darExportFrame5PNG: function () {
+          darCaptureFrame5PNGBlob: function () {
             var _this = this;
-            if (!_this.dar.svgaPlayer) return;
-            _this.dar.svgaPlayer.pauseAnimation();
-            _this.dar.svgaPlayer.stepToFrame(4);
-            setTimeout(function () {
-              var container = document.getElementById('darSvgaContainer');
-              var canvas = container ? container.querySelector('canvas') : null;
-              if (canvas) {
-                var dataUrl = canvas.toDataURL('image/png');
-                var a = document.createElement('a');
-                a.href = dataUrl;
-                a.download = _this.getTimestampFilename(_this.dar.currentFrame.name + '_frame5', 'png');
-                a.click();
+            return new Promise(function (resolve, reject) {
+              if (!_this.dar.svgaPlayer) {
+                reject(new Error('未找到播放器'));
+                return;
               }
-              _this.dar.svgaPlayer.startAnimation();
-            }, 100);
+              _this.dar.svgaPlayer.pauseAnimation();
+              _this.dar.svgaPlayer.stepToFrame(4);
+              setTimeout(function () {
+                var container = document.getElementById('darSvgaContainer');
+                var canvas = container ? container.querySelector('canvas') : null;
+                if (!canvas) {
+                  _this.dar.svgaPlayer.startAnimation();
+                  reject(new Error('未找到预览画布'));
+                  return;
+                }
+                canvas.toBlob(function (blob) {
+                  _this.dar.svgaPlayer.startAnimation();
+                  if (!blob) {
+                    reject(new Error('生成PNG失败'));
+                    return;
+                  }
+                  resolve(blob);
+                }, 'image/png');
+              }, 100);
+            });
+          },
+
+          darExportFrame5PNG: async function () {
+            try {
+              var pngBlob = await this.darCaptureFrame5PNGBlob();
+              this.downloadBlobFile(pngBlob, this.getTimestampFilename(this.dar.currentFrame.name + '_frame5', 'png'));
+            } catch (err) {
+              this.showToast('导出PNG失败');
+            }
           },
 
           // ==================== 名人礼物基本款方法 ====================
