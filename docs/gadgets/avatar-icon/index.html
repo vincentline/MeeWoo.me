@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avatar图标预览器</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="preview-page">
+    <div class="container">
+        <!-- 页面标题 -->
+        <h1>Avatar图标预览器</h1>
+        
+        <!-- 预览区 -->
+        <div class="preview-section">
+            <div class="canvas-wrapper">
+                <canvas id="preview-canvas" width="500" height="500"></canvas>
+            </div>
+            
+            <!-- 预览区恢复按钮 -->
+            <button id="canvas-reset-btn" class="reset-btn" style="display: none;">恢复预览区</button>
+        </div>
+        
+        <!-- 操作提示 -->
+        <div class="operation-tips">
+            <h3>操作提示</h3>
+            <p>• 鼠标滚轮：缩放图片（步进5%）</p>
+            <p>• 鼠标左键拖动：移动图片位置</p>
+            <p>• 恢复按钮：重置图片位置和缩放</p>
+        </div>
+        
+        <!-- 身体图片选择和底色选择 -->
+        <div class="selection-row">
+            <!-- 身体图片选择 -->
+            <div class="selection-section">
+                <h3>身体图片选择</h3>
+                <div class="button-group">
+                    <button id="body-none" class="body-btn active">无</button>
+                    <button id="body-male" class="body-btn">男</button>
+                    <button id="body-female" class="body-btn">女</button>
+                </div>
+            </div>
+            
+            <!-- 底色选择 -->
+            <div class="selection-section">
+                <h3>底色选择</h3>
+                <div class="button-group">
+                    <button id="bg-default" class="bg-btn active">默认</button>
+                    <button id="bg-skin" class="bg-btn">肤色</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 按钮A -->
+        <div class="section">
+            <h3>按钮A（顶层图片）</h3>
+            <div class="upload-group">
+                <button id="upload-btn-a" class="upload-btn">上传图片</button>
+                <input type="file" id="file-input-a" accept=".png" style="display: none;">
+                <button id="reset-btn-a" class="reset-btn" style="display: none;">恢复</button>
+            </div>
+        </div>
+        
+        <!-- 按钮B -->
+        <div class="section">
+            <h3>按钮B（底层图片）</h3>
+            <div class="upload-group">
+                <button id="upload-btn-b" class="upload-btn">上传图片</button>
+                <input type="file" id="file-input-b" accept=".png" style="display: none;">
+                <button id="reset-btn-b" class="reset-btn" style="display: none;">恢复</button>
+            </div>
+        </div>
+        
+        <!-- 生成图标按钮 -->
+        <div class="section">
+            <button id="generate-btn" class="generate-btn">生成图标</button>
+        </div>
+    </div>
+
+    <script src="js/preview.js"></script>
+</body>
+</html>

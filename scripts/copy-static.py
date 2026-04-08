@@ -244,11 +244,14 @@ def main():
         if os.path.exists(source):
             copy_directory(source, dest)
     
-    # 复制 gadgets 目录
+    # 复制 gadgets 目录（使用 shutil.copytree 直接复制，不受排除规则影响）
     gadgets_source = os.path.join(src_dir, 'gadgets')
     gadgets_dest = os.path.join(docs_dir, 'gadgets')
     if os.path.exists(gadgets_source):
-        copy_directory(gadgets_source, gadgets_dest)
+        if os.path.exists(gadgets_dest):
+            shutil.rmtree(gadgets_dest)
+        shutil.copytree(gadgets_source, gadgets_dest)
+        print_info(f"复制目录完成: {gadgets_source} -> {gadgets_dest}")
     
     # 复制 src 根目录文件（现在会走copy_file的排除规则）
     if os.path.exists(src_dir):

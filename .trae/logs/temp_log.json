@@ -1,0 +1,5 @@
+{
+  "action": "修改文件",
+  "file": "src/index.html",
+  "desc": "Avatar小图标生成按钮改为可点击，跳转到gadgets/avatar-icon/"
+}

@@ -1,0 +1,491 @@
+/* 全局样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+    font-size: 13px;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* 返回按钮 */
+.back-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.back-btn:hover {
+    background-color: #5a6268;
+}
+
+/* 上传区域 */
+.upload-section {
+    text-align: center;
+    padding: 100px 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-top: 50px;
+}
+
+.upload-section h1 {
+    margin-bottom: 30px;
+    color: #333333;
+    font-size: 2.0em;
+}
+
+.upload-btn {
+    width: 480px;
+    padding: 15px;
+    font-size: 1.2em;
+    background-color: #333333;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 6px rgba(52, 152, 219, 0.3);
+}
+
+.upload-btn:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(52, 152, 219, 0.4);
+}
+
+/* Canvas容器 */
+.canvas-container {
+    margin-top: 50px;
+}
+
+.canvas-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.canvas-item {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.canvas-item canvas {
+    border: 1px solid #ddd;
+    background-color: #F7F7F7;
+    margin-bottom: 15px;
+}
+
+.canvas-item button {
+    padding: 8px 16px;
+    background-color: #333333;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.canvas-item button:hover {
+    background-color: #2980b9;
+}
+
+/* 打包下载按钮 */
+.batch-download-btn {
+    display: block;
+    margin: 30px auto;
+    padding: 12px 30px;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.batch-download-btn:hover {
+    background-color: #219a52;
+}
+
+/* 弹窗样式 */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #333;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #999;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-btn:hover {
+    color: #333;
+}
+
+.modal-body {
+    padding: 20px;
+    flex: 1;
+    overflow: auto;
+}
+
+.crop-container {
+    width: 100%;
+    height: 600px;
+    overflow: hidden;
+}
+
+.crop-container img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.modal-footer {
+    padding: 20px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.btn-primary {
+    background-color: #333333;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .upload-section {
+        padding: 50px 10px;
+        margin-top: 20px;
+    }
+    
+    .upload-section h1 {
+        font-size: 2em;
+    }
+    
+    .upload-btn {
+        padding: 12px 30px;
+        font-size: 1em;
+    }
+    
+    .canvas-list {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .modal-content {
+        width: 95%;
+    }
+    
+    .crop-container {
+        height: 400px;
+    }
+    
+    .back-btn {
+        top: 10px;
+        left: 10px;
+        padding: 8px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .upload-section h1 {
+        font-size: 1.8em;
+    }
+    
+    .upload-btn {
+        padding: 10px 20px;
+        font-size: 0.9em;
+    }
+    
+    .modal-header h2 {
+        font-size: 1.2em;
+    }
+    
+    .crop-container {
+        height: 300px;
+    }
+}
+
+/* 预览页面样式 */
+.preview-page h1 {
+    text-align: center;
+    color: #333333;
+    font-size: 2em;
+}
+
+/* 预览区样式 */
+.preview-section {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.canvas-wrapper {
+    display: inline-block;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+#preview-canvas {
+    background-color: #F7F7F7;
+    cursor: move;
+}
+
+/* 重置按钮样式 */
+.reset-btn {
+    margin-top: 15px;
+    padding: 8px 16px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.reset-btn:hover {
+    background-color: #5a6268;
+}
+
+/* 操作提示样式 */
+.operation-tips {
+    margin-bottom: 30px;
+}
+
+.operation-tips h3 {
+    color: #333333;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.operation-tips p {
+    margin: 8px 0;
+    color: #666;
+}
+
+/* 分区样式 */
+.section {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.section h3 {
+    color: #333333;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+/* 选择行样式 */
+.selection-row {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 20px;
+}
+
+.selection-section {
+    flex: 1;
+}
+
+/* 按钮组样式 */
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.body-btn, .bg-btn {
+    padding: 10px 20px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+    min-width: 80px;
+}
+
+.body-btn:hover, .bg-btn:hover {
+    border-color: #333333;
+    color: #333333;
+}
+
+.body-btn.active, .bg-btn.active {
+    background-color: #333333;
+    color: white;
+    border-color: #333333;
+}
+
+/* 上传组样式 */
+.upload-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* 生成图标按钮样式 */
+.generate-btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.2em;
+    font-weight: bold;
+    transition: background-color 0.3s;
+    position: relative;
+    z-index: 1000;
+}
+
+.generate-btn:hover {
+    background-color: #219a52;
+}
+
+/* 预览页面响应式设计 */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2em;
+        margin: 20px 0;
+    }
+    
+    .canvas-wrapper {
+        max-width: 100%;
+    }
+    
+    #preview-canvas {
+        width: 100%;
+        height: auto;
+    }
+    
+    .button-group {
+        justify-content: center;
+    }
+    
+    .upload-group {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.8em;
+    }
+    
+    .section {
+        padding: 15px;
+    }
+    
+    .section h3 {
+        font-size: 1.1em;
+    }
+    
+    .body-btn, .bg-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+        min-width: 70px;
+    }
+    
+    .generate-btn {
+        padding: 12px;
+        font-size: 1.1em;
+    }
+}
