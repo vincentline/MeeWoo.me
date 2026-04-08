@@ -285,7 +285,7 @@ class AvatarPreviewer {
     }
     
     selectBgColor(colorType) {
-        this.currentBgColor = colorType === 'default' ? '#F7F7F7' : '#FFDAB9';
+        this.currentBgColor = colorType === 'default' ? '#F7F7F7' : '#fff0e5';
         
         // 更新按钮状态
         document.querySelectorAll('.bg-btn').forEach(btn => {
