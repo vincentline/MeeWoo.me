@@ -5,6 +5,24 @@
 
 ## 记录列表
 
+[2026-04-22 21:06:27] 【修改文件】 : src/gadgets/avatar-icon/js/preview.js - 完善取消选中功能：再次点击已选中的图片可取消选中；提取 deselectNode 方法统一处理取消选中逻辑
+[2026-04-22 19:54:05] 【修改文件】 : src/gadgets/avatar-icon/js/preview.js - 添加鼠标悬停激活功能：hover上传按钮时自动激活对应图层，可直接粘贴图片
+[2026-04-22 19:39:29] 【修改文件】 : src/gadgets/avatar-icon/js/cutout-tool.js - 修复AI抠图逻辑：将背景标记为红色删除区域，前景标记为绿色保留区域；修复应用抠图逻辑，精确识别红色删除区域
+[2026-04-22 19:32:38] 【修改文件】 : src/gadgets/avatar-icon/js/cutout-tool.js - 添加面板拖动功能，修复抠图应用逻辑（检查蒙版透明度）
+[2026-04-22 19:32:37] 【修改文件】 : src/gadgets/avatar-icon/css/style.css - 抠图面板添加可拖动样式
+[2026-04-22 18:36:59] 【修改文件】 : src/gadgets/avatar-icon/css/style.css - 添加抠图工具面板和按钮样式
+[2026-04-22 18:36:58] 【修改文件】 : src/gadgets/avatar-icon/index.html - 添加抠图按钮和抠图工具面板UI
+[2026-04-22 18:36:56] 【修改文件】 : src/gadgets/avatar-icon/js/preview.js - 集成抠图工具模块，添加抠图按钮显示逻辑
+[2026-04-22 18:36:54] 【新增文件】 : src/gadgets/avatar-icon/js/cutout-tool.js - 新增抠图工具模块，支持AI人像抠图和手动精细抠图
+[2026-04-22 18:30:32] 【修改文件】 : src/gadgets/avatar-icon/js/preview.js - 修复拖动逻辑：图片默认不可拖动，只有选中后才可拖动；未选中时拖动的是画布
+[2026-04-22 18:28:49] 【修改文件】 : src/gadgets/avatar-icon/index.html - 更新操作提示，添加粘贴图片功能说明
+[2026-04-22 18:28:48] 【修改文件】 : src/gadgets/avatar-icon/js/preview.js - 添加粘贴图片功能：点击上传按钮或选中图层后，可按 Ctrl+V 粘贴图片
+[2026-04-22 18:20:09] 【修改文件】 : src/gadgets/avatar-icon/js/preview.js - 修复关键bug：添加 layer.add(konvaImage) 将图片添加到图层；简化 Stage 初始化逻辑，移除不必要的缩放
+[2026-04-22 17:57:22] 【修改文件】 : vite.config.js - 添加 avatar-icon 页面入口到多页应用配置
+[2026-04-22 17:57:20] 【修改文件】 : src/gadgets/avatar-icon/index.html - 添加 type=module 属性以支持 ES6 模块导入
+[2026-04-22 17:56:02] 【修改文件】 : src/gadgets/avatar-icon/css/style.css - 适配 Konva 容器样式，新增导出素材按钮样式
+[2026-04-22 17:56:01] 【修改文件】 : src/gadgets/avatar-icon/js/preview.js - 重写为 Konva 版本，实现 750x750 画布编辑器，支持画布缩放/平移、图层选中编辑、单层透明导出
+[2026-04-22 17:55:58] 【修改文件】 : src/gadgets/avatar-icon/index.html - 删除页面标题，替换原生 canvas 为 Konva 容器，新增 A/B 导出素材按钮
 [2026-03-14 18:42:32] 【修改文件】 : src/assets/js/core/app.js - 修复双通道MP4弹窗静音默认值：在所有入口点(SVGA/MP4/Lottie/序列帧)初始化时重置muted为true
 [2026-03-14 18:29:31] 【修改文件】 : src/assets/js/mixins/panel-mixin.js - 修复双通道MP4弹窗静音默认值：父组件 dualChannelConfig.muted 改为 true
 [2026-03-14 17:49:28] 【修改文件】 : src/assets/js/components/dual-channel-panel.js - SVGA转双通道MP4弹窗，静音开关默认打开（muted默认值改为true）

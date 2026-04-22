@@ -1,467 +1,625 @@
-// Avatar图标预览器 - 主脚本
+/**
+ * Avatar图标预览器 - Konva版本
+ * 基于 Konva 实现的 750x750 画布编辑器
+ */
+
+import Konva from 'konva';
 
 class AvatarPreviewer {
-    constructor() {
-        this.canvas = document.getElementById('preview-canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.canvasWidth = 500;
-        this.canvasHeight = 500;
-        
-        // 图片数据
-        this.imageA = null;
-        this.imageB = null;
-        this.bodyImage = null;
-        this.imageAFileName = '';
-        
-        // 图片状态
-        this.imageAState = { x: 0, y: 0, scale: 1 };
-        this.imageBState = { x: 0, y: 0, scale: 1 };
-        this.bodyImageState = { x: 0, y: 0, scale: 1 };
-        
-        // UI状态
-        this.currentBodyType = 'none';
-        this.currentBgColor = '#F7F7F7';
-        this.isDragging = false;
-        this.dragTarget = null;
-        this.lastX = 0;
-        this.lastY = 0;
-        
-        // 初始化
-        this.init();
-    }
+  constructor() {
+    this.canvasWidth = 750;
+    this.canvasHeight = 750;
     
-    init() {
-        this.setupCanvas();
-        this.bindEvents();
-        this.drawCanvas();
-    }
+    this.stage = null;
+    this.layer = null;
+    this.transformer = null;
+    this.backgroundRect = null;
+    this.bodyImage = null;
+    this.imageA = null;
+    this.imageB = null;
     
-    setupCanvas() {
-        this.canvas.width = this.canvasWidth;
-        this.canvas.height = this.canvasHeight;
-    }
+    this.imageAFileName = '';
+    this.currentBodyType = 'none';
+    this.currentBgColor = '#F7F7F7';
     
-    bindEvents() {
-        console.log('开始绑定事件');
-        
-        // 按钮A上传
-        const uploadBtnA = document.getElementById('upload-btn-a');
-        console.log('upload-btn-a:', uploadBtnA);
-        if (uploadBtnA) {
-            uploadBtnA.addEventListener('click', () => {
-                document.getElementById('file-input-a').click();
-            });
-            
-            // 添加拖放功能
-            uploadBtnA.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadBtnA.style.backgroundColor = '#2980b9';
-            });
-            
-            uploadBtnA.addEventListener('dragleave', () => {
-                uploadBtnA.style.backgroundColor = '#333333';
-            });
-            
-            uploadBtnA.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadBtnA.style.backgroundColor = '#333333';
-                
-                const file = e.dataTransfer.files[0];
-                if (file && file.type === 'image/png') {
-                    const fileInputA = document.getElementById('file-input-a');
-                    if (fileInputA) {
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(file);
-                        fileInputA.files = dataTransfer.files;
-                        this.handleFileUpload({ target: fileInputA }, 'A');
-                    }
-                }
-            });
+    this.selectedNode = null;
+    this.activeUploadTarget = null;
+    
+    this.init();
+  }
+  
+  init() {
+    this.setupStage();
+    this.bindEvents();
+    this.bindPasteEvent();
+  }
+  
+  setupStage() {
+    this.stage = new Konva.Stage({
+      container: 'konva-container',
+      width: this.canvasWidth,
+      height: this.canvasHeight,
+      draggable: true
+    });
+    
+    this.layer = new Konva.Layer();
+    this.stage.add(this.layer);
+    
+    this.backgroundRect = new Konva.Rect({
+      x: 0,
+      y: 0,
+      width: this.canvasWidth,
+      height: this.canvasHeight,
+      fill: this.currentBgColor
+    });
+    this.layer.add(this.backgroundRect);
+    
+    this.transformer = new Konva.Transformer({
+      rotateEnabled: false,
+      boundBoxFunc: (oldBox, newBox) => {
+        if (newBox.width < 10 || newBox.height < 10) {
+          return oldBox;
         }
-        
-        const fileInputA = document.getElementById('file-input-a');
-        console.log('file-input-a:', fileInputA);
-        if (fileInputA) {
-            fileInputA.addEventListener('change', (e) => {
-                this.handleFileUpload(e, 'A');
-            });
+        return newBox;
+      }
+    });
+    this.layer.add(this.transformer);
+    
+    this.layer.draw();
+    
+    this.stage.on('mouseenter', () => {
+      if (!this.selectedNode) {
+        this.stage.draggable(true);
+      }
+    });
+    
+    this.stage.on('wheel', (e) => {
+      e.evt.preventDefault();
+      this.handleWheelZoom(e);
+    });
+    
+    this.stage.on('click tap', (e) => {
+      this.handleStageClick(e);
+    });
+  }
+  
+  handleWheelZoom(e) {
+    const oldScale = this.stage.scaleX();
+    const pointer = this.stage.getPointerPosition();
+    
+    const mousePointTo = {
+      x: (pointer.x - this.stage.x()) / oldScale,
+      y: (pointer.y - this.stage.y()) / oldScale
+    };
+    
+    const direction = e.evt.deltaY > 0 ? -1 : 1;
+    const newScale = direction > 0 ? oldScale * 1.05 : oldScale / 1.05;
+    
+    this.stage.scale({ x: newScale, y: newScale });
+    
+    const newPos = {
+      x: pointer.x - mousePointTo.x * newScale,
+      y: pointer.y - mousePointTo.y * newScale
+    };
+    this.stage.position(newPos);
+    this.stage.batchDraw();
+    
+    document.getElementById('canvas-reset-btn').style.display = 'block';
+  }
+  
+  handleStageClick(e) {
+    if (e.target === this.stage || e.target === this.backgroundRect) {
+      this.deselectNode();
+    }
+  }
+  
+  bindPasteEvent() {
+    document.addEventListener('paste', (e) => {
+      if (!this.activeUploadTarget) {
+        return;
+      }
+      
+      const items = e.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const file = items[i].getAsFile();
+          
+          if (this.activeUploadTarget === 'A') {
+            this.imageAFileName = 'pasted_image.png';
+          }
+          
+          this.handleFileFromClipboard(file, this.activeUploadTarget);
+          break;
         }
-        
-        // 按钮B上传
-        const uploadBtnB = document.getElementById('upload-btn-b');
-        console.log('upload-btn-b:', uploadBtnB);
-        if (uploadBtnB) {
-            uploadBtnB.addEventListener('click', () => {
-                document.getElementById('file-input-b').click();
-            });
-            
-            // 添加拖放功能
-            uploadBtnB.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadBtnB.style.backgroundColor = '#2980b9';
-            });
-            
-            uploadBtnB.addEventListener('dragleave', () => {
-                uploadBtnB.style.backgroundColor = '#333333';
-            });
-            
-            uploadBtnB.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadBtnB.style.backgroundColor = '#333333';
-                
-                const file = e.dataTransfer.files[0];
-                if (file && file.type === 'image/png') {
-                    const fileInputB = document.getElementById('file-input-b');
-                    if (fileInputB) {
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(file);
-                        fileInputB.files = dataTransfer.files;
-                        this.handleFileUpload({ target: fileInputB }, 'B');
-                    }
-                }
-            });
-        }
-        
-        const fileInputB = document.getElementById('file-input-b');
-        console.log('file-input-b:', fileInputB);
-        if (fileInputB) {
-            fileInputB.addEventListener('change', (e) => {
-                this.handleFileUpload(e, 'B');
-            });
-        }
-        
-        // 按钮A恢复
-        const resetBtnA = document.getElementById('reset-btn-a');
-        console.log('reset-btn-a:', resetBtnA);
-        if (resetBtnA) {
-            resetBtnA.addEventListener('click', () => {
-                this.resetImageA();
-            });
-        }
-        
-        // 按钮B恢复
-        const resetBtnB = document.getElementById('reset-btn-b');
-        console.log('reset-btn-b:', resetBtnB);
-        if (resetBtnB) {
-            resetBtnB.addEventListener('click', () => {
-                this.resetImageB();
-            });
-        }
-        
-        // 预览区恢复
-        const canvasResetBtn = document.getElementById('canvas-reset-btn');
-        console.log('canvas-reset-btn:', canvasResetBtn);
-        if (canvasResetBtn) {
-            canvasResetBtn.addEventListener('click', () => {
-                this.resetCanvas();
-            });
-        }
-        
-        // 身体图片选择
-        const bodyBtns = document.querySelectorAll('.body-btn');
-        console.log('body-btn数量:', bodyBtns.length);
-        bodyBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.selectBodyType(e.target.id.replace('body-', ''));
-            });
-        });
-        
-        // 底色选择
-        const bgBtns = document.querySelectorAll('.bg-btn');
-        console.log('bg-btn数量:', bgBtns.length);
-        bgBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.selectBgColor(e.target.id.replace('bg-', ''));
-            });
-        });
-        
-        // 生成图标
-        const generateBtn = document.getElementById('generate-btn');
-        console.log('generate-btn:', generateBtn);
-        if (generateBtn) {
-            generateBtn.addEventListener('click', () => {
-                console.log('点击生成图标按钮');
-                this.generateIcon();
-            });
+      }
+    });
+  }
+  
+  handleFileFromClipboard(file, type) {
+    const reader = new FileReader();
+    
+    reader.onload = (event) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        if (type === 'A') {
+          if (!this.imageAFileName || this.imageAFileName === 'pasted_image.png') {
+            this.imageAFileName = 'pasted_image.png';
+          }
+          document.getElementById('reset-btn-a').style.display = 'inline-block';
+          document.getElementById('export-btn-a').style.display = 'inline-block';
+          this.addImageToLayer(img, 'A');
         } else {
-            console.error('找不到generate-btn按钮');
+          document.getElementById('reset-btn-b').style.display = 'inline-block';
+          document.getElementById('export-btn-b').style.display = 'inline-block';
+          this.addImageToLayer(img, 'B');
         }
+      };
+      img.src = event.target.result;
+    };
+    
+    reader.readAsDataURL(file);
+  }
+  
+  bindEvents() {
+    const uploadBtnA = document.getElementById('upload-btn-a');
+    if (uploadBtnA) {
+      uploadBtnA.addEventListener('click', () => {
+        this.activeUploadTarget = 'A';
+        document.getElementById('file-input-a').click();
+      });
+      
+      uploadBtnA.addEventListener('mouseenter', () => {
+        this.activeUploadTarget = 'A';
+      });
+      
+      uploadBtnA.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadBtnA.style.backgroundColor = '#2980b9';
+        this.activeUploadTarget = 'A';
+      });
+      
+      uploadBtnA.addEventListener('dragleave', () => {
+        uploadBtnA.style.backgroundColor = '#333333';
+      });
+      
+      uploadBtnA.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadBtnA.style.backgroundColor = '#333333';
+        this.activeUploadTarget = 'A';
         
-        // Canvas鼠标事件
-        this.canvas.addEventListener('mousedown', (e) => {
-            this.handleMouseDown(e);
-        });
-        
-        this.canvas.addEventListener('mousemove', (e) => {
-            this.handleMouseMove(e);
-        });
-        
-        this.canvas.addEventListener('mouseup', () => {
-            this.handleMouseUp();
-        });
-        
-        this.canvas.addEventListener('mouseleave', () => {
-            this.handleMouseUp();
-        });
-        
-        // 滚轮缩放
-        this.canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            this.handleWheelZoom(e);
-        });
+        const file = e.dataTransfer.files[0];
+        if (file && file.type === 'image/png') {
+          const fileInputA = document.getElementById('file-input-a');
+          if (fileInputA) {
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInputA.files = dataTransfer.files;
+            this.handleFileUpload({ target: fileInputA }, 'A');
+          }
+        }
+      });
     }
     
-    handleFileUpload(e, type) {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        
-        reader.onload = (event) => {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => {
-                if (type === 'A') {
-                    this.imageA = img;
-                    this.imageAFileName = file.name;
-                    document.getElementById('reset-btn-a').style.display = 'inline-block';
-                } else {
-                    this.imageB = img;
-                    document.getElementById('reset-btn-b').style.display = 'inline-block';
-                }
-                this.drawCanvas();
-            };
-            img.src = event.target.result;
-        };
-        
-        reader.readAsDataURL(file);
+    const fileInputA = document.getElementById('file-input-a');
+    if (fileInputA) {
+      fileInputA.addEventListener('change', (e) => {
+        this.handleFileUpload(e, 'A');
+      });
     }
     
-    resetImageA() {
-        this.imageA = null;
-        this.imageAFileName = '';
-        this.imageAState = { x: 0, y: 0, scale: 1 };
-        document.getElementById('reset-btn-a').style.display = 'none';
-        this.drawCanvas();
-    }
-    
-    resetImageB() {
-        this.imageB = null;
-        this.imageBState = { x: 0, y: 0, scale: 1 };
-        document.getElementById('reset-btn-b').style.display = 'none';
-        this.drawCanvas();
-    }
-    
-    resetCanvas() {
-        this.imageAState = { x: 0, y: 0, scale: 1 };
-        this.imageBState = { x: 0, y: 0, scale: 1 };
-        this.bodyImageState = { x: 0, y: 0, scale: 1 };
-        document.getElementById('canvas-reset-btn').style.display = 'none';
-        this.drawCanvas();
-    }
-    
-    selectBodyType(type) {
-        this.currentBodyType = type;
+    const uploadBtnB = document.getElementById('upload-btn-b');
+    if (uploadBtnB) {
+      uploadBtnB.addEventListener('click', () => {
+        this.activeUploadTarget = 'B';
+        document.getElementById('file-input-b').click();
+      });
+      
+      uploadBtnB.addEventListener('mouseenter', () => {
+        this.activeUploadTarget = 'B';
+      });
+      
+      uploadBtnB.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadBtnB.style.backgroundColor = '#2980b9';
+        this.activeUploadTarget = 'B';
+      });
+      
+      uploadBtnB.addEventListener('dragleave', () => {
+        uploadBtnB.style.backgroundColor = '#333333';
+      });
+      
+      uploadBtnB.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadBtnB.style.backgroundColor = '#333333';
+        this.activeUploadTarget = 'B';
         
-        // 更新按钮状态
-        document.querySelectorAll('.body-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.getElementById(`body-${type}`).classList.add('active');
-        
-        // 加载身体图片
-        if (type !== 'none') {
-            this.bodyImage = new Image();
-            this.bodyImage.crossOrigin = 'anonymous';
-            // 使用本地图片
-            this.bodyImage.src = `img/${type === 'male' ? 'nan' : 'nv'}.png`;
-            this.bodyImage.onload = () => {
-                this.drawCanvas();
-            };
+        const file = e.dataTransfer.files[0];
+        if (file && file.type === 'image/png') {
+          const fileInputB = document.getElementById('file-input-b');
+          if (fileInputB) {
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInputB.files = dataTransfer.files;
+            this.handleFileUpload({ target: fileInputB }, 'B');
+          }
+        }
+      });
+    }
+    
+    const fileInputB = document.getElementById('file-input-b');
+    if (fileInputB) {
+      fileInputB.addEventListener('change', (e) => {
+        this.handleFileUpload(e, 'B');
+      });
+    }
+    
+    const resetBtnA = document.getElementById('reset-btn-a');
+    if (resetBtnA) {
+      resetBtnA.addEventListener('click', () => {
+        this.resetImageA();
+      });
+    }
+    
+    const resetBtnB = document.getElementById('reset-btn-b');
+    if (resetBtnB) {
+      resetBtnB.addEventListener('click', () => {
+        this.resetImageB();
+      });
+    }
+    
+    const exportBtnA = document.getElementById('export-btn-a');
+    if (exportBtnA) {
+      exportBtnA.addEventListener('click', () => {
+        this.exportSingleLayer('A');
+      });
+    }
+    
+    const exportBtnB = document.getElementById('export-btn-b');
+    if (exportBtnB) {
+      exportBtnB.addEventListener('click', () => {
+        this.exportSingleLayer('B');
+      });
+    }
+    
+    const canvasResetBtn = document.getElementById('canvas-reset-btn');
+    if (canvasResetBtn) {
+      canvasResetBtn.addEventListener('click', () => {
+        this.resetCanvas();
+      });
+    }
+    
+    const bodyBtns = document.querySelectorAll('.body-btn');
+    bodyBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        this.selectBodyType(e.target.id.replace('body-', ''));
+      });
+    });
+    
+    const bgBtns = document.querySelectorAll('.bg-btn');
+    bgBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        this.selectBgColor(e.target.id.replace('bg-', ''));
+      });
+    });
+    
+    const generateBtn = document.getElementById('generate-btn');
+    if (generateBtn) {
+      generateBtn.addEventListener('click', () => {
+        this.generateIcon();
+      });
+    }
+  }
+  
+  handleFileUpload(e, type) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    
+    reader.onload = (event) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        if (type === 'A') {
+          this.imageAFileName = file.name;
+          document.getElementById('reset-btn-a').style.display = 'inline-block';
+          document.getElementById('export-btn-a').style.display = 'inline-block';
+          this.addImageToLayer(img, 'A');
         } else {
-            this.bodyImage = null;
-            this.drawCanvas();
+          document.getElementById('reset-btn-b').style.display = 'inline-block';
+          document.getElementById('export-btn-b').style.display = 'inline-block';
+          this.addImageToLayer(img, 'B');
         }
+      };
+      img.src = event.target.result;
+    };
+    
+    reader.readAsDataURL(file);
+  }
+  
+  addImageToLayer(img, type) {
+    const scale = Math.min(
+      this.canvasWidth / img.width,
+      this.canvasHeight / img.height
+    );
+    
+    const width = img.width * scale;
+    const height = img.height * scale;
+    
+    const konvaImage = new Konva.Image({
+      image: img,
+      x: this.canvasWidth / 2,
+      y: this.canvasHeight / 2,
+      width: width,
+      height: height,
+      offsetX: width / 2,
+      offsetY: height / 2,
+      draggable: false
+    });
+    
+    konvaImage.on('click tap', (e) => {
+      if (this.selectedNode === konvaImage) {
+        this.deselectNode();
+      } else {
+        this.selectNode(konvaImage);
+      }
+      e.cancelBubble = true;
+    });
+    
+    if (type === 'A') {
+      if (this.imageA) {
+        this.imageA.destroy();
+      }
+      this.imageA = konvaImage;
+      konvaImage.name('imageA');
+    } else {
+      if (this.imageB) {
+        this.imageB.destroy();
+      }
+      this.imageB = konvaImage;
+      konvaImage.name('imageB');
     }
     
-    selectBgColor(colorType) {
-        this.currentBgColor = colorType === 'default' ? '#F7F7F7' : '#fff0e5';
+    this.layer.add(konvaImage);
+    this.updateLayerOrder();
+    this.layer.draw();
+  }
+  
+  selectNode(node) {
+    if (this.selectedNode && this.selectedNode !== node) {
+      this.selectedNode.draggable(false);
+    }
+    
+    this.selectedNode = node;
+    node.draggable(true);
+    this.transformer.nodes([node]);
+    this.stage.draggable(false);
+    
+    if (node.name() === 'imageA') {
+      this.activeUploadTarget = 'A';
+    } else if (node.name() === 'imageB') {
+      this.activeUploadTarget = 'B';
+    }
+    
+    this.layer.draw();
+  }
+  
+  deselectNode() {
+    if (this.selectedNode) {
+      this.selectedNode.draggable(false);
+    }
+    this.transformer.nodes([]);
+    this.selectedNode = null;
+    this.stage.draggable(true);
+    this.layer.draw();
+  }
+  
+  updateLayerOrder() {
+    this.backgroundRect.moveToBottom();
+    
+    if (this.imageB) {
+      this.imageB.moveToTop();
+    }
+    
+    if (this.bodyImage) {
+      this.bodyImage.moveToTop();
+    }
+    
+    if (this.imageA) {
+      this.imageA.moveToTop();
+    }
+    
+    this.transformer.moveToTop();
+  }
+  
+  resetImageA() {
+    if (this.imageA) {
+      this.imageA.destroy();
+      this.imageA = null;
+    }
+    this.imageAFileName = '';
+    document.getElementById('reset-btn-a').style.display = 'none';
+    document.getElementById('export-btn-a').style.display = 'none';
+    this.transformer.nodes([]);
+    this.selectedNode = null;
+    this.layer.draw();
+  }
+  
+  resetImageB() {
+    if (this.imageB) {
+      this.imageB.destroy();
+      this.imageB = null;
+    }
+    document.getElementById('reset-btn-b').style.display = 'none';
+    document.getElementById('export-btn-b').style.display = 'none';
+    this.transformer.nodes([]);
+    this.selectedNode = null;
+    this.layer.draw();
+  }
+  
+  resetCanvas() {
+    this.stage.position({ x: 0, y: 0 });
+    this.stage.scale({ x: 1, y: 1 });
+    document.getElementById('canvas-reset-btn').style.display = 'none';
+    this.stage.batchDraw();
+  }
+  
+  selectBodyType(type) {
+    this.currentBodyType = type;
+    
+    document.querySelectorAll('.body-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    document.getElementById(`body-${type}`).classList.add('active');
+    
+    if (this.bodyImage) {
+      this.bodyImage.destroy();
+      this.bodyImage = null;
+    }
+    
+    if (type !== 'none') {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = `img/${type === 'male' ? 'nan' : 'nv'}.png`;
+      img.onload = () => {
+        const scale = Math.min(
+          this.canvasWidth / img.width,
+          this.canvasHeight / img.height
+        );
         
-        // 更新按钮状态
-        document.querySelectorAll('.bg-btn').forEach(btn => {
-            btn.classList.remove('active');
+        const width = img.width * scale;
+        const height = img.height * scale;
+        
+        this.bodyImage = new Konva.Image({
+          image: img,
+          x: this.canvasWidth / 2,
+          y: this.canvasHeight / 2,
+          width: width,
+          height: height,
+          offsetX: width / 2,
+          offsetY: height / 2
         });
-        document.getElementById(`bg-${colorType}`).classList.add('active');
         
-        this.drawCanvas();
+        this.bodyImage.name('bodyImage');
+        this.layer.add(this.bodyImage);
+        this.updateLayerOrder();
+        this.layer.draw();
+      };
+    } else {
+      this.layer.draw();
+    }
+  }
+  
+  selectBgColor(colorType) {
+    this.currentBgColor = colorType === 'default' ? '#F7F7F7' : '#fff0e5';
+    
+    document.querySelectorAll('.bg-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    document.getElementById(`bg-${colorType}`).classList.add('active');
+    
+    this.backgroundRect.fill(this.currentBgColor);
+    this.layer.draw();
+  }
+  
+  generateIcon() {
+    if (!this.imageA) {
+      alert('请先上传按钮A的图片');
+      return;
     }
     
-    drawCanvas() {
-        // 清空画布
-        this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-        
-        // 绘制背景
-        this.ctx.fillStyle = this.currentBgColor;
-        this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
-        
-        // 绘制底层图片（按钮B）
-        if (this.imageB) {
-            this.drawImageWithTransform(this.ctx, this.imageB, this.imageBState);
-        }
-        
-        // 绘制身体图片
-        if (this.bodyImage) {
-            this.drawImageWithTransform(this.ctx, this.bodyImage, this.bodyImageState);
-        }
-        
-        // 绘制顶层图片（按钮A）
-        if (this.imageA) {
-            this.drawImageWithTransform(this.ctx, this.imageA, this.imageAState);
-        }
+    const exportStage = new Konva.Stage({
+      container: document.createElement('div'),
+      width: this.canvasWidth,
+      height: this.canvasHeight
+    });
+    
+    const exportLayer = new Konva.Layer();
+    exportStage.add(exportLayer);
+    
+    const exportBg = new Konva.Rect({
+      x: 0,
+      y: 0,
+      width: this.canvasWidth,
+      height: this.canvasHeight,
+      fill: this.currentBgColor
+    });
+    exportLayer.add(exportBg);
+    
+    if (this.imageB) {
+      const cloneB = this.imageB.clone();
+      exportLayer.add(cloneB);
     }
     
-    drawImageWithTransform(ctx, image, state) {
-        ctx.save();
-        
-        // 根据目标canvas的尺寸调整绘制
-        const targetWidth = ctx.canvas.width;
-        const targetHeight = ctx.canvas.height;
-        
-        ctx.translate(targetWidth / 2 + state.x * (targetWidth / this.canvasWidth), targetHeight / 2 + state.y * (targetHeight / this.canvasHeight));
-        ctx.scale(state.scale, state.scale);
-        ctx.drawImage(image, -targetWidth / 2, -targetHeight / 2, targetWidth, targetHeight);
-        
-        ctx.restore();
+    if (this.bodyImage) {
+      const cloneBody = this.bodyImage.clone();
+      exportLayer.add(cloneBody);
     }
     
-    handleMouseDown(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        this.lastX = e.clientX - rect.left;
-        this.lastY = e.clientY - rect.top;
-        this.isDragging = true;
-        
-        // 确定拖动目标（优先顶层图片）
-        if (this.imageA) {
-            this.dragTarget = 'A';
-        } else if (this.bodyImage) {
-            this.dragTarget = 'body';
-        } else if (this.imageB) {
-            this.dragTarget = 'B';
-        }
+    if (this.imageA) {
+      const cloneA = this.imageA.clone();
+      exportLayer.add(cloneA);
     }
     
-    handleMouseMove(e) {
-        if (!this.isDragging) return;
-        
-        const rect = this.canvas.getBoundingClientRect();
-        const currentX = e.clientX - rect.left;
-        const currentY = e.clientY - rect.top;
-        
-        const deltaX = currentX - this.lastX;
-        const deltaY = currentY - this.lastY;
-        
-        // 更新所有图片的位置（保持对齐）
-        this.imageAState.x += deltaX;
-        this.imageAState.y += deltaY;
-        this.bodyImageState.x += deltaX;
-        this.bodyImageState.y += deltaY;
-        this.imageBState.x += deltaX;
-        this.imageBState.y += deltaY;
-        
-        this.lastX = currentX;
-        this.lastY = currentY;
-        
-        // 显示恢复按钮
-        document.getElementById('canvas-reset-btn').style.display = 'block';
-        
-        this.drawCanvas();
+    exportLayer.draw();
+    
+    const dataURL = exportStage.toDataURL({ pixelRatio: 1 });
+    
+    const baseName = this.imageAFileName.replace(/\.[^/.]+$/, '');
+    const fileName = 'btn_' + baseName + '.png';
+    
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = dataURL;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    exportStage.destroy();
+  }
+  
+  exportSingleLayer(type) {
+    const targetImage = type === 'A' ? this.imageA : this.imageB;
+    
+    if (!targetImage) {
+      alert(`请先上传按钮${type}的图片`);
+      return;
     }
     
-    handleMouseUp() {
-        this.isDragging = false;
-        this.dragTarget = null;
-    }
+    const exportStage = new Konva.Stage({
+      container: document.createElement('div'),
+      width: this.canvasWidth,
+      height: this.canvasHeight
+    });
     
-    handleWheelZoom(e) {
-        // 检查是否有任何图片
-        if (!this.imageA && !this.bodyImage && !this.imageB) return;
-        
-        const delta = e.deltaY > 0 ? -0.05 : 0.05; // 缩放步进5%
-        
-        // 更新所有图片的缩放比例（保持对齐）
-        this.imageAState.scale = Math.max(0.1, Math.min(5, this.imageAState.scale + delta));
-        this.bodyImageState.scale = Math.max(0.1, Math.min(5, this.bodyImageState.scale + delta));
-        this.imageBState.scale = Math.max(0.1, Math.min(5, this.imageBState.scale + delta));
-        
-        // 显示恢复按钮
-        document.getElementById('canvas-reset-btn').style.display = 'block';
-        
-        this.drawCanvas();
-    }
+    const exportLayer = new Konva.Layer();
+    exportStage.add(exportLayer);
     
-    generateIcon() {
-        console.log('开始生成图标');
-        console.log('imageA:', this.imageA);
-        console.log('imageAFileName:', this.imageAFileName);
-        
-        if (!this.imageA) {
-            console.log('没有上传按钮A的图片');
-            alert('请先上传按钮A的图片');
-            return;
-        }
-        
-        // 创建临时canvas用于生成图标
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = 198;
-        tempCanvas.height = 198;
-        const tempCtx = tempCanvas.getContext('2d');
-        
-        // 绘制背景
-        tempCtx.fillStyle = this.currentBgColor;
-        tempCtx.fillRect(0, 0, 198, 198);
-        
-        // 绘制底层图片（按钮B）
-        if (this.imageB && this.imageB.complete) {
-            this.drawImageWithTransform(tempCtx, this.imageB, this.imageBState);
-        }
-        
-        // 绘制身体图片
-        if (this.bodyImage && this.bodyImage.complete) {
-            this.drawImageWithTransform(tempCtx, this.bodyImage, this.bodyImageState);
-        }
-        
-        // 绘制顶层图片（按钮A）
-        if (this.imageA && this.imageA.complete) {
-            this.drawImageWithTransform(tempCtx, this.imageA, this.imageAState);
-        }
-        
-        // 生成文件名
-        const baseName = this.imageAFileName.replace(/\.[^/.]+$/, '');
-        const fileName = 'btn_' + baseName + '.png';
-        
-        // 下载图片
-        try {
-            const dataURL = tempCanvas.toDataURL('image/png');
-            console.log('生成的dataURL长度:', dataURL.length);
-            
-            const link = document.createElement('a');
-            link.download = fileName;
-            link.href = dataURL;
-            
-            // 添加到DOM并触发点击
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            console.log('图片下载成功');
-        } catch (error) {
-            console.error('下载图片失败:', error);
-            alert('生成图标失败，请重试');
-        }
-    }
+    const clone = targetImage.clone();
+    exportLayer.add(clone);
+    
+    exportLayer.draw();
+    
+    const dataURL = exportStage.toDataURL({ pixelRatio: 1 });
+    
+    const baseName = type === 'A' 
+      ? this.imageAFileName.replace(/\.[^/.]+$/, '')
+      : 'layer_B';
+    const fileName = `${baseName}_750x750.png`;
+    
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = dataURL;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    exportStage.destroy();
+  }
 }
 
-// 初始化应用
 document.addEventListener('DOMContentLoaded', () => {
-    new AvatarPreviewer();
+  new AvatarPreviewer();
 });
