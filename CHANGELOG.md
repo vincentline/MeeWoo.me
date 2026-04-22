@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/vincentline/MeeWoo.me/compare/v1.1.0...v1.2.0) (2026-04-22)
+
+
+### Features
+
+* **avatar-icon:** 重构预览器为基于Konva的画布编辑器 ([2662d6b](https://github.com/vincentline/MeeWoo.me/commit/2662d6b65cd97799ab304cfb47115137d873ce34))
+* **ui:** 添加Avatar小图标生成工具入口 ([62135b6](https://github.com/vincentline/MeeWoo.me/commit/62135b68dce4486b86d1e0b0b3eb0f85823c63e6))
+
+
+### Bug Fixes
+
+* **ui:** Avatar图标预览器肤色改为#fff0e5 ([d13c91e](https://github.com/vincentline/MeeWoo.me/commit/d13c91ebe1cfe74bc9c78a55dd99fd1ed99e5b6f))
+
 ## [1.1.0](https://github.com/vincentline/MeeWoo.me/compare/v1.0.0...v1.1.0) (2026-03-30)
 
 
