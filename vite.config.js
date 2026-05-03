@@ -89,7 +89,8 @@ export default defineConfig({
         index: resolve(__dirname, 'src', 'index.html'),
         '404': resolve(__dirname, 'src', '404.html'),
         'gadgets/fix_garbled_text': resolve(__dirname, 'src', 'gadgets/fix_garbled_text.html'),
-        'gadgets/png_compression': resolve(__dirname, 'src', 'gadgets/png_compression.html')
+        'gadgets/png_compression': resolve(__dirname, 'src', 'gadgets/png_compression.html'),
+        'gadgets/avatar-icon': resolve(__dirname, 'src', 'gadgets/avatar-icon/index.html')
       }
     }
   },
