@@ -19,7 +19,7 @@ version: 1.1.0
 
 ## 核心规则
 
-### 支持的 CSS 属性（6 项）
+### 支持的 CSS 属性（7 项）
 
 | CSS 属性 | JSON 字段 | 说明 |
 |----------|-----------|------|
@@ -27,6 +27,7 @@ version: 1.1.0
 | `color` | `fillColor` | 文字填充色 |
 | `-webkit-text-stroke-color` | `strokeColor` | 描边颜色 |
 | `-webkit-text-stroke-width` | `strokeWidth` | 描边宽度（数字） |
+| `border: Npx solid #COLOR` | `strokeWidth` + `strokeColor` | 文字描边简写（设计师常用，与上两条等效） |
 | `text-shadow` | `textShadow` 或 `multiShadow` | 单条→textShadow，逗号分隔多条→multiShadow |
 | `background: linear-gradient(...)` | `gradient` | 自动拆为 `colors` + `positions` |
 

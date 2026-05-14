@@ -163,6 +163,14 @@ def css_to_textstyle(css_text, key_name="name01"):
         if match:
             textstyle['strokeWidth'] = float(match.group(1))
     
+    # 4b. border → strokeColor + strokeWidth（设计师常用 border 替代 text-stroke）
+    # 仅当上面未通过 -webkit-text-stroke-* 设置时才生效
+    if 'strokeColor' not in textstyle and 'strokeWidth' not in textstyle and 'border' in styles:
+        border_match = re.match(r'([\d.]+)px\s+solid\s+(#[0-9a-fA-F]{3,8})', styles['border'])
+        if border_match:
+            textstyle['strokeWidth'] = float(border_match.group(1))
+            textstyle['strokeColor'] = border_match.group(2)
+    
     # 5. text-shadow → textShadow 或 multiShadow
     if 'text-shadow' in styles:
         single, multi = extract_text_shadows(styles['text-shadow'])

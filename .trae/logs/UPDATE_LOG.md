@@ -5,6 +5,8 @@
 
 ## 记录列表
 
+[2026-05-15 04:59:22] 【修改文件】 : .trae/skills/css-to-dar-style/scripts/css_to_json.py - 扩充CSS转换脚本：支持border: Npx solid #COLOR → strokeColor+strokeWidth
+[2026-05-15 04:59:10] 【修改文件】 : src/assets/dar_svga/file-list.json - 新增dtop01_xunzhang头像框：渐变+描边(border)+投影，fontWeight=500
 [2026-05-15 04:52:31] 【修改文件】 : src/assets/dar_svga/file-list.json - dtop5头像框字体字重从700改为500
 [2026-05-15 04:43:03] 【修改文件】 : docs/assets/dar_svga/file-list.json - 同步新增dtop5头像框条目
 [2026-05-15 04:42:53] 【修改文件】 : src/assets/dar_svga/file-list.json - 新增dtop5头像框：渐变文字+多层投影样式，CSS→JSON自动换算

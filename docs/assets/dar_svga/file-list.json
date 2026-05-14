@@ -585,7 +585,7 @@
     "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/dtop5.svga",
     "textStyle": {
       "name01": {
-        "fontWeight": "700",
+        "fontWeight": "500",
         "multiShadow": [
           "0px 1px 0px #EF9A4B",
           "0px 3px 0px #F8B94B",
@@ -608,6 +608,40 @@
             0.56,
             0.58,
             0.6,
+            0.72,
+            0.95,
+            1.0
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "dtop01_xunzhang",
+    "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/dtop01_xunzhang.svga",
+    "textStyle": {
+      "name01": {
+        "fontWeight": "500",
+        "strokeWidth": 1.0,
+        "strokeColor": "#633434",
+        "textShadow": "0px 0px 3px #FFFFFF",
+        "gradient": {
+          "colors": [
+            "#FFFAC5",
+            "#FEFBD8",
+            "#FFFFFF",
+            "#FFE45B",
+            "#FFC351",
+            "#FFEE82",
+            "#FFFFFF",
+            "#FFFFFF"
+          ],
+          "positions": [
+            0.0,
+            0.2019,
+            0.5,
+            0.58,
+            0.62,
             0.72,
             0.95,
             1.0

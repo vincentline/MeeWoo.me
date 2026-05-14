@@ -8,13 +8,10 @@
 </head>
 <body class="preview-page">
     <div class="container">
-        <!-- 页面标题 -->
-        <h1>Avatar图标预览器</h1>
-        
         <!-- 预览区 -->
         <div class="preview-section">
             <div class="canvas-wrapper">
-                <canvas id="preview-canvas" width="500" height="500"></canvas>
+                <div id="konva-container"></div>
             </div>
             
             <!-- 预览区恢复按钮 -->
@@ -27,6 +24,7 @@
             <p>• 鼠标滚轮：缩放图片（步进5%）</p>
             <p>• 鼠标左键拖动：移动图片位置</p>
             <p>• 恢复按钮：重置图片位置和缩放</p>
+            <p>• 点击上传按钮或选中图层后，可按 Ctrl+V 粘贴图片</p>
         </div>
         
         <!-- 身体图片选择和底色选择 -->
@@ -58,6 +56,7 @@
                 <button id="upload-btn-a" class="upload-btn">上传图片</button>
                 <input type="file" id="file-input-a" accept=".png" style="display: none;">
                 <button id="reset-btn-a" class="reset-btn" style="display: none;">恢复</button>
+                <button id="export-btn-a" class="export-btn" style="display: none;">导出素材</button>
             </div>
         </div>
         
@@ -68,6 +67,7 @@
                 <button id="upload-btn-b" class="upload-btn">上传图片</button>
                 <input type="file" id="file-input-b" accept=".png" style="display: none;">
                 <button id="reset-btn-b" class="reset-btn" style="display: none;">恢复</button>
+                <button id="export-btn-b" class="export-btn" style="display: none;">导出素材</button>
             </div>
         </div>
         
@@ -77,6 +77,6 @@
         </div>
     </div>
 
-    <script src="js/preview.js"></script>
+    <script type="module" src="js/preview.js"></script>
 </body>
 </html>
