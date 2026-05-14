@@ -543,5 +543,77 @@
         }
       }
     }
+  },
+  {
+    "name": "dtop2",
+    "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/dtop2.svga",
+    "textStyle": {
+      "name01": {
+        "fontWeight": "700",
+        "gradient": {
+          "colors": [
+            "#FFFAC5",
+            "#FEFBD8",
+            "#FFFFFF",
+            "#FFF16A",
+            "#FDE84B",
+            "#FFF3A2",
+            "#FFFFFF",
+            "#FFFFFF"
+          ],
+          "positions": [
+            0.0,
+            0.2019,
+            0.56,
+            0.58,
+            0.6,
+            0.72,
+            0.95,
+            1.0
+          ]
+        },
+        "multiShadow": [
+          "0px 1px 0px #EF9A4B",
+          "0px 3px 0px #F8B94B",
+          "0px 2px 6px rgba(0, 0, 0, 0.7)"
+        ]
+      }
+    }
+  },
+  {
+    "name": "dtop5",
+    "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/dtop5.svga",
+    "textStyle": {
+      "name01": {
+        "fontWeight": "500",
+        "multiShadow": [
+          "0px 1px 0px #EF9A4B",
+          "0px 3px 0px #F8B94B",
+          "0px 2px 6px rgba(0, 0, 0, 0.7)"
+        ],
+        "gradient": {
+          "colors": [
+            "#FFFAC5",
+            "#FEFBD8",
+            "#FFFFFF",
+            "#FFF16A",
+            "#FDE84B",
+            "#FFF3A2",
+            "#FFFFFF",
+            "#FFFFFF"
+          ],
+          "positions": [
+            0.0,
+            0.2019,
+            0.56,
+            0.58,
+            0.6,
+            0.72,
+            0.95,
+            1.0
+          ]
+        }
+      }
+    }
   }
 ]

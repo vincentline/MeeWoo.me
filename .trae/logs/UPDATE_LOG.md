@@ -5,6 +5,13 @@
 
 ## 记录列表
 
+[2026-05-15 04:52:31] 【修改文件】 : src/assets/dar_svga/file-list.json - dtop5头像框字体字重从700改为500
+[2026-05-15 04:43:03] 【修改文件】 : docs/assets/dar_svga/file-list.json - 同步新增dtop5头像框条目
+[2026-05-15 04:42:53] 【修改文件】 : src/assets/dar_svga/file-list.json - 新增dtop5头像框：渐变文字+多层投影样式，CSS→JSON自动换算
+[2026-05-15 04:23:29] 【修改文件】 : docs/assets/dar_svga/file-list.json - 同步新增dtop2头像框条目，与src保持一致
+[2026-05-15 04:23:19] 【修改文件】 : src/assets/dar_svga/file-list.json - 新增dtop2头像框：渐变文字+多层投影样式，SVGA素材链接，图标dtop2.png
+[2026-05-15 03:48:19] 【修改文件】 : docs/sth_auto.html - 同步修复：将纯文本中的 < 转义为 &lt;，与src源码保持一致
+[2026-05-15 03:48:08] 【修改文件】 : src/sth_auto.html - 修复Vite parse5解析器报错：将纯文本中的 < 转义为 &lt;，解决500 Internal Server Error
 [2026-04-22 21:06:27] 【修改文件】 : src/gadgets/avatar-icon/js/preview.js - 完善取消选中功能：再次点击已选中的图片可取消选中；提取 deselectNode 方法统一处理取消选中逻辑
 [2026-04-22 19:54:05] 【修改文件】 : src/gadgets/avatar-icon/js/preview.js - 添加鼠标悬停激活功能：hover上传按钮时自动激活对应图层，可直接粘贴图片
 [2026-04-22 19:39:29] 【修改文件】 : src/gadgets/avatar-icon/js/cutout-tool.js - 修复AI抠图逻辑：将背景标记为红色删除区域，前景标记为绿色保留区域；修复应用抠图逻辑，精确识别红色删除区域

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Skill Creator - 技能初始化工具
 ==============================
@@ -43,7 +42,6 @@ Skill Creator - 技能初始化工具
 
 import sys
 from pathlib import Path
-
 
 # ============================================================================
 # 模板定义
@@ -235,7 +233,7 @@ def title_case_skill_name(skill_name):
         >>> title_case_skill_name("my-new-skill")
         'My New Skill'
     """
-    return ' '.join(word.capitalize() for word in skill_name.split('-'))
+    return " ".join(word.capitalize() for word in skill_name.split("-"))
 
 
 def init_skill(skill_name, path):
@@ -274,14 +272,11 @@ def init_skill(skill_name, path):
 
     # 创建 SKILL.md
     skill_title = title_case_skill_name(skill_name)
-    skill_content = SKILL_TEMPLATE.format(
-        skill_name=skill_name,
-        skill_title=skill_title
-    )
+    skill_content = SKILL_TEMPLATE.format(skill_name=skill_name, skill_title=skill_title)
 
-    skill_md_path = skill_dir / 'SKILL.md'
+    skill_md_path = skill_dir / "SKILL.md"
     try:
-        skill_md_path.write_text(skill_content, encoding='utf-8')
+        skill_md_path.write_text(skill_content, encoding="utf-8")
         print("✅ 已创建 SKILL.md")
     except Exception as e:
         print(f"❌ 创建 SKILL.md 失败: {e}")
@@ -290,25 +285,27 @@ def init_skill(skill_name, path):
     # 创建资源目录及示例文件
     try:
         # 创建 scripts/ 目录及示例脚本
-        scripts_dir = skill_dir / 'scripts'
+        scripts_dir = skill_dir / "scripts"
         scripts_dir.mkdir(exist_ok=True)
-        example_script = scripts_dir / 'example.py'
-        example_script.write_text(EXAMPLE_SCRIPT.format(skill_name=skill_name), encoding='utf-8')
+        example_script = scripts_dir / "example.py"
+        example_script.write_text(EXAMPLE_SCRIPT.format(skill_name=skill_name), encoding="utf-8")
         example_script.chmod(0o755)
         print("✅ 已创建 scripts/example.py")
 
         # 创建 references/ 目录及示例参考文档
-        references_dir = skill_dir / 'references'
+        references_dir = skill_dir / "references"
         references_dir.mkdir(exist_ok=True)
-        example_reference = references_dir / 'api_reference.md'
-        example_reference.write_text(EXAMPLE_REFERENCE.format(skill_title=skill_title), encoding='utf-8')
+        example_reference = references_dir / "api_reference.md"
+        example_reference.write_text(
+            EXAMPLE_REFERENCE.format(skill_title=skill_title), encoding="utf-8"
+        )
         print("✅ 已创建 references/api_reference.md")
 
         # 创建 assets/ 目录及示例资源占位符
-        assets_dir = skill_dir / 'assets'
+        assets_dir = skill_dir / "assets"
         assets_dir.mkdir(exist_ok=True)
-        example_asset = assets_dir / 'example_asset.txt'
-        example_asset.write_text(EXAMPLE_ASSET, encoding='utf-8')
+        example_asset = assets_dir / "example_asset.txt"
+        example_asset.write_text(EXAMPLE_ASSET, encoding="utf-8")
         print("✅ 已创建 assets/example_asset.txt")
     except Exception as e:
         print(f"❌ 创建资源目录失败: {e}")
@@ -328,7 +325,7 @@ def main():
     """
     主函数入口 - CLI 命令解析和执行。
     """
-    if len(sys.argv) < 4 or sys.argv[2] != '--path':
+    if len(sys.argv) < 4 or sys.argv[2] != "--path":
         print("用法: init_skill.py <skill-name> --path <path>")
         print("\n技能名称要求:")
         print("  - kebab-case 标识符 (如 'data-analyzer')")

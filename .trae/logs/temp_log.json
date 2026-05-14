@@ -1,19 +1,16 @@
 {
-  "changes": [
+  "entries": [
     {
+      "time": "[2026-05-15 03:47:29]",
       "action": "修改文件",
-      "file": "src/gadgets/avatar-icon/index.html",
-      "desc": "删除页面标题，替换原生 canvas 为 Konva 容器，新增 A/B 导出素材按钮"
+      "file": "src/sth_auto.html",
+      "desc": "修复Vite parse5解析器报错：将纯文本中的 < 转义为 &lt;（PNG, &lt; 5MB, &lt; 3000px），解决500 Internal Server Error"
     },
     {
+      "time": "[2026-05-15 03:47:29]",
       "action": "修改文件",
-      "file": "src/gadgets/avatar-icon/js/preview.js",
-      "desc": "重写为 Konva 版本，实现 750x750 画布编辑器，支持画布缩放/平移、图层选中编辑、单层透明导出"
-    },
-    {
-      "action": "修改文件",
-      "file": "src/gadgets/avatar-icon/css/style.css",
-      "desc": "适配 Konva 容器样式，新增导出素材按钮样式"
+      "file": "docs/sth_auto.html",
+      "desc": "同步修复：将纯文本中的 < 转义为 &lt;，与src源码保持一致"
     }
   ]
 }

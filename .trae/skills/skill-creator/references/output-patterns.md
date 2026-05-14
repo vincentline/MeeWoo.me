@@ -1,82 +1,82 @@
-# Output Patterns
+# 输出模式
 
-Use these patterns when skills need to produce consistent, high-quality output.
+当技能需要产生一致、高质量的输出时，使用这些模式。
 
-## Template Pattern
+## 模板模式
 
-Provide templates for output format. Match the level of strictness to your needs.
+为输出格式提供模板。根据需求匹配严格程度。
 
-**For strict requirements (like API responses or data formats):**
+**适用于严格要求（如 API 响应或数据格式）：**
 
 ```markdown
-## Report structure
+## 报告结构
 
-ALWAYS use this exact template structure:
+始终使用此精确的模板结构：
 
-# [Analysis Title]
+# [分析标题]
 
-## Executive summary
-[One-paragraph overview of key findings]
+## 执行摘要
+[关键发现的一段话概述]
 
-## Key findings
-- Finding 1 with supporting data
-- Finding 2 with supporting data
-- Finding 3 with supporting data
+## 关键发现
+- 发现 1 及支撑数据
+- 发现 2 及支撑数据
+- 发现 3 及支撑数据
 
-## Recommendations
-1. Specific actionable recommendation
-2. Specific actionable recommendation
+## 建议
+1. 具体可操作的建议
+2. 具体可操作的建议
 ```
 
-**For flexible guidance (when adaptation is useful):**
+**适用于灵活指导（当适应性有用时）：**
 
 ```markdown
-## Report structure
+## 报告结构
 
-Here is a sensible default format, but use your best judgment:
+以下是一个合理的默认格式，但请运用你的最佳判断：
 
-# [Analysis Title]
+# [分析标题]
 
-## Executive summary
-[Overview]
+## 执行摘要
+[概述]
 
-## Key findings
-[Adapt sections based on what you discover]
+## 关键发现
+[根据发现调整章节]
 
-## Recommendations
-[Tailor to the specific context]
+## 建议
+[根据具体场景定制]
 
-Adjust sections as needed for the specific analysis type.
+根据具体分析类型按需调整章节。
 ```
 
-## Examples Pattern
+## 示例模式
 
-For skills where output quality depends on seeing examples, provide input/output pairs:
+当输出质量依赖看到示例时，提供输入/输出对：
 
 ```markdown
-## Commit message format
+## 提交信息格式
 
-Generate commit messages following these examples:
+按照以下示例生成提交信息：
 
-**Example 1:**
-Input: Added user authentication with JWT tokens
-Output:
+**示例 1：**
+输入：Added user authentication with JWT tokens
+输出：
 ```
 feat(auth): implement JWT-based authentication
 
 Add login endpoint and token validation middleware
 ```
 
-**Example 2:**
-Input: Fixed bug where dates displayed incorrectly in reports
-Output:
+**示例 2：**
+输入：Fixed bug where dates displayed incorrectly in reports
+输出：
 ```
 fix(reports): correct date formatting in timezone conversion
 
 Use UTC timestamps consistently across report generation
 ```
 
-Follow this style: type(scope): brief description, then detailed explanation.
+遵循此风格：type(scope): 简要描述，然后详细说明。
 ```
 
-Examples help Claude understand the desired style and level of detail more clearly than descriptions alone.
+示例比单纯的描述更能帮助 Claude 理解期望的风格和细节级别。

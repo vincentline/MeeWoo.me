@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Skill Creator - 技能打包工具
 ============================
@@ -38,6 +37,7 @@ Skill Creator - 技能打包工具
 import sys
 import zipfile
 from pathlib import Path
+
 from quick_validate import validate_skill
 
 
@@ -96,9 +96,9 @@ def package_skill(skill_path, output_dir=None):
 
     # 创建 .skill 文件 (ZIP 格式)
     try:
-        with zipfile.ZipFile(skill_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        with zipfile.ZipFile(skill_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
             # 遍历技能目录
-            for file_path in skill_path.rglob('*'):
+            for file_path in skill_path.rglob("*"):
                 if file_path.is_file():
                     # 计算 ZIP 内的相对路径
                     arcname = file_path.relative_to(skill_path.parent)

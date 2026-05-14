@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Skill Creator - 技能快速验证工具
 ================================
@@ -35,11 +34,11 @@ Skill Creator - 技能快速验证工具
 
 """
 
-import sys
-import os
 import re
-import yaml
+import sys
 from pathlib import Path
+
+import yaml
 
 
 def validate_skill(skill_path):
@@ -66,19 +65,19 @@ def validate_skill(skill_path):
     # ========================================
     # 检查 1: SKILL.md 存在
     # ========================================
-    skill_md = skill_path / 'SKILL.md'
+    skill_md = skill_path / "SKILL.md"
     if not skill_md.exists():
         return False, "SKILL.md 未找到"
 
     # ========================================
     # 检查 2: 读取并验证 frontmatter
     # ========================================
-    content = skill_md.read_text(encoding='utf-8')
-    if not content.startswith('---'):
+    content = skill_md.read_text(encoding="utf-8")
+    if not content.startswith("---"):
         return False, "未找到 YAML frontmatter"
 
     # 提取 frontmatter
-    match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
+    match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
     if not match:
         return False, "frontmatter 格式无效"
 
@@ -95,7 +94,14 @@ def validate_skill(skill_path):
     # ========================================
     # 检查 3: 验证允许的属性
     # ========================================
-    ALLOWED_PROPERTIES = {'name', 'description', 'license', 'allowed-tools', 'metadata'}
+    ALLOWED_PROPERTIES = {
+        "name",
+        "description",
+        "license",
+        "compatibility",
+        "allowed-tools",
+        "metadata",
+    }
 
     # 检查意外属性 (排除 metadata 下的嵌套键)
     unexpected_keys = set(frontmatter.keys()) - ALLOWED_PROPERTIES
@@ -108,27 +114,27 @@ def validate_skill(skill_path):
     # ========================================
     # 检查 4: 必需字段
     # ========================================
-    if 'name' not in frontmatter:
+    if "name" not in frontmatter:
         return False, "frontmatter 中缺少 'name'"
 
-    if 'description' not in frontmatter:
+    if "description" not in frontmatter:
         return False, "frontmatter 中缺少 'description'"
 
     # ========================================
     # 检查 5: name 验证
     # ========================================
-    name = frontmatter.get('name', '')
+    name = frontmatter.get("name", "")
     if not isinstance(name, str):
         return False, f"name 必须是字符串，得到 {type(name).__name__}"
 
     name = name.strip()
     if name:
         # 检查命名规范 (kebab-case: 小写字母、数字和连字符)
-        if not re.match(r'^[a-z0-9-]+$', name):
+        if not re.match(r"^[a-z0-9-]+$", name):
             return False, f"name '{name}' 应为 kebab-case (仅限小写字母、数字和连字符)"
 
         # 检查连字符位置
-        if name.startswith('-') or name.endswith('-') or '--' in name:
+        if name.startswith("-") or name.endswith("-") or "--" in name:
             return False, f"name '{name}' 不能以连字符开头/结尾或包含连续连字符"
 
         # 检查长度 (规范要求最大 64 字符)
@@ -138,14 +144,14 @@ def validate_skill(skill_path):
     # ========================================
     # 检查 6: description 验证
     # ========================================
-    description = frontmatter.get('description', '')
+    description = frontmatter.get("description", "")
     if not isinstance(description, str):
         return False, f"description 必须是字符串，得到 {type(description).__name__}"
 
     description = description.strip()
     if description:
         # 检查尖括号 (可能包含敏感信息)
-        if '<' in description or '>' in description:
+        if "<" in description or ">" in description:
             return False, "description 不能包含尖括号 (< 或 >)"
 
         # 检查长度 (规范要求最大 1024 字符)
