@@ -90,7 +90,8 @@ export default defineConfig({
         '404': resolve(__dirname, 'src', '404.html'),
         'gadgets/fix_garbled_text': resolve(__dirname, 'src', 'gadgets/fix_garbled_text.html'),
         'gadgets/png_compression': resolve(__dirname, 'src', 'gadgets/png_compression.html'),
-        'gadgets/avatar-icon': resolve(__dirname, 'src', 'gadgets/avatar-icon/index.html')
+        'gadgets/avatar-icon': resolve(__dirname, 'src', 'gadgets/avatar-icon/index.html'),
+        'gadgets/game-huodong': resolve(__dirname, 'src', 'gadgets/game-huodong/index.html')
       }
     }
   },
