@@ -291,8 +291,9 @@
       });
   }
 
-  function buildRenderItems(group) {
-    var suffix = state.language === "ar" ? "_ar" : "";
+  function buildRenderItems(group, language) {
+    var itemLanguage = language || state.language;
+    var suffix = itemLanguage === "ar" ? "_ar" : "";
     var items = [
       {
         key: group.id + "-main",
@@ -405,11 +406,11 @@
   function renderAll(showGuides) {
     var shouldShowGuides = typeof showGuides === "boolean" ? showGuides : editState.enabled;
     renderItems.forEach(function (item) {
-      renderItem(item, shouldShowGuides);
+      renderItem(item, shouldShowGuides, state.language);
     });
   }
 
-  function renderItem(item, showGuides) {
+  function renderItem(item, showGuides, language) {
     if (!item.context || !item.baseImage) return;
 
     var ctx = item.context;
@@ -421,8 +422,8 @@
     }
 
     if (item.kind === "large") {
-      drawNickname(ctx, item.placement.nickname);
-      drawMessage(ctx, item.placement.message);
+      drawNickname(ctx, item.placement.nickname, language);
+      drawMessage(ctx, item.placement.message, language);
     }
 
     if (showGuides) {
@@ -674,12 +675,12 @@
     ctx.restore();
   }
 
-  function drawNickname(ctx, placement) {
+  function drawNickname(ctx, placement, language) {
     var text = state.nickname.trim();
     if (!text) return;
 
     ctx.save();
-    ctx.direction = state.language === "ar" ? "rtl" : "ltr";
+    ctx.direction = language === "ar" ? "rtl" : "ltr";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = placement.color;
@@ -691,7 +692,7 @@
     ctx.restore();
   }
 
-  function drawMessage(ctx, placement) {
+  function drawMessage(ctx, placement, language) {
     var text = state.message.trim();
     if (!text) return;
 
@@ -707,7 +708,7 @@
     ctx.beginPath();
     ctx.rect(placement.x, placement.y, placement.width, placement.height);
     ctx.clip();
-    ctx.direction = state.language === "ar" ? "rtl" : "ltr";
+    ctx.direction = language === "ar" ? "rtl" : "ltr";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = placement.color;
@@ -868,6 +869,31 @@
     });
   }
 
+  function renderItemsForDownload(group, language) {
+    var items = buildRenderItems(group, language);
+
+    return Promise.all(items.map(function (item) {
+      var canvas = document.createElement("canvas");
+      canvas.width = item.width;
+      canvas.height = item.height;
+      item.canvas = canvas;
+      item.context = canvas.getContext("2d");
+
+      return loadImage(item.src)
+        .then(function (image) {
+          item.baseImage = image;
+          renderItem(item, false, language);
+          return canvasToBlob(canvas);
+        })
+        .then(function (blob) {
+          return {
+            filename: item.filename,
+            blob: blob
+          };
+        });
+    }));
+  }
+
   function downloadCurrentZip() {
     if (!window.JSZip) {
       showStatus("JSZip 加载失败，暂时无法打包下载。", true);
@@ -875,13 +901,16 @@
     }
 
     elements.downloadBtn.disabled = true;
-    showStatus("正在打包图片...");
+    showStatus("正在打包英/阿双语图片...");
     renderAll(false);
 
     var zip = new JSZip();
-    Promise.all(renderItems.map(function (item) {
-      return canvasToBlob(item.canvas).then(function (blob) {
-        zip.file(item.filename, blob);
+    var group = getCurrentGroup();
+    Promise.all(["en", "ar"].map(function (language) {
+      return renderItemsForDownload(group, language).then(function (files) {
+        files.forEach(function (file) {
+          zip.file(file.filename, file.blob);
+        });
       });
     }))
       .then(function () {
@@ -889,15 +918,14 @@
       })
       .then(function (blob) {
         var link = document.createElement("a");
-        var suffix = state.language === "ar" ? "ar" : "en";
         var url = URL.createObjectURL(blob);
         link.href = url;
-        link.download = "game_huodong_" + state.group + "_" + suffix + ".zip";
+        link.download = "game_huodong_" + group.id + ".zip";
         document.body.appendChild(link);
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-        showStatus("图片包已生成。");
+        showStatus("英/阿双语图片包已生成。");
       })
       .catch(function (error) {
         console.error(error);
