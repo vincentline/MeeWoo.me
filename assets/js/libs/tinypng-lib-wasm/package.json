@@ -1,0 +1,33 @@
+{
+  "name": "tinypng-lib-wasm",
+  "type": "module",
+  "description": "TinyPNG Rust WASM Library",
+  "version": "1.0.55",
+  "license": "MIT",
+  "files": [
+    "tinypng_lib_wasm_bg.wasm",
+    "tinypng_lib_wasm.js",
+    "tinypng_lib_wasm_bg.js",
+    "tinypng_lib_wasm.d.ts"
+  ],
+  "main": "tinypng_lib_wasm.js",
+  "types": "tinypng_lib_wasm.d.ts",
+  "sideEffects": [
+    "./tinypng_lib_wasm.js",
+    "./snippets/*"
+  ],
+  "keywords": [
+    "tinypng",
+    "tinify",
+    "image",
+    "wasm",
+    "webassembly",
+    "图片压缩",
+    "前端压缩",
+    "图片压缩库",
+    "图片压缩工具",
+    "图片压缩插件",
+    "开箱即用",
+    "压缩图片"
+  ]
+}

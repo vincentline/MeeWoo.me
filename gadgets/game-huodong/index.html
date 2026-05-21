@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>活动图片生成器</title>
+  <link rel="icon" type="image/png" href="/assets/favicon-BQKJcyi4.png">
+  <link rel="stylesheet" crossorigin href="/assets/game-huodong-Dw5KUhcB.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="back-link" href="../../index.html">返回 MeeWoo</a>
+      <div class="title-block">
+        <h1>活动图片生成器</h1>
+        <p>上传头像、填写昵称和文案，生成当前活动素材的完整图片包。</p>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="preview-panel" aria-label="图片预览">
+        <div class="tabs" role="tablist" aria-label="活动组">
+          <button class="tab-btn is-active" data-group="60m" type="button">60m</button>
+          <button class="tab-btn" data-group="100m" type="button">100m</button>
+          <button class="tab-btn" data-group="200m" type="button">200m</button>
+          <button class="tab-btn" data-group="one" type="button">one</button>
+        </div>
+
+        <div class="tabs tabs--language" role="tablist" aria-label="语言">
+          <button class="tab-btn is-active" data-language="en" type="button">English</button>
+          <button class="tab-btn" data-language="ar" type="button">العربية</button>
+        </div>
+
+        <div class="canvas-grid" id="canvas-grid"></div>
+      </section>
+
+      <aside class="control-panel" aria-label="生成设置">
+        <div class="panel-card">
+          <h2>生成设置</h2>
+          <p class="hint">内容会自动保存在本机浏览器，刷新后可继续编辑。</p>
+
+          <div class="form-group">
+            <label for="avatar-input">头像</label>
+            <div class="upload-row">
+              <button class="btn-secondary" id="avatar-upload-btn" type="button">上传头像</button>
+              <button class="btn-primary" id="avatar-clear-btn" type="button">清空头像</button>
+              <input id="avatar-input" type="file" accept="image/*" hidden>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="nickname-input">昵称</label>
+            <input class="text-input" id="nickname-input" maxlength="28" type="text" placeholder="输入昵称">
+          </div>
+
+          <div class="form-group">
+            <label for="message-input">文案</label>
+            <textarea class="text-input textarea-input" id="message-input" maxlength="180" rows="5" placeholder="输入展示文案"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>文案字号</label>
+            <div class="font-size-row">
+              <button class="square-btn" id="font-decrease-btn" type="button" aria-label="缩小字号">-</button>
+              <span class="font-size-value" id="font-size-value">32px</span>
+              <button class="square-btn" id="font-increase-btn" type="button" aria-label="放大字号">+</button>
+            </div>
+          </div>
+
+          <div class="form-group placement-editor is-collapsed" id="placement-editor">
+            <button class="editor-heading" id="placement-editor-toggle" type="button" aria-expanded="false">
+              <span>位置编辑</span>
+              <span class="editor-toggle-icon" aria-hidden="true">展开</span>
+            </button>
+            <div class="placement-editor-body">
+              <label class="toggle-row">
+                <input id="edit-mode-toggle" type="checkbox">
+                <span>开启拖拽</span>
+              </label>
+              <select class="text-input select-input" id="placement-target" aria-label="位置编辑对象">
+                <option value="largeAvatar">大图头像</option>
+                <option value="largeNickname">大图昵称</option>
+                <option value="largeMessage">大图文案框</option>
+                <option value="bannerAvatar:gala">Banner头像 - gala</option>
+                <option value="bannerAvatar:litchat">Banner头像 - litchat</option>
+                <option value="bannerAvatar:Rostar">Banner头像 - Rostar</option>
+              </select>
+              <div class="placement-size-row">
+                <span class="placement-size-label" id="placement-size-label">半径</span>
+                <button class="square-btn" id="placement-size-decrease-btn" type="button" aria-label="缩小当前对象">-</button>
+                <span class="font-size-value" id="placement-size-value">--</span>
+                <button class="square-btn" id="placement-size-increase-btn" type="button" aria-label="放大当前对象">+</button>
+              </div>
+              <div class="editor-actions">
+                <button class="btn-primary" id="placement-reset-btn" type="button">恢复当前默认</button>
+                <button class="btn-primary" id="placement-copy-btn" type="button">复制坐标</button>
+              </div>
+              <textarea class="placement-output" id="placement-output" readonly rows="6"></textarea>
+              <p class="hint hint--compact">开启后在预览图上拖动选中对象。坐标会临时保存；调满意后把“复制坐标”的内容发我，我再写回默认值。</p>
+            </div>
+          </div>
+
+          <button class="download-btn" id="download-btn" type="button">下载当前图片包 ZIP</button>
+          <div class="status-message" id="status-message" role="status" aria-live="polite"></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="../../assets/js/lib/jszip.min.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
