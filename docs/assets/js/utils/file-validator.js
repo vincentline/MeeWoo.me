@@ -1,1 +1,970 @@
-!function(e){"use strict";function FileValidator(e){this.libraryLoader=e}e.MeeWoo=e.MeeWoo||{},e.MeeWoo.Services=e.MeeWoo.Services||{},FileValidator.prototype.validateFile=function(e,t){var a=this;return new Promise(function(n,i){"svga"===t?a._validateSvga(e,n,i):"lottie"===t?a._validateLottie(e,n,i):"yyeva"===t?a._validateYyeva(e,n,i):"mp4"===t?a._validateMp4(e,n,i):i("不支持的文件类型")})},FileValidator.prototype._validateSvga=function(e,t,a){var n=new FileReader;n.onload=function(n){var i=n.target.result,r=new Blob([i],{type:"application/octet-stream"}),o=URL.createObjectURL(r);(new SVGA.Parser).load(o,function(a){URL.revokeObjectURL(o),t({videoItem:a,file:e})},function(e){URL.revokeObjectURL(o),a("SVGA文件解析失败："+(e.message||e))})},n.onerror=function(){a("文件读取失败")},n.readAsArrayBuffer(e)},FileValidator.prototype._validateLottie=function(e,t,a){(e.name||"").toLowerCase().endsWith(".lottie")?this._validateLottieZip(e,t,a):this._validateLottieJson(e,t,a)},FileValidator.prototype._validateLottieZip=function(e,t,a){var n=this;this.libraryLoader.load("jszip",!0).then(function(){var i=new FileReader;i.onload=function(i){JSZip.loadAsync(i.target.result).then(function(i){var r=i.file("manifest.json");r?r.async("text").then(function(r){try{var o=JSON.parse(r),l="";if(o.animations&&o.animations.length>0){var s=o.activeAnimationId,c=o.animations[0];if(s)for(var d=0;d<o.animations.length;d++)if(o.animations[d].id===s){c=o.animations[d];break}l="animations/"+c.id+".json",i.file(l)||(i.file(c.id+".json")?l=c.id+".json":i.file(c.id)&&(l=c.id))}l&&i.file(l)?n._readZipJsonFile(i,l,e,t,a):n._findAndReadAnyJson(i,e,t,a)}catch(r){n._findAndReadAnyJson(i,e,t,a)}}).catch(function(){n._findAndReadAnyJson(i,e,t,a)}):n._findAndReadAnyJson(i,e,t,a)}).catch(function(e){a(".lottie文件解压失败："+e.message)})},i.onerror=function(){a("文件读取失败")},i.readAsArrayBuffer(e)}).catch(function(e){a("JSZip库加载失败")})},FileValidator.prototype._findAndReadAnyJson=function(e,t,a,n){var i=[];if(e.forEach(function(e,t){e.endsWith(".json")&&!e.startsWith("__MACOSX")&&i.push(e)}),0!==i.length){for(var r=i[0],o=0;o<i.length;o++)if(-1!==i[o].toLowerCase().indexOf("data.json")){r=i[o];break}this._readZipJsonFile(e,r,t,a,n)}else n(".lottie文件中未找到JSON数据")},FileValidator.prototype._readZipJsonFile=function(e,t,a,n,i){var r=this;e.file(t).async("text").then(function(e){try{var t=JSON.parse(e),o=t;t.animations&&Array.isArray(t.animations)&&t.animations.length>0&&(t.animations[0].data?o=t.animations[0].data:t.animations[0].animation&&(o=t.animations[0].animation)),r._validateLottieAnimationData(o,a,n,i)}catch(e){i("JSON解析失败："+e.message)}}).catch(function(e){i("读取JSON文件失败："+e.message)})},FileValidator.prototype._validateLottieJson=function(e,t,a){var n=this,i=new FileReader;i.onload=function(i){try{var r=JSON.parse(i.target.result),o=r;r.animation&&"object"==typeof r.animation&&(o=r.animation),n._validateLottieAnimationData(o,e,t,a)}catch(e){a("JSON解析失败："+e.message)}},i.onerror=function(){a("文件读取失败")},i.readAsText(e)},FileValidator.prototype._validateLottieAnimationData=function(e,t,a,n){var i=e.w||e.width||0,r=e.h||e.height||0;i&&r?a({animationData:e,file:t}):n("Lottie文件缺少尺寸信息，可能文件格式不正确")},FileValidator.prototype._validateYyeva=function(e,t,a){var n=this;Promise.all([new Promise(function(t,a){n.detectMp4Type(e,function(e,n){e?t({isDualChannel:!0,alphaDirection:n}):a("检测未发现透明通道特征，请确认是双通道MP4文件")})}),n.detectMp4Fps(e),n.detectYyevaType(e)]).then(function(a){var n=a[0],i=a[1],r=a[2];t({file:e,isDualChannel:n.isDualChannel,alphaDirection:n.alphaDirection,detectedFps:i,isYyeva:!!r&&r.isYyeva,yyevaData:r?r.data:null})}).catch(function(e){a(e)})},FileValidator.prototype.detectYyevaType=function(t){return new Promise(function(a){var loadPakoAndDetect=function(){var e=new FileReader;e.onload=function(e){try{var t=function _parseYyevaMetadata(e){for(var t="yyeffectmp4json",a=(new TextEncoder).encode(t),n=-1,i=0;i<=e.length-a.length;i++){for(var r=!0,o=0;o<a.length;o++)if(e[i+o]!==a[o]){r=!1;break}if(r){n=i;break}}if(-1===n)return null;for(var l=n+t.length,s=Math.min(e.length-l,5e4),c="",d=l;d<l+s;d++)c+=String.fromCharCode(e[d]);var f=c.match(/\[\[([A-Za-z0-9+/=]+)\]\]/);if(!f||!f[1])return null;try{for(var u=atob(f[1]),h=new Uint8Array(u.length),v=0;v<u.length;v++)h[v]=u.charCodeAt(v);if("undefined"==typeof pako||!pako.inflate)return console.warn("YYEVA 解析需要 pako 库，请确保已加载"),null;var p=pako.inflate(h),m=new TextDecoder("utf-8").decode(p),g=JSON.parse(m);return g.descript&&1===g.descript.isEffect?{descript:g.descript,effect:g.effect||{},datas:g.datas||[]}:null}catch(e){return console.warn("YYEVA 数据解析失败:",e),null}}(new Uint8Array(e.target.result));a(t?{isYyeva:!0,data:t}:{isYyeva:!1,data:null})}catch(e){console.warn("YYEVA 检测失败:",e),a({isYyeva:!1,data:null})}},e.onerror=function(){a({isYyeva:!1,data:null})},e.readAsArrayBuffer(t)};"undefined"!=typeof pako&&pako.inflate?loadPakoAndDetect():e.MeeWoo&&e.MeeWoo.Core&&e.MeeWoo.Core.libraryLoader?e.MeeWoo.Core.libraryLoader.load("pako",!0).then(function(){loadPakoAndDetect()}).catch(function(e){console.warn("pako 加载失败，跳过 YYEVA 检测:",e),a({isYyeva:!1,data:null})}):(console.warn("YYEVA 解析需要 pako 库，请确保已加载"),a({isYyeva:!1,data:null}))})},FileValidator.prototype._validateMp4=function(e,t,a){var n=this,i=URL.createObjectURL(e),r=document.createElement("video");r.src=i,r.muted=!0,r.onloadedmetadata=function(){URL.revokeObjectURL(i),n.detectMp4Fps(e).then(function(a){t({file:e,detectedFps:a})})},r.onerror=function(){URL.revokeObjectURL(i),a("视频文件加载失败")}},FileValidator.prototype.detectMp4Fps=function(e){return new Promise(function(t){var a=Math.min(e.size,512e3),n=new FileReader;n.onload=function(e){try{var a=e.target.result,n=function parseMp4ForFps(e){var t=0,a=e.byteLength;function findAtom(a,n){for(;t<n;){if(t+8>n)return null;var i=t,r=e.getUint32(t),o=String.fromCharCode(e.getUint8(t+4),e.getUint8(t+5),e.getUint8(t+6),e.getUint8(t+7));if(1!==r){if(0===r)return null;if(o===a)return t=i+8,{size:r,start:i,end:i+r};t=i+r}else t+=8,t=i+8+8}return null}var n=findAtom("moov",a);if(!n)return null;t=n.start+8;var i=n.end;for(;t<i;){var r=findAtom("trak",i);if(!r)break;var o=r.end;t=r.start+8;var l=findAtom("mdia",o);if(l){t=l.start+8;for(var s=l.end,c=null,d=null,f=null,u=t;u<s;){t=u;var h=e.getUint32(t),v=String.fromCharCode(e.getUint8(t+4),e.getUint8(t+5),e.getUint8(t+6),e.getUint8(t+7));"hdlr"===v?c={start:t,size:h}:"mdhd"===v?d={start:t,size:h}:"minf"===v&&(f={start:t,size:h,end:t+h}),u+=h}if(c)if(t=c.start+8+4,t+=4,"vide"===String.fromCharCode(e.getUint8(t),e.getUint8(t+1),e.getUint8(t+2),e.getUint8(t+3))&&d&&f){t=d.start+8;var p=e.getUint8(t);t+=4;var m=0;1===p?(t+=16,m=e.getUint32(t)):(t+=8,m=e.getUint32(t)),t=f.start+8;var g=findAtom("stbl",f.end);if(g){t=g.start+8;var y=findAtom("stts",g.end);if(y){t=y.start+8,t+=4;var F=e.getUint32(t);if(t+=4,F>0){e.getUint32(t);var A=e.getUint32(t+4);if(A>0&&m>0)return Math.round(m/A)}}}}}t=o}return null}(new DataView(a));t(n)}catch(e){console.warn("MP4 FPS parsing failed:",e),t(null)}},n.onerror=function(){t(null)},n.readAsArrayBuffer(e.slice(0,a))})},FileValidator.prototype.detectMp4Type=function(e,t){var a=URL.createObjectURL(e),n=document.createElement("video");n.src=a,n.muted=!0;var i={pureBlackThreshold:.015,saturationDiffThreshold:.02,brightnessDiffThreshold:.03,checkFramePositions:[.3,.7]};function cleanup(){n&&(n.onloadedmetadata=null,n.onseeked=null,n.onerror=null,n.removeAttribute("src"),n.src=""),a&&(setTimeout(function(){URL.revokeObjectURL(a)},100),a=null)}n.onloadedmetadata=function(){var e=n.videoWidth,a=n.videoHeight,r=n.duration,o=document.createElement("canvas"),l=Math.min(1,320/e),s=Math.max(1,Math.floor(e*l)),c=Math.max(1,Math.floor(a*l));o.width=s,o.height=c;var d=o.getContext("2d",{willReadFrequently:!0}),f=0,u=!1,h=null;function calculateMetrics(e){for(var t=e.data,a=0,n=0,i=0,r=0;r<t.length;r+=4){var o=t[r]/255,l=t[r+1]/255,s=t[r+2]/255,c=Math.max(o,l,s),d=Math.min(o,l,s);a+=0===c?0:(c-d)/c,n+=.299*o+.587*l+.114*s,i++}return{saturation:0===i?0:a/i,brightness:0===i?0:n/i}}function analyzeFrame(){d.drawImage(n,0,0,s,c);var e=Math.floor(s/2);if(e<=0||c<=0)return!1;var t=d.getImageData(0,0,e,c),a=d.getImageData(e,0,e,c),r=calculateMetrics(t),o=calculateMetrics(a),l=Math.abs(r.saturation-o.saturation),f=Math.abs(r.brightness-o.brightness),u=r.saturation<i.pureBlackThreshold||o.saturation<i.pureBlackThreshold,h=l>i.saturationDiffThreshold,v=f>i.brightnessDiffThreshold;return r.saturation<i.pureBlackThreshold&&o.saturation<i.pureBlackThreshold&&(h=l>.003,v=f>.003),u&&(h||v)?r.saturation<o.saturation?"left":"right":null}function checkNextFrame(){if(f>=i.checkFramePositions.length)return cleanup(),void t(u,h);var e=i.checkFramePositions[f];if(!isFinite(r)||r<=0)if(0===f){var a=analyzeFrame();a&&(u=!0,h=a),cleanup(),t(u,h)}else cleanup(),t(u,h);else n.currentTime=r*e}n.onseeked=function(){var e=analyzeFrame();e&&(u=!0,h||(h=e)),f++,checkNextFrame()},n.onerror=function(){cleanup(),t(!1,null)},checkNextFrame()},n.onerror=function(){cleanup(),t(!1,null)}},FileValidator.prototype.isSequenceFrames=function(e){if(e.length<2)return!1;for(var t=/\d+/g,a=[],n=0;n<e.length;n++){var i=e[n].name.replace(/\.[^.]+$/,""),r=i.match(t);if(!r||0===r.length)return!1;var o=parseInt(r[r.length-1],10),l=i.lastIndexOf(r[r.length-1]),s=i.substring(0,l);a.push({file:e[n],seqNum:o,prefix:s})}for(var c=a[0].prefix,d=1;d<a.length;d++)if(a[d].prefix!==c)return!1;var f=a.map(function(e){return e.seqNum}),u=Math.min.apply(null,f);return Math.max.apply(null,f)-u+1<=1.5*e.length},e.MeeWoo=e.MeeWoo||{},e.MeeWoo.Services=e.MeeWoo.Services||{},e.MeeWoo.Services.FileValidator=FileValidator}(window);
+/**
+ * ==================== 文件验证器模块 (File Validator) ====================
+ * 
+ * 功能说明：
+ * 提供统一的文件格式验证功能，支持 SVGA、Lottie、双通道MP4、普通MP4 等格式
+ * 在文件加载前进行验证，避免错误文件影响当前播放状态
+ * 
+ * 主要方法：
+ * 1. validateFile(file, fileType) - 统一文件验证入口
+ * 2. detectMp4Type(file, callback) - MP4类型检测（双通道/普通）
+ * 3. isSequenceFrames(imageFiles) - 序列帧格式判断
+ * 
+ * 依赖：
+ * - SVGA.Parser (全局变量，用于SVGA文件验证)
+ * - JSZip (全局变量，用于.lottie文件解压)
+ * - libraryLoader.load() (用于动态加载JSZip)
+ * 
+ * 使用示例：
+ * ```javascript
+ * var validator = new FileValidator(libraryLoader);
+ * validator.validateFile(file, 'svga')
+ *   .then(function(validatedData) {
+ *     console.log('验证通过', validatedData);
+ *   })
+ *   .catch(function(errorMsg) {
+ *     alert(errorMsg);
+ *   });
+ * ```
+ * 
+ * @author MeeWoo Team
+ * @version 1.0.0
+ * ====================================================================
+ */
+
+(function (window) {
+    'use strict';
+
+    // Ensure namespace
+    window.MeeWoo = window.MeeWoo || {};
+    window.MeeWoo.Services = window.MeeWoo.Services || {};
+
+    /**
+     * 文件验证器构造函数
+     * @param {Object} libraryLoader - 库加载器实例
+     */
+    function FileValidator(libraryLoader) {
+        this.libraryLoader = libraryLoader;
+    }
+
+    /**
+     * 统一的文件验证器
+     * 在切换模式之前预验证，避免错误文件影响当前播放
+     * 
+     * @param {File} file - 文件对象
+     * @param {String} fileType - 文件类型：'svga' | 'lottie' | 'yyeva' | 'mp4'
+     * @returns {Promise} - resolve(validatedData) 或 reject(errorMessage)
+     */
+    FileValidator.prototype.validateFile = function (file, fileType) {
+        var _this = this;
+
+        return new Promise(function (resolve, reject) {
+            if (fileType === 'svga') {
+                // SVGA 验证：尝试解析 protobuf
+                _this._validateSvga(file, resolve, reject);
+
+            } else if (fileType === 'lottie') {
+                // Lottie 验证：检查 JSON 格式和必要字段
+                _this._validateLottie(file, resolve, reject);
+
+            } else if (fileType === 'yyeva') {
+                // 双通道MP4 验证：检查视频尺寸比例
+                _this._validateYyeva(file, resolve, reject);
+
+            } else if (fileType === 'mp4') {
+                // 普通MP4 验证：基本格式检查
+                _this._validateMp4(file, resolve, reject);
+
+            } else {
+                reject('不支持的文件类型');
+            }
+        });
+    };
+
+    /**
+     * 验证SVGA文件
+     * @private
+     */
+    FileValidator.prototype._validateSvga = function (file, resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var arrayBuffer = e.target.result;
+            var blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
+            var objectUrl = URL.createObjectURL(blob);
+            var parser = new SVGA.Parser();
+
+            parser.load(
+                objectUrl,
+                function (videoItem) {
+                    URL.revokeObjectURL(objectUrl);
+                    resolve({ videoItem: videoItem, file: file });
+                },
+                function (error) {
+                    URL.revokeObjectURL(objectUrl);
+                    reject('SVGA文件解析失败：' + (error.message || error));
+                }
+            );
+        };
+        reader.onerror = function () {
+            reject('文件读取失败');
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    /**
+     * 验证Lottie文件（支持.json和.lottie格式）
+     * @private
+     */
+    FileValidator.prototype._validateLottie = function (file, resolve, reject) {
+        var _this = this;
+        var fileName = (file.name || '').toLowerCase();
+
+        if (fileName.endsWith('.lottie')) {
+            // .lottie 文件（ZIP格式）
+            this._validateLottieZip(file, resolve, reject);
+        } else {
+            // .json 文件
+            this._validateLottieJson(file, resolve, reject);
+        }
+    };
+
+    /**
+     * 验证.lottie格式（ZIP压缩包）
+     * @private
+     */
+    FileValidator.prototype._validateLottieZip = function (file, resolve, reject) {
+        var _this = this;
+
+        this.libraryLoader.load('jszip', true).then(function () {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                JSZip.loadAsync(e.target.result).then(function (zip) {
+                    // 1. 优先尝试读取 manifest.json (标准 .lottie 格式)
+                    var manifestFile = zip.file('manifest.json');
+                    if (manifestFile) {
+                        manifestFile.async('text').then(function (manifestText) {
+                            try {
+                                var manifest = JSON.parse(manifestText);
+                                var animPath = '';
+
+                                // 获取主动画路径
+                                if (manifest.animations && manifest.animations.length > 0) {
+                                    var activeId = manifest.activeAnimationId;
+                                    var targetAnim = manifest.animations[0]; // 默认取第一个
+
+                                    // 如果有指定激活的动画ID，则查找对应动画
+                                    if (activeId) {
+                                        for (var k = 0; k < manifest.animations.length; k++) {
+                                            if (manifest.animations[k].id === activeId) {
+                                                targetAnim = manifest.animations[k];
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    // 拼接路径：.lottie 规范中通常在 animations/ 目录下
+                                    animPath = 'animations/' + targetAnim.id + '.json';
+
+                                    // 尝试直接读取（有些非标准包可能直接放在根目录或路径不同）
+                                    if (!zip.file(animPath)) {
+                                        // 尝试直接用 id 作为文件名
+                                        if (zip.file(targetAnim.id + '.json')) {
+                                            animPath = targetAnim.id + '.json';
+                                        } else if (zip.file(targetAnim.id)) {
+                                            animPath = targetAnim.id;
+                                        }
+                                    }
+                                }
+
+                                if (animPath && zip.file(animPath)) {
+                                    _this._readZipJsonFile(zip, animPath, file, resolve, reject);
+                                } else {
+                                    // Manifest 存在但找不到对应的动画文件，回退到遍历查找
+                                    _this._findAndReadAnyJson(zip, file, resolve, reject);
+                                }
+                            } catch (err) {
+                                // Manifest 解析失败，回退到遍历查找
+                                _this._findAndReadAnyJson(zip, file, resolve, reject);
+                            }
+                        }).catch(function () {
+                            _this._findAndReadAnyJson(zip, file, resolve, reject);
+                        });
+                    } else {
+                        // 2. 没有 manifest.json，回退到遍历查找 .json 文件
+                        _this._findAndReadAnyJson(zip, file, resolve, reject);
+                    }
+                }).catch(function (err) {
+                    reject('.lottie文件解压失败：' + err.message);
+                });
+            };
+            reader.onerror = function () {
+                reject('文件读取失败');
+            };
+            reader.readAsArrayBuffer(file);
+        }).catch(function (err) {
+            reject('JSZip库加载失败');
+        });
+    };
+
+    /**
+     * 辅助方法：遍历查找并读取任意 JSON 文件
+     * @private
+     */
+    FileValidator.prototype._findAndReadAnyJson = function (zip, file, resolve, reject) {
+        var _this = this;
+        var jsonFiles = [];
+        zip.forEach(function (relativePath, file) {
+            if (relativePath.endsWith('.json') && !relativePath.startsWith('__MACOSX')) {
+                jsonFiles.push(relativePath);
+            }
+        });
+
+        if (jsonFiles.length === 0) {
+            reject('.lottie文件中未找到JSON数据');
+            return;
+        }
+
+        // 简单的启发式规则：优先找 'data.json' 或包含 'animation' 的文件
+        var targetFile = jsonFiles[0];
+        for (var i = 0; i < jsonFiles.length; i++) {
+            if (jsonFiles[i].toLowerCase().indexOf('data.json') !== -1) {
+                targetFile = jsonFiles[i];
+                break;
+            }
+        }
+
+        _this._readZipJsonFile(zip, targetFile, file, resolve, reject);
+    };
+
+    /**
+     * 辅助方法：读取 ZIP 中的 JSON 文件并验证
+     * @private
+     */
+    FileValidator.prototype._readZipJsonFile = function (zip, filePath, file, resolve, reject) {
+        var _this = this;
+        zip.file(filePath).async('text').then(function (jsonText) {
+            try {
+                var data = JSON.parse(jsonText);
+                var animationData = data;
+
+                // 兼容旧的包装格式
+                if (data.animations && Array.isArray(data.animations) && data.animations.length > 0) {
+                    if (data.animations[0].data) {
+                        animationData = data.animations[0].data;
+                    } else if (data.animations[0].animation) {
+                        animationData = data.animations[0].animation;
+                    }
+                }
+
+                _this._validateLottieAnimationData(animationData, file, resolve, reject);
+            } catch (err) {
+                reject('JSON解析失败：' + err.message);
+            }
+        }).catch(function (err) {
+            reject('读取JSON文件失败：' + err.message);
+        });
+    };
+
+    /**
+     * 验证.json格式的Lottie文件
+     * @private
+     */
+    FileValidator.prototype._validateLottieJson = function (file, resolve, reject) {
+        var _this = this;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                var data = JSON.parse(e.target.result);
+                var animationData = data;
+
+                // 检查是否是包装格式
+                if (data.animation && typeof data.animation === 'object') {
+                    animationData = data.animation;
+                }
+
+                _this._validateLottieAnimationData(animationData, file, resolve, reject);
+            } catch (err) {
+                reject('JSON解析失败：' + err.message);
+            }
+        };
+        reader.onerror = function () {
+            reject('文件读取失败');
+        };
+        reader.readAsText(file);
+    };
+
+    /**
+     * 验证Lottie动画数据（检查必要字段）
+     * @private
+     */
+    FileValidator.prototype._validateLottieAnimationData = function (animData, file, resolve, reject) {
+        var width = animData.w || animData.width || 0;
+        var height = animData.h || animData.height || 0;
+
+        if (!width || !height) {
+            reject('Lottie文件缺少尺寸信息，可能文件格式不正确');
+        } else {
+            resolve({ animationData: animData, file: file });
+        }
+    };
+
+    /**
+     * 验证双通道MP4文件（复用detectMp4Type进行内容检测）
+     * 同时检测是否为 YYEVA 格式（带动态元素）
+     * @private
+     */
+    FileValidator.prototype._validateYyeva = function (file, resolve, reject) {
+        var _this = this;
+
+        // 并行执行：内容检测、FPS解析、YYEVA检测
+        Promise.all([
+            new Promise(function (res, rej) {
+                _this.detectMp4Type(file, function (isDualChannel, alphaPosition) {
+                    if (isDualChannel) {
+                        res({ isDualChannel: true, alphaDirection: alphaPosition });
+                    } else {
+                        rej('检测未发现透明通道特征，请确认是双通道MP4文件');
+                    }
+                });
+            }),
+            _this.detectMp4Fps(file),
+            _this.detectYyevaType(file)
+        ]).then(function (results) {
+            var typeResult = results[0];
+            var fps = results[1];
+            var yyevaResult = results[2];
+
+            resolve({
+                file: file,
+                isDualChannel: typeResult.isDualChannel,
+                alphaDirection: typeResult.alphaDirection,
+                detectedFps: fps,
+                isYyeva: yyevaResult ? yyevaResult.isYyeva : false,
+                yyevaData: yyevaResult ? yyevaResult.data : null
+            });
+        }).catch(function (err) {
+            reject(err);
+        });
+    };
+
+    /**
+     * 检测 MP4 是否为 YYEVA 格式（带动态元素）
+     * @param {File} file - MP4 文件
+     * @returns {Promise<{isYyeva: boolean, data: object|null}>}
+     */
+    FileValidator.prototype.detectYyevaType = function (file) {
+        return new Promise(function (resolve) {
+            // 确保 pako 库已加载
+            var loadPakoAndDetect = function () {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    try {
+                        var buffer = new Uint8Array(e.target.result);
+                        var yyevaData = _parseYyevaMetadata(buffer);
+                        if (yyevaData) {
+                            resolve({ isYyeva: true, data: yyevaData });
+                        } else {
+                            resolve({ isYyeva: false, data: null });
+                        }
+                    } catch (err) {
+                        console.warn('YYEVA 检测失败:', err);
+                        resolve({ isYyeva: false, data: null });
+                    }
+                };
+                reader.onerror = function () {
+                    resolve({ isYyeva: false, data: null });
+                };
+                reader.readAsArrayBuffer(file);
+            };
+
+            // 检查 pako 是否已加载
+            if (typeof pako !== 'undefined' && pako.inflate) {
+                loadPakoAndDetect();
+            } else if (window.MeeWoo && window.MeeWoo.Core && window.MeeWoo.Core.libraryLoader) {
+                // 动态加载 pako
+                window.MeeWoo.Core.libraryLoader.load('pako', true).then(function () {
+                    loadPakoAndDetect();
+                }).catch(function (err) {
+                    console.warn('pako 加载失败，跳过 YYEVA 检测:', err);
+                    resolve({ isYyeva: false, data: null });
+                });
+            } else {
+                console.warn('YYEVA 解析需要 pako 库，请确保已加载');
+                resolve({ isYyeva: false, data: null });
+            }
+        });
+
+        function _parseYyevaMetadata(buffer) {
+            var YYEVA_MARKER = 'yyeffectmp4json';
+            var markerBytes = new TextEncoder().encode(YYEVA_MARKER);
+            
+            var markerIndex = -1;
+            for (var i = 0; i <= buffer.length - markerBytes.length; i++) {
+                var found = true;
+                for (var j = 0; j < markerBytes.length; j++) {
+                    if (buffer[i + j] !== markerBytes[j]) {
+                        found = false;
+                        break;
+                    }
+                }
+                if (found) {
+                    markerIndex = i;
+                    break;
+                }
+            }
+
+            if (markerIndex === -1) {
+                return null;
+            }
+
+            var dataStart = markerIndex + YYEVA_MARKER.length;
+            var maxLen = Math.min(buffer.length - dataStart, 50000);
+            var str = '';
+            for (var k = dataStart; k < dataStart + maxLen; k++) {
+                str += String.fromCharCode(buffer[k]);
+            }
+
+            var base64Match = str.match(/\[\[([A-Za-z0-9+/=]+)\]\]/);
+            if (!base64Match || !base64Match[1]) {
+                return null;
+            }
+
+            try {
+                var binaryStr = atob(base64Match[1]);
+                var compressed = new Uint8Array(binaryStr.length);
+                for (var m = 0; m < binaryStr.length; m++) {
+                    compressed[m] = binaryStr.charCodeAt(m);
+                }
+
+                if (typeof pako === 'undefined' || !pako.inflate) {
+                    console.warn('YYEVA 解析需要 pako 库，请确保已加载');
+                    return null;
+                }
+
+                var decompressed = pako.inflate(compressed);
+                var jsonStr = new TextDecoder('utf-8').decode(decompressed);
+                var jsonData = JSON.parse(jsonStr);
+
+                if (!jsonData.descript || jsonData.descript.isEffect !== 1) {
+                    return null;
+                }
+
+                return {
+                    descript: jsonData.descript,
+                    effect: jsonData.effect || {},
+                    datas: jsonData.datas || []
+                };
+            } catch (e) {
+                console.warn('YYEVA 数据解析失败:', e);
+                return null;
+            }
+        }
+    };
+
+    /**
+     * 验证普通MP4文件（基本格式检查）
+     * @private
+     */
+    FileValidator.prototype._validateMp4 = function (file, resolve, reject) {
+        var _this = this;
+        var objectUrl = URL.createObjectURL(file);
+        var video = document.createElement('video');
+        video.src = objectUrl;
+        video.muted = true;
+
+        video.onloadedmetadata = function () {
+            URL.revokeObjectURL(objectUrl);
+
+            // 尝试获取FPS
+            _this.detectMp4Fps(file).then(function (fps) {
+                resolve({ file: file, detectedFps: fps });
+            });
+        };
+        video.onerror = function () {
+            URL.revokeObjectURL(objectUrl);
+            reject('视频文件加载失败');
+        };
+    };
+
+    /**
+     * 解析MP4文件获取帧率
+     * @param {File} file 
+     * @returns {Promise<number|null>} 返回FPS或null
+     */
+    FileValidator.prototype.detectMp4Fps = function (file) {
+        return new Promise(function (resolve) {
+            // 读取前 500KB，通常包含 moov atom
+            // 如果文件很大且 moov 在末尾，这里会失败，返回 null，这是一个折衷方案
+            var chunkSize = 500 * 1024;
+            var size = Math.min(file.size, chunkSize);
+            var reader = new FileReader();
+
+            reader.onload = function (e) {
+                try {
+                    var buffer = e.target.result;
+                    var data = new DataView(buffer);
+                    var fps = parseMp4ForFps(data);
+                    resolve(fps);
+                } catch (err) {
+                    console.warn('MP4 FPS parsing failed:', err);
+                    resolve(null);
+                }
+            };
+
+            reader.onerror = function () {
+                resolve(null);
+            };
+
+            reader.readAsArrayBuffer(file.slice(0, size));
+        });
+    };
+
+    /**
+     * 内部帮助函数：解析二进制数据查找 FPS
+     * 简化版 parser，查找 moov -> trak -> mdia -> mdhd (timescale) 和 stts (duration)
+     */
+    function parseMp4ForFps(data) {
+        var offset = 0;
+        var len = data.byteLength;
+
+        function readUint32() {
+            var v = data.getUint32(offset);
+            offset += 4;
+            return v;
+        }
+
+        function readString(length) {
+            var str = '';
+            for (var i = 0; i < length; i++) {
+                str += String.fromCharCode(data.getUint8(offset + i));
+            }
+            offset += length; // Update offset!
+            return str;
+        }
+
+        function findAtom(targetType, end) {
+            while (offset < end) {
+                if (offset + 8 > end) return null;
+                var atomStart = offset;
+                var size = data.getUint32(offset);
+                var type = String.fromCharCode(
+                    data.getUint8(offset + 4),
+                    data.getUint8(offset + 5),
+                    data.getUint8(offset + 6),
+                    data.getUint8(offset + 7)
+                );
+
+                if (size === 1) { // 64-bit size, skip for simplicity or handle
+                    // minimal parser usually encounters 32-bit atoms for headers
+                    offset += 8; // skip header
+                    // size is next 8 bytes
+                    // safe skip
+                    offset = atomStart + 8 + 8; // not supporting 64-bit size fully in this mini parser
+                    continue;
+                }
+
+                if (size === 0) return null; // last atom
+
+                if (type === targetType) {
+                    offset = atomStart + 8; // Point to data
+                    return { size: size, start: atomStart, end: atomStart + size };
+                }
+
+                offset = atomStart + size;
+            }
+            return null;
+        }
+
+        // 1. Find moov
+        var moov = findAtom('moov', len);
+        if (!moov) return null;
+
+        // 2. Search for tracks inside moov
+        // reset offset to moov data
+        offset = moov.start + 8;
+        var moovEnd = moov.end;
+
+        while (offset < moovEnd) {
+            // Find trak
+            var trak = findAtom('trak', moovEnd);
+            if (!trak) break;
+
+            // Check if this trak is video
+            // trak -> mdia -> hdlr
+            var trakEnd = trak.end;
+            var mdiaStart = -1;
+
+            // Look for mdia inside trak
+            offset = trak.start + 8;
+            var mdia = findAtom('mdia', trakEnd);
+            if (mdia) {
+                // Look for hdlr inside mdia
+                offset = mdia.start + 8;
+                var mdiaEnd = mdia.end;
+
+                // We need to find hdlr to confirm it's video, 
+                // AND mdhd for timescale, 
+                // AND minf->stbl->stts for duration/samples
+
+                var hdlr = null;
+                var mdhd = null;
+                var minf = null;
+
+                // Scan children of mdia
+                var tempOffset = offset;
+                while (tempOffset < mdiaEnd) {
+                    offset = tempOffset;
+                    var atomSize = data.getUint32(offset);
+                    var atomType = String.fromCharCode(
+                        data.getUint8(offset + 4),
+                        data.getUint8(offset + 5),
+                        data.getUint8(offset + 6),
+                        data.getUint8(offset + 7)
+                    );
+
+                    if (atomType === 'hdlr') {
+                        hdlr = { start: offset, size: atomSize };
+                    } else if (atomType === 'mdhd') {
+                        mdhd = { start: offset, size: atomSize };
+                    } else if (atomType === 'minf') {
+                        minf = { start: offset, size: atomSize, end: offset + atomSize };
+                    }
+
+                    tempOffset += atomSize;
+                }
+
+                // Check handler type
+                if (hdlr) {
+                    offset = hdlr.start + 8 + 4; // size + type + version/flags
+                    offset += 4; // pre_defined
+                    var handlerType = String.fromCharCode(
+                        data.getUint8(offset),
+                        data.getUint8(offset + 1),
+                        data.getUint8(offset + 2),
+                        data.getUint8(offset + 3)
+                    );
+
+                    if (handlerType === 'vide' && mdhd && minf) {
+                        // Found video track!
+
+                        // 1. Get timescale from mdhd
+                        offset = mdhd.start + 8;
+                        var version = data.getUint8(offset);
+                        offset += 4; // version + flags
+
+                        var timescale = 0;
+                        if (version === 1) {
+                            offset += 16; // creation_time(8) + modification_time(8)
+                            timescale = data.getUint32(offset);
+                        } else {
+                            offset += 8; // creation_time(4) + modification_time(4)
+                            timescale = data.getUint32(offset);
+                        }
+
+                        // 2. Get stts from minf -> stbl -> stts
+                        // Need to go deep: minf -> stbl -> stts
+                        offset = minf.start + 8;
+                        var stbl = findAtom('stbl', minf.end);
+                        if (stbl) {
+                            offset = stbl.start + 8;
+                            var stts = findAtom('stts', stbl.end);
+                            if (stts) {
+                                offset = stts.start + 8;
+                                offset += 4; // version + flags
+                                var entryCount = data.getUint32(offset);
+                                offset += 4;
+
+                                // Read first entry
+                                if (entryCount > 0) {
+                                    var sampleCount = data.getUint32(offset);
+                                    var sampleDelta = data.getUint32(offset + 4);
+
+                                    if (sampleDelta > 0 && timescale > 0) {
+                                        return Math.round(timescale / sampleDelta);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Move to next trak
+            offset = trakEnd;
+        }
+
+        return null;
+    }
+
+
+    /**
+     * 检测MP4是双通道还是普通视频
+     * 通过分析30%和70%位置的帧，检测左右两半的饱和度和亮度差异
+     * 
+     * @param {File} file - MP4文件
+     * @param {Function} callback - 回调函数，参数为 callback(isDualChannel, alphaPosition)
+     *                               isDualChannel: boolean - 是否为双通道
+     *                               alphaPosition: 'left' | 'right' | null - alpha通道位置（仅双通道时有效）
+     */
+    FileValidator.prototype.detectMp4Type = function (file, callback) {
+        var objectUrl = URL.createObjectURL(file);
+        var video = document.createElement('video');
+        video.src = objectUrl;
+        video.muted = true;
+
+        // 配置参数
+        var CONFIG = {
+            pureBlackThreshold: 0.015,     // 饱和度<0.015判定为纯黑（alpha通道），降低阈值更严格
+            saturationDiffThreshold: 0.02, // 饱和度差异>0.02判定为双通道，提高阈值避免误判
+            brightnessDiffThreshold: 0.03, // 亮度差异>0.03判定为双通道，提高阈值避免误判
+            checkFramePositions: [0.3, 0.7] // 检测30%和70%位置的帧
+        };
+
+        // 清理资源的辅助函数
+        function cleanup() {
+            if (video) {
+                video.onloadedmetadata = null;
+                video.onseeked = null;
+                video.onerror = null;
+
+                // [Optimize] 停止加载，但避免触发 net::ERR_ABORTED
+                // 直接移除src属性即可，不需要调用load()，让垃圾回收处理
+                // 调用load()会强制中断当前的HTTP请求（即使是blob），在控制台产生红色报错
+                video.removeAttribute('src');
+                video.src = '';
+            }
+            if (objectUrl) {
+                // 延迟撤销URL，给予浏览器一点缓冲时间，减少报错概率
+                setTimeout(function () {
+                    URL.revokeObjectURL(objectUrl);
+                }, 100);
+                objectUrl = null;
+            }
+        }
+
+        video.onloadedmetadata = function () {
+            var videoWidth = video.videoWidth;
+            var videoHeight = video.videoHeight;
+            var duration = video.duration;
+
+            // 创建临时canvas用于分析
+            var canvas = document.createElement('canvas');
+
+            // 性能优化：限制分析分辨率
+            // 将分析宽度限制在 320px 以内，大幅提升大分辨率视频的检测速度
+            var MAX_ANALYZE_WIDTH = 320;
+            var scale = Math.min(1, MAX_ANALYZE_WIDTH / videoWidth);
+
+            // 确保尺寸至少为 1
+            var analyzeWidth = Math.max(1, Math.floor(videoWidth * scale));
+            var analyzeHeight = Math.max(1, Math.floor(videoHeight * scale));
+
+            canvas.width = analyzeWidth;
+            canvas.height = analyzeHeight;
+
+            var ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+            var frameIndex = 0;
+            var isDualChannel = false;
+            var alphaPosition = null; // 'left' | 'right' - 记录alpha通道位置
+
+            // 计算区域平均饱和度和亮度
+            function calculateMetrics(imageData) {
+                var data = imageData.data;
+                var totalSaturation = 0;
+                var totalBrightness = 0;
+                var count = 0;
+
+                // 抖样计算（步长根据尺寸动态调整，保证性能）
+                // 缩小后的图片像素已经很少，可以减小步长或不跳过
+                var step = 4; // 每次跳过一个像素（RGBA是4字节，所以+4是下一个像素）
+
+                for (var i = 0; i < data.length; i += step) {
+                    var r = data[i] / 255;
+                    var g = data[i + 1] / 255;
+                    var b = data[i + 2] / 255;
+                    var max = Math.max(r, g, b);
+                    var min = Math.min(r, g, b);
+
+                    // 饱和度
+                    var saturation = max === 0 ? 0 : (max - min) / max;
+                    totalSaturation += saturation;
+
+                    // 亮度（使用相对亮度公式）
+                    var brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+                    totalBrightness += brightness;
+
+                    count++;
+                }
+                return {
+                    saturation: count === 0 ? 0 : totalSaturation / count,
+                    brightness: count === 0 ? 0 : totalBrightness / count
+                };
+            }
+
+            // 分析单帧是否为双通道
+            function analyzeFrame() {
+                // 将视频帧绘制到缩小后的 canvas 上
+                ctx.drawImage(video, 0, 0, analyzeWidth, analyzeHeight);
+
+                var halfWidth = Math.floor(analyzeWidth / 2);
+
+                // 防止视频尺寸为0导致的错误
+                if (halfWidth <= 0 || analyzeHeight <= 0) {
+                    return false;
+                }
+
+                var leftData = ctx.getImageData(0, 0, halfWidth, analyzeHeight);
+                var rightData = ctx.getImageData(halfWidth, 0, halfWidth, analyzeHeight);
+
+                var leftMetrics = calculateMetrics(leftData);
+                var rightMetrics = calculateMetrics(rightData);
+
+                var satDiff = Math.abs(leftMetrics.saturation - rightMetrics.saturation);
+                var brightDiff = Math.abs(leftMetrics.brightness - rightMetrics.brightness);
+
+                // 判断逻辑：
+                // 1. 一边是纯黑（alpha通道，饱和度极低）
+                // 2. 另一边饱和度明显更高（有彩色内容）
+                // 3. 或者亮度差异明显（一边全黑，一边有内容）
+                var hasBlackSide = leftMetrics.saturation < CONFIG.pureBlackThreshold ||
+                    rightMetrics.saturation < CONFIG.pureBlackThreshold;
+                var hasSaturationDiff = satDiff > CONFIG.saturationDiffThreshold;
+                var hasBrightnessDiff = brightDiff > CONFIG.brightnessDiffThreshold;
+
+                // 特殊处理：当两边都极暗时（两者都<0.015），放宽差异阈值
+                var bothVeryDark = leftMetrics.saturation < CONFIG.pureBlackThreshold &&
+                    rightMetrics.saturation < CONFIG.pureBlackThreshold;
+                if (bothVeryDark) {
+                    // 极暗场景：只要有微小差异就判定为双通道
+                    hasSaturationDiff = satDiff > 0.003;
+                    hasBrightnessDiff = brightDiff > 0.003;
+                }
+
+                var result = hasBlackSide && (hasSaturationDiff || hasBrightnessDiff);
+
+                // 判断alpha通道在哪一侧：饱和度低的一侧是灰度图（alpha通道）
+                if (result) {
+                    return leftMetrics.saturation < rightMetrics.saturation ? 'left' : 'right';
+                }
+
+                return null;
+            }
+
+            // 检查下一帧
+            function checkNextFrame() {
+                if (frameIndex >= CONFIG.checkFramePositions.length) {
+                    // 所有帧检查完成
+                    cleanup();
+                    callback(isDualChannel, alphaPosition);
+                    return;
+                }
+
+                var position = CONFIG.checkFramePositions[frameIndex];
+                // 确保 seek 位置有效
+                if (!isFinite(duration) || duration <= 0) {
+                    // 无法获取时长，仅检测第一帧（当前位置）
+                    if (frameIndex === 0) {
+                        var frameAlphaPosition = analyzeFrame();
+                        if (frameAlphaPosition) {
+                            isDualChannel = true;
+                            alphaPosition = frameAlphaPosition;
+                        }
+                        cleanup();
+                        callback(isDualChannel, alphaPosition);
+                    } else {
+                        cleanup();
+                        callback(isDualChannel, alphaPosition);
+                    }
+                    return;
+                }
+
+                video.currentTime = duration * position;
+            }
+
+            video.onseeked = function () {
+                var frameAlphaPosition = analyzeFrame();
+                if (frameAlphaPosition) {
+                    isDualChannel = true;
+                    // 记录alpha位置（如果多帧检测结果一致，保留第一次的结果）
+                    if (!alphaPosition) {
+                        alphaPosition = frameAlphaPosition;
+                    }
+                }
+                frameIndex++;
+                checkNextFrame();
+            };
+
+            video.onerror = function () {
+                cleanup();
+                callback(false, null); // 出错默认为普通视频
+            };
+
+            // 开始检测第一帧
+            checkNextFrame();
+        };
+
+        video.onerror = function () {
+            cleanup();
+            callback(false, null); // 出错默认为普通视频
+        };
+    };
+
+    /**
+     * 判断是否是序列帧格式
+     * 序列帧文件名应该包含连续的数字编号，如: frame001.png, frame002.png
+     * 
+     * @param {Array<File>} imageFiles - 图片文件数组
+     * @returns {boolean} - 是否为序列帧格式
+     */
+    FileValidator.prototype.isSequenceFrames = function (imageFiles) {
+        if (imageFiles.length < 2) return false;
+
+        // 提取文件名中的数字部分
+        var numberPattern = /\d+/g;
+        var fileInfos = [];
+
+        for (var i = 0; i < imageFiles.length; i++) {
+            var name = imageFiles[i].name;
+            var baseName = name.replace(/\.[^.]+$/, ''); // 去掉扩展名
+            var matches = baseName.match(numberPattern);
+
+            if (!matches || matches.length === 0) {
+                // 文件名中没有数字，不是序列帧
+                return false;
+            }
+
+            // 取最后一个数字作为序号
+            var seqNum = parseInt(matches[matches.length - 1], 10);
+            // 提取前缀（数字前的部分）
+            var lastNumIndex = baseName.lastIndexOf(matches[matches.length - 1]);
+            var prefix = baseName.substring(0, lastNumIndex);
+
+            fileInfos.push({ file: imageFiles[i], seqNum: seqNum, prefix: prefix });
+        }
+
+        // 检查前缀是否一致
+        var firstPrefix = fileInfos[0].prefix;
+        for (var j = 1; j < fileInfos.length; j++) {
+            if (fileInfos[j].prefix !== firstPrefix) {
+                return false; // 前缀不一致
+            }
+        }
+
+        // 检查序号是否连续（允许乱序，但数字范围要连续）
+        var seqNums = fileInfos.map(function (info) { return info.seqNum; });
+        var minSeq = Math.min.apply(null, seqNums);
+        var maxSeq = Math.max.apply(null, seqNums);
+
+        // 序号范围应该等于文件数量（允许有缺失，但整体是连续的）
+        // 例如：1,2,3,4,5 是连续的，1,2,5,6,7 也算连续（中间缺失但整体范围覆盖）
+        return (maxSeq - minSeq + 1) <= imageFiles.length * 1.5; // 允许50%的缺失容忍度
+    };
+
+    // 暴露到全局命名空间
+    // 按照项目规范，使用 MeeWoo 作为项目级命名空间
+    window.MeeWoo = window.MeeWoo || {};
+    window.MeeWoo.Services = window.MeeWoo.Services || {};
+    window.MeeWoo.Services.FileValidator = FileValidator;
+
+})(window);

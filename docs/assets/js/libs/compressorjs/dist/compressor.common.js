@@ -7,4 +7,1051 @@
  *
  * Date: 2023-02-28T14:09:41.732Z
  */
-"use strict";function ownKeys(e,t){var r=Object.keys(e);if(Object.getOwnPropertySymbols){var i=Object.getOwnPropertySymbols(e);t&&(i=i.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),r.push.apply(r,i)}return r}function _objectSpread2(e){for(var t=1;t<arguments.length;t++){var r=null!=arguments[t]?arguments[t]:{};t%2?ownKeys(Object(r),!0).forEach(function(t){_defineProperty(e,t,r[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(r)):ownKeys(Object(r)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(r,t))})}return e}function _classCallCheck(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}function _defineProperties(e,t){for(var r=0;r<t.length;r++){var i=t[r];i.enumerable=i.enumerable||!1,i.configurable=!0,"value"in i&&(i.writable=!0),Object.defineProperty(e,_toPropertyKey(i.key),i)}}function _createClass(e,t,r){return t&&_defineProperties(e.prototype,t),r&&_defineProperties(e,r),Object.defineProperty(e,"prototype",{writable:!1}),e}function _defineProperty(e,t,r){return(t=_toPropertyKey(t))in e?Object.defineProperty(e,t,{value:r,enumerable:!0,configurable:!0,writable:!0}):e[t]=r,e}function _extends(){return _extends=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var r=arguments[t];for(var i in r)Object.prototype.hasOwnProperty.call(r,i)&&(e[i]=r[i])}return e},_extends.apply(this,arguments)}function _toPrimitive(e,t){if("object"!=typeof e||null===e)return e;var r=e[Symbol.toPrimitive];if(void 0!==r){var i=r.call(e,t||"default");if("object"!=typeof i)return i;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}function _toPropertyKey(e){var t=_toPrimitive(e,"string");return"symbol"==typeof t?t:String(t)}var canvasToBlob={exports:{}};!function(e){"undefined"!=typeof window&&function(t){var r=t.HTMLCanvasElement&&t.HTMLCanvasElement.prototype,i=t.Blob&&function(){try{return Boolean(new Blob)}catch(e){return!1}}(),a=i&&t.Uint8Array&&function(){try{return 100===new Blob([new Uint8Array(100)]).size}catch(e){return!1}}(),o=t.BlobBuilder||t.WebKitBlobBuilder||t.MozBlobBuilder||t.MSBlobBuilder,n=/^data:((.*?)(;charset=.*?)?)(;base64)?,/,s=(i||o)&&t.atob&&t.ArrayBuffer&&t.Uint8Array&&function(e){var t,r,s,l,c,u,f,h,d;if(!(t=e.match(n)))throw new Error("invalid data URI");for(r=t[2]?t[1]:"text/plain"+(t[3]||";charset=US-ASCII"),s=!!t[4],l=e.slice(t[0].length),c=s?atob(l):decodeURIComponent(l),u=new ArrayBuffer(c.length),f=new Uint8Array(u),h=0;h<c.length;h+=1)f[h]=c.charCodeAt(h);return i?new Blob([a?f:u],{type:r}):((d=new o).append(u),d.getBlob(r))};t.HTMLCanvasElement&&!r.toBlob&&(r.mozGetAsFile?r.toBlob=function(e,t,i){var a=this;setTimeout(function(){i&&r.toDataURL&&s?e(s(a.toDataURL(t,i))):e(a.mozGetAsFile("blob",t))})}:r.toDataURL&&s&&(r.msToBlob?r.toBlob=function(e,t,i){var a=this;setTimeout(function(){(t&&"image/png"!==t||i)&&r.toDataURL&&s?e(s(a.toDataURL(t,i))):e(a.msToBlob(t))})}:r.toBlob=function(e,t,r){var i=this;setTimeout(function(){e(s(i.toDataURL(t,r)))})})),e.exports?e.exports=s:t.dataURLtoBlob=s}(window)}(canvasToBlob);var toBlob=canvasToBlob.exports,isBlob=function isBlob(e){return"undefined"!=typeof Blob&&(e instanceof Blob||"[object Blob]"===Object.prototype.toString.call(e))},DEFAULTS={strict:!0,checkOrientation:!0,retainExif:!1,maxWidth:1/0,maxHeight:1/0,minWidth:0,minHeight:0,width:void 0,height:void 0,resize:"none",quality:.8,mimeType:"auto",convertTypes:["image/png"],convertSize:5e6,beforeDraw:null,drew:null,success:null,error:null},IS_BROWSER="undefined"!=typeof window&&void 0!==window.document,WINDOW=IS_BROWSER?window:{},isPositiveNumber=function isPositiveNumber(e){return e>0&&e<1/0},slice=Array.prototype.slice;function toArray(e){return Array.from?Array.from(e):slice.call(e)}var REGEXP_IMAGE_TYPE=/^image\/.+$/;function isImageType(e){return REGEXP_IMAGE_TYPE.test(e)}function imageTypeToExtension(e){var t=isImageType(e)?e.substr(6):"";return"jpeg"===t&&(t="jpg"),".".concat(t)}var fromCharCode=String.fromCharCode;function getStringFromCharCode(e,t,r){var i,a="";for(r+=t,i=t;i<r;i+=1)a+=fromCharCode(e.getUint8(i));return a}var btoa=WINDOW.btoa;function arrayBufferToDataURL(e,t){for(var r=[],i=new Uint8Array(e);i.length>0;)r.push(fromCharCode.apply(null,toArray(i.subarray(0,8192)))),i=i.subarray(8192);return"data:".concat(t,";base64,").concat(btoa(r.join("")))}function resetAndGetOrientation(e){var t,r=new DataView(e);try{var i,a,o;if(255===r.getUint8(0)&&216===r.getUint8(1))for(var n=r.byteLength,s=2;s+1<n;){if(255===r.getUint8(s)&&225===r.getUint8(s+1)){a=s;break}s+=1}if(a){var l=a+10;if("Exif"===getStringFromCharCode(r,a+4,4)){var c=r.getUint16(l);if(((i=18761===c)||19789===c)&&42===r.getUint16(l+2,i)){var u=r.getUint32(l+4,i);u>=8&&(o=l+u)}}}if(o){var f,h,d=r.getUint16(o,i);for(h=0;h<d;h+=1)if(f=o+12*h+2,274===r.getUint16(f,i)){f+=8,t=r.getUint16(f,i),r.setUint16(f,1,i);break}}}catch(e){t=1}return t}function parseOrientation(e){var t=0,r=1,i=1;switch(e){case 2:r=-1;break;case 3:t=-180;break;case 4:i=-1;break;case 5:t=90,i=-1;break;case 6:t=90;break;case 7:t=90,r=-1;break;case 8:t=-90}return{rotate:t,scaleX:r,scaleY:i}}var REGEXP_DECIMALS=/\.\d*(?:0|9){12}\d*$/;function normalizeDecimalNumber(e){var t=arguments.length>1&&void 0!==arguments[1]?arguments[1]:1e11;return REGEXP_DECIMALS.test(e)?Math.round(e*t)/t:e}function getAdjustedSizes(e){var t=e.aspectRatio,r=e.height,i=e.width,a=arguments.length>1&&void 0!==arguments[1]?arguments[1]:"none",o=isPositiveNumber(i),n=isPositiveNumber(r);if(o&&n){var s=r*t;("contain"===a||"none"===a)&&s>i||"cover"===a&&s<i?r=i/t:i=r*t}else o?r=i/t:n&&(i=r*t);return{width:i,height:r}}function getExif(e){for(var t=toArray(new Uint8Array(e)),r=t.length,i=[],a=0;a+3<r;){var o=t[a],n=t[a+1];if(255===o&&218===n)break;if(255===o&&216===n)a+=2;else{var s=a+(256*t[a+2]+t[a+3])+2,l=t.slice(a,s);i.push(l),a=s}}return i.reduce(function(e,t){return 255===t[0]&&225===t[1]?e.concat(t):e},[])}function insertExif(e,t){var r=toArray(new Uint8Array(e));if(255!==r[2]||224!==r[3])return e;var i=256*r[4]+r[5],a=[255,216].concat(t,r.slice(4+i));return new Uint8Array(a)}var ArrayBuffer$1=WINDOW.ArrayBuffer,FileReader=WINDOW.FileReader,URL=WINDOW.URL||WINDOW.webkitURL,REGEXP_EXTENSION=/\.\w+$/,AnotherCompressor=WINDOW.Compressor,Compressor=function(){function Compressor(e,t){_classCallCheck(this,Compressor),this.file=e,this.exif=[],this.image=new Image,this.options=_objectSpread2(_objectSpread2({},DEFAULTS),t),this.aborted=!1,this.result=null,this.init()}return _createClass(Compressor,[{key:"init",value:function init(){var e=this,t=this.file,r=this.options;if(isBlob(t)){var i=t.type;if(isImageType(i))if(URL&&FileReader){ArrayBuffer$1||(r.checkOrientation=!1,r.retainExif=!1);var a="image/jpeg"===i,o=a&&r.checkOrientation,n=a&&r.retainExif;if(!URL||o||n){var s=new FileReader;this.reader=s,s.onload=function(r){var a=r.target.result,s={},l=1;o&&(l=resetAndGetOrientation(a))>1&&_extends(s,parseOrientation(l)),n&&(e.exif=getExif(a)),s.url=o||n?!URL||l>1?arrayBufferToDataURL(a,i):URL.createObjectURL(t):a,e.load(s)},s.onabort=function(){e.fail(new Error("Aborted to read the image with FileReader."))},s.onerror=function(){e.fail(new Error("Failed to read the image with FileReader."))},s.onloadend=function(){e.reader=null},o||n?s.readAsArrayBuffer(t):s.readAsDataURL(t)}else this.load({url:URL.createObjectURL(t)})}else this.fail(new Error("The current browser does not support image compression."));else this.fail(new Error("The first argument must be an image File or Blob object."))}else this.fail(new Error("The first argument must be a File or Blob object."))}},{key:"load",value:function load(e){var t=this,r=this.file,i=this.image;i.onload=function(){t.draw(_objectSpread2(_objectSpread2({},e),{},{naturalWidth:i.naturalWidth,naturalHeight:i.naturalHeight}))},i.onabort=function(){t.fail(new Error("Aborted to load the image."))},i.onerror=function(){t.fail(new Error("Failed to load the image."))},WINDOW.navigator&&/(?:iPad|iPhone|iPod).*?AppleWebKit/i.test(WINDOW.navigator.userAgent)&&(i.crossOrigin="anonymous"),i.alt=r.name,i.src=e.url}},{key:"draw",value:function draw(e){var t=this,r=e.naturalWidth,i=e.naturalHeight,a=e.rotate,o=void 0===a?0:a,n=e.scaleX,s=void 0===n?1:n,l=e.scaleY,c=void 0===l?1:l,u=this.file,f=this.image,h=this.options,d=document.createElement("canvas"),m=d.getContext("2d"),b=Math.abs(o)%180==90,p=("contain"===h.resize||"cover"===h.resize)&&isPositiveNumber(h.width)&&isPositiveNumber(h.height),g=Math.max(h.maxWidth,0)||1/0,v=Math.max(h.maxHeight,0)||1/0,y=Math.max(h.minWidth,0)||0,w=Math.max(h.minHeight,0)||0,E=r/i,B=h.width,R=h.height;if(b){var A=[v,g];g=A[0],v=A[1];var O=[w,y];y=O[0],w=O[1];var U=[R,B];B=U[0],R=U[1]}p&&(E=B/R);var T=getAdjustedSizes({aspectRatio:E,width:g,height:v},"contain");g=T.width,v=T.height;var x=getAdjustedSizes({aspectRatio:E,width:y,height:w},"cover");if(y=x.width,w=x.height,p){var j=getAdjustedSizes({aspectRatio:E,width:B,height:R},h.resize);B=j.width,R=j.height}else{var P=getAdjustedSizes({aspectRatio:E,width:B,height:R}),C=P.width;B=void 0===C?r:C;var D=P.height;R=void 0===D?i:D}var S=-(B=Math.floor(normalizeDecimalNumber(Math.min(Math.max(B,y),g))))/2,L=-(R=Math.floor(normalizeDecimalNumber(Math.min(Math.max(R,w),v))))/2,_=B,W=R,I=[];if(p){var k,M,z,N,F=getAdjustedSizes({aspectRatio:E,width:r,height:i},{contain:"cover",cover:"contain"}[h.resize]);z=F.width,N=F.height,k=(r-z)/2,M=(i-N)/2,I.push(k,M,z,N)}if(I.push(S,L,_,W),b){var H=[R,B];B=H[0],R=H[1]}d.width=B,d.height=R,isImageType(h.mimeType)||(h.mimeType=u.type);var G="transparent";u.size>h.convertSize&&h.convertTypes.indexOf(h.mimeType)>=0&&(h.mimeType="image/jpeg");var X="image/jpeg"===h.mimeType;if(X&&(G="#fff"),m.fillStyle=G,m.fillRect(0,0,B,R),h.beforeDraw&&h.beforeDraw.call(this,m,d),!this.aborted&&(m.save(),m.translate(B/2,R/2),m.rotate(o*Math.PI/180),m.scale(s,c),m.drawImage.apply(m,[f].concat(I)),m.restore(),h.drew&&h.drew.call(this,m,d),!this.aborted)){var K=function callback(e){if(!t.aborted){var a=function done(e){return t.done({naturalWidth:r,naturalHeight:i,result:e})};if(e&&X&&h.retainExif&&t.exif&&t.exif.length>0){var o=function next(e){return a(toBlob(arrayBufferToDataURL(insertExif(e,t.exif),h.mimeType)))};if(e.arrayBuffer)e.arrayBuffer().then(o).catch(function(){t.fail(new Error("Failed to read the compressed image with Blob.arrayBuffer()."))});else{var n=new FileReader;t.reader=n,n.onload=function(e){var t=e.target;o(t.result)},n.onabort=function(){t.fail(new Error("Aborted to read the compressed image with FileReader."))},n.onerror=function(){t.fail(new Error("Failed to read the compressed image with FileReader."))},n.onloadend=function(){t.reader=null},n.readAsArrayBuffer(e)}}else a(e)}};d.toBlob?d.toBlob(K,h.mimeType,h.quality):K(toBlob(d.toDataURL(h.mimeType,h.quality)))}}},{key:"done",value:function done(e){var t=e.naturalWidth,r=e.naturalHeight,i=e.result,a=this.file,o=this.image,n=this.options;if(URL&&0===o.src.indexOf("blob:")&&URL.revokeObjectURL(o.src),i)if(n.strict&&!n.retainExif&&i.size>a.size&&n.mimeType===a.type&&!(n.width>t||n.height>r||n.minWidth>t||n.minHeight>r||n.maxWidth<t||n.maxHeight<r))i=a;else{var s=new Date;i.lastModified=s.getTime(),i.lastModifiedDate=s,i.name=a.name,i.name&&i.type!==a.type&&(i.name=i.name.replace(REGEXP_EXTENSION,imageTypeToExtension(i.type)))}else i=a;this.result=i,n.success&&n.success.call(this,i)}},{key:"fail",value:function fail(e){var t=this.options;if(!t.error)throw e;t.error.call(this,e)}},{key:"abort",value:function abort(){this.aborted||(this.aborted=!0,this.reader?this.reader.abort():this.image.complete?this.fail(new Error("The compression process has been aborted.")):(this.image.onload=null,this.image.onabort()))}}],[{key:"noConflict",value:function noConflict(){return window.Compressor=AnotherCompressor,Compressor}},{key:"setDefaults",value:function setDefaults(e){_extends(DEFAULTS,e)}}]),Compressor}();module.exports=Compressor;
+
+'use strict';
+
+function ownKeys(object, enumerableOnly) {
+  var keys = Object.keys(object);
+  if (Object.getOwnPropertySymbols) {
+    var symbols = Object.getOwnPropertySymbols(object);
+    enumerableOnly && (symbols = symbols.filter(function (sym) {
+      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+    })), keys.push.apply(keys, symbols);
+  }
+  return keys;
+}
+function _objectSpread2(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = null != arguments[i] ? arguments[i] : {};
+    i % 2 ? ownKeys(Object(source), !0).forEach(function (key) {
+      _defineProperty(target, key, source[key]);
+    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) {
+      Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+    });
+  }
+  return target;
+}
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+}
+function _defineProperties(target, props) {
+  for (var i = 0; i < props.length; i++) {
+    var descriptor = props[i];
+    descriptor.enumerable = descriptor.enumerable || false;
+    descriptor.configurable = true;
+    if ("value" in descriptor) descriptor.writable = true;
+    Object.defineProperty(target, _toPropertyKey(descriptor.key), descriptor);
+  }
+}
+function _createClass(Constructor, protoProps, staticProps) {
+  if (protoProps) _defineProperties(Constructor.prototype, protoProps);
+  if (staticProps) _defineProperties(Constructor, staticProps);
+  Object.defineProperty(Constructor, "prototype", {
+    writable: false
+  });
+  return Constructor;
+}
+function _defineProperty(obj, key, value) {
+  key = _toPropertyKey(key);
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+  return obj;
+}
+function _extends() {
+  _extends = Object.assign ? Object.assign.bind() : function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+    return target;
+  };
+  return _extends.apply(this, arguments);
+}
+function _toPrimitive(input, hint) {
+  if (typeof input !== "object" || input === null) return input;
+  var prim = input[Symbol.toPrimitive];
+  if (prim !== undefined) {
+    var res = prim.call(input, hint || "default");
+    if (typeof res !== "object") return res;
+    throw new TypeError("@@toPrimitive must return a primitive value.");
+  }
+  return (hint === "string" ? String : Number)(input);
+}
+function _toPropertyKey(arg) {
+  var key = _toPrimitive(arg, "string");
+  return typeof key === "symbol" ? key : String(key);
+}
+
+var canvasToBlob = {exports: {}};
+
+/*
+ * JavaScript Canvas to Blob
+ * https://github.com/blueimp/JavaScript-Canvas-to-Blob
+ *
+ * Copyright 2012, Sebastian Tschan
+ * https://blueimp.net
+ *
+ * Licensed under the MIT license:
+ * https://opensource.org/licenses/MIT
+ *
+ * Based on stackoverflow user Stoive's code snippet:
+ * http://stackoverflow.com/q/4998908
+ */
+(function (module) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  (function (window) {
+
+    var CanvasPrototype = window.HTMLCanvasElement && window.HTMLCanvasElement.prototype;
+    var hasBlobConstructor = window.Blob && function () {
+      try {
+        return Boolean(new Blob());
+      } catch (e) {
+        return false;
+      }
+    }();
+    var hasArrayBufferViewSupport = hasBlobConstructor && window.Uint8Array && function () {
+      try {
+        return new Blob([new Uint8Array(100)]).size === 100;
+      } catch (e) {
+        return false;
+      }
+    }();
+    var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder || window.MSBlobBuilder;
+    var dataURIPattern = /^data:((.*?)(;charset=.*?)?)(;base64)?,/;
+    var dataURLtoBlob = (hasBlobConstructor || BlobBuilder) && window.atob && window.ArrayBuffer && window.Uint8Array && function (dataURI) {
+      var matches, mediaType, isBase64, dataString, byteString, arrayBuffer, intArray, i, bb;
+      // Parse the dataURI components as per RFC 2397
+      matches = dataURI.match(dataURIPattern);
+      if (!matches) {
+        throw new Error('invalid data URI');
+      }
+      // Default to text/plain;charset=US-ASCII
+      mediaType = matches[2] ? matches[1] : 'text/plain' + (matches[3] || ';charset=US-ASCII');
+      isBase64 = !!matches[4];
+      dataString = dataURI.slice(matches[0].length);
+      if (isBase64) {
+        // Convert base64 to raw binary data held in a string:
+        byteString = atob(dataString);
+      } else {
+        // Convert base64/URLEncoded data component to raw binary:
+        byteString = decodeURIComponent(dataString);
+      }
+      // Write the bytes of the string to an ArrayBuffer:
+      arrayBuffer = new ArrayBuffer(byteString.length);
+      intArray = new Uint8Array(arrayBuffer);
+      for (i = 0; i < byteString.length; i += 1) {
+        intArray[i] = byteString.charCodeAt(i);
+      }
+      // Write the ArrayBuffer (or ArrayBufferView) to a blob:
+      if (hasBlobConstructor) {
+        return new Blob([hasArrayBufferViewSupport ? intArray : arrayBuffer], {
+          type: mediaType
+        });
+      }
+      bb = new BlobBuilder();
+      bb.append(arrayBuffer);
+      return bb.getBlob(mediaType);
+    };
+    if (window.HTMLCanvasElement && !CanvasPrototype.toBlob) {
+      if (CanvasPrototype.mozGetAsFile) {
+        CanvasPrototype.toBlob = function (callback, type, quality) {
+          var self = this;
+          setTimeout(function () {
+            if (quality && CanvasPrototype.toDataURL && dataURLtoBlob) {
+              callback(dataURLtoBlob(self.toDataURL(type, quality)));
+            } else {
+              callback(self.mozGetAsFile('blob', type));
+            }
+          });
+        };
+      } else if (CanvasPrototype.toDataURL && dataURLtoBlob) {
+        if (CanvasPrototype.msToBlob) {
+          CanvasPrototype.toBlob = function (callback, type, quality) {
+            var self = this;
+            setTimeout(function () {
+              if ((type && type !== 'image/png' || quality) && CanvasPrototype.toDataURL && dataURLtoBlob) {
+                callback(dataURLtoBlob(self.toDataURL(type, quality)));
+              } else {
+                callback(self.msToBlob(type));
+              }
+            });
+          };
+        } else {
+          CanvasPrototype.toBlob = function (callback, type, quality) {
+            var self = this;
+            setTimeout(function () {
+              callback(dataURLtoBlob(self.toDataURL(type, quality)));
+            });
+          };
+        }
+      }
+    }
+    if (module.exports) {
+      module.exports = dataURLtoBlob;
+    } else {
+      window.dataURLtoBlob = dataURLtoBlob;
+    }
+  })(window);
+})(canvasToBlob);
+var toBlob = canvasToBlob.exports;
+
+var isBlob = function isBlob(value) {
+  if (typeof Blob === 'undefined') {
+    return false;
+  }
+  return value instanceof Blob || Object.prototype.toString.call(value) === '[object Blob]';
+};
+
+var DEFAULTS = {
+  /**
+   * Indicates if output the original image instead of the compressed one
+   * when the size of the compressed image is greater than the original one's
+   * @type {boolean}
+   */
+  strict: true,
+  /**
+   * Indicates if read the image's Exif Orientation information,
+   * and then rotate or flip the image automatically.
+   * @type {boolean}
+   */
+  checkOrientation: true,
+  /**
+   * Indicates if retain the image's Exif information after compressed.
+   * @type {boolean}
+  */
+  retainExif: false,
+  /**
+   * The max width of the output image.
+   * @type {number}
+   */
+  maxWidth: Infinity,
+  /**
+   * The max height of the output image.
+   * @type {number}
+   */
+  maxHeight: Infinity,
+  /**
+   * The min width of the output image.
+   * @type {number}
+   */
+  minWidth: 0,
+  /**
+   * The min height of the output image.
+   * @type {number}
+   */
+  minHeight: 0,
+  /**
+   * The width of the output image.
+   * If not specified, the natural width of the source image will be used.
+   * @type {number}
+   */
+  width: undefined,
+  /**
+   * The height of the output image.
+   * If not specified, the natural height of the source image will be used.
+   * @type {number}
+   */
+  height: undefined,
+  /**
+   * Sets how the size of the image should be resized to the container
+   * specified by the `width` and `height` options.
+   * @type {string}
+   */
+  resize: 'none',
+  /**
+   * The quality of the output image.
+   * It must be a number between `0` and `1`,
+   * and only available for `image/jpeg` and `image/webp` images.
+   * Check out {@link https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/toBlob canvas.toBlob}.
+   * @type {number}
+   */
+  quality: 0.8,
+  /**
+   * The mime type of the output image.
+   * By default, the original mime type of the source image file will be used.
+   * @type {string}
+   */
+  mimeType: 'auto',
+  /**
+   * Files whose file type is included in this list,
+   * and whose file size exceeds the `convertSize` value will be converted to JPEGs.
+   * @type {string｜Array}
+   */
+  convertTypes: ['image/png'],
+  /**
+   * PNG files over this size (5 MB by default) will be converted to JPEGs.
+   * To disable this, just set the value to `Infinity`.
+   * @type {number}
+   */
+  convertSize: 5000000,
+  /**
+   * The hook function to execute before draw the image into the canvas for compression.
+   * @type {Function}
+   * @param {CanvasRenderingContext2D} context - The 2d rendering context of the canvas.
+   * @param {HTMLCanvasElement} canvas - The canvas for compression.
+   * @example
+   * function (context, canvas) {
+   *   context.fillStyle = '#fff';
+   * }
+   */
+  beforeDraw: null,
+  /**
+   * The hook function to execute after drew the image into the canvas for compression.
+   * @type {Function}
+   * @param {CanvasRenderingContext2D} context - The 2d rendering context of the canvas.
+   * @param {HTMLCanvasElement} canvas - The canvas for compression.
+   * @example
+   * function (context, canvas) {
+   *   context.filter = 'grayscale(100%)';
+   * }
+   */
+  drew: null,
+  /**
+   * The hook function to execute when success to compress the image.
+   * @type {Function}
+   * @param {File} file - The compressed image File object.
+   * @example
+   * function (file) {
+   *   console.log(file);
+   * }
+   */
+  success: null,
+  /**
+   * The hook function to execute when fail to compress the image.
+   * @type {Function}
+   * @param {Error} err - An Error object.
+   * @example
+   * function (err) {
+   *   console.log(err.message);
+   * }
+   */
+  error: null
+};
+
+var IS_BROWSER = typeof window !== 'undefined' && typeof window.document !== 'undefined';
+var WINDOW = IS_BROWSER ? window : {};
+
+/**
+ * Check if the given value is a positive number.
+ * @param {*} value - The value to check.
+ * @returns {boolean} Returns `true` if the given value is a positive number, else `false`.
+ */
+var isPositiveNumber = function isPositiveNumber(value) {
+  return value > 0 && value < Infinity;
+};
+var slice = Array.prototype.slice;
+
+/**
+ * Convert array-like or iterable object to an array.
+ * @param {*} value - The value to convert.
+ * @returns {Array} Returns a new array.
+ */
+function toArray(value) {
+  return Array.from ? Array.from(value) : slice.call(value);
+}
+var REGEXP_IMAGE_TYPE = /^image\/.+$/;
+
+/**
+ * Check if the given value is a mime type of image.
+ * @param {*} value - The value to check.
+ * @returns {boolean} Returns `true` if the given is a mime type of image, else `false`.
+ */
+function isImageType(value) {
+  return REGEXP_IMAGE_TYPE.test(value);
+}
+
+/**
+ * Convert image type to extension.
+ * @param {string} value - The image type to convert.
+ * @returns {boolean} Returns the image extension.
+ */
+function imageTypeToExtension(value) {
+  var extension = isImageType(value) ? value.substr(6) : '';
+  if (extension === 'jpeg') {
+    extension = 'jpg';
+  }
+  return ".".concat(extension);
+}
+var fromCharCode = String.fromCharCode;
+
+/**
+ * Get string from char code in data view.
+ * @param {DataView} dataView - The data view for read.
+ * @param {number} start - The start index.
+ * @param {number} length - The read length.
+ * @returns {string} The read result.
+ */
+function getStringFromCharCode(dataView, start, length) {
+  var str = '';
+  var i;
+  length += start;
+  for (i = start; i < length; i += 1) {
+    str += fromCharCode(dataView.getUint8(i));
+  }
+  return str;
+}
+var btoa = WINDOW.btoa;
+
+/**
+ * Transform array buffer to Data URL.
+ * @param {ArrayBuffer} arrayBuffer - The array buffer to transform.
+ * @param {string} mimeType - The mime type of the Data URL.
+ * @returns {string} The result Data URL.
+ */
+function arrayBufferToDataURL(arrayBuffer, mimeType) {
+  var chunks = [];
+  var chunkSize = 8192;
+  var uint8 = new Uint8Array(arrayBuffer);
+  while (uint8.length > 0) {
+    // XXX: Babel's `toConsumableArray` helper will throw error in IE or Safari 9
+    // eslint-disable-next-line prefer-spread
+    chunks.push(fromCharCode.apply(null, toArray(uint8.subarray(0, chunkSize))));
+    uint8 = uint8.subarray(chunkSize);
+  }
+  return "data:".concat(mimeType, ";base64,").concat(btoa(chunks.join('')));
+}
+
+/**
+ * Get orientation value from given array buffer.
+ * @param {ArrayBuffer} arrayBuffer - The array buffer to read.
+ * @returns {number} The read orientation value.
+ */
+function resetAndGetOrientation(arrayBuffer) {
+  var dataView = new DataView(arrayBuffer);
+  var orientation;
+
+  // Ignores range error when the image does not have correct Exif information
+  try {
+    var littleEndian;
+    var app1Start;
+    var ifdStart;
+
+    // Only handle JPEG image (start by 0xFFD8)
+    if (dataView.getUint8(0) === 0xFF && dataView.getUint8(1) === 0xD8) {
+      var length = dataView.byteLength;
+      var offset = 2;
+      while (offset + 1 < length) {
+        if (dataView.getUint8(offset) === 0xFF && dataView.getUint8(offset + 1) === 0xE1) {
+          app1Start = offset;
+          break;
+        }
+        offset += 1;
+      }
+    }
+    if (app1Start) {
+      var exifIDCode = app1Start + 4;
+      var tiffOffset = app1Start + 10;
+      if (getStringFromCharCode(dataView, exifIDCode, 4) === 'Exif') {
+        var endianness = dataView.getUint16(tiffOffset);
+        littleEndian = endianness === 0x4949;
+        if (littleEndian || endianness === 0x4D4D /* bigEndian */) {
+          if (dataView.getUint16(tiffOffset + 2, littleEndian) === 0x002A) {
+            var firstIFDOffset = dataView.getUint32(tiffOffset + 4, littleEndian);
+            if (firstIFDOffset >= 0x00000008) {
+              ifdStart = tiffOffset + firstIFDOffset;
+            }
+          }
+        }
+      }
+    }
+    if (ifdStart) {
+      var _length = dataView.getUint16(ifdStart, littleEndian);
+      var _offset;
+      var i;
+      for (i = 0; i < _length; i += 1) {
+        _offset = ifdStart + i * 12 + 2;
+        if (dataView.getUint16(_offset, littleEndian) === 0x0112 /* Orientation */) {
+          // 8 is the offset of the current tag's value
+          _offset += 8;
+
+          // Get the original orientation value
+          orientation = dataView.getUint16(_offset, littleEndian);
+
+          // Override the orientation with its default value
+          dataView.setUint16(_offset, 1, littleEndian);
+          break;
+        }
+      }
+    }
+  } catch (e) {
+    orientation = 1;
+  }
+  return orientation;
+}
+
+/**
+ * Parse Exif Orientation value.
+ * @param {number} orientation - The orientation to parse.
+ * @returns {Object} The parsed result.
+ */
+function parseOrientation(orientation) {
+  var rotate = 0;
+  var scaleX = 1;
+  var scaleY = 1;
+  switch (orientation) {
+    // Flip horizontal
+    case 2:
+      scaleX = -1;
+      break;
+
+    // Rotate left 180°
+    case 3:
+      rotate = -180;
+      break;
+
+    // Flip vertical
+    case 4:
+      scaleY = -1;
+      break;
+
+    // Flip vertical and rotate right 90°
+    case 5:
+      rotate = 90;
+      scaleY = -1;
+      break;
+
+    // Rotate right 90°
+    case 6:
+      rotate = 90;
+      break;
+
+    // Flip horizontal and rotate right 90°
+    case 7:
+      rotate = 90;
+      scaleX = -1;
+      break;
+
+    // Rotate left 90°
+    case 8:
+      rotate = -90;
+      break;
+  }
+  return {
+    rotate: rotate,
+    scaleX: scaleX,
+    scaleY: scaleY
+  };
+}
+var REGEXP_DECIMALS = /\.\d*(?:0|9){12}\d*$/;
+
+/**
+ * Normalize decimal number.
+ * Check out {@link https://0.30000000000000004.com/}
+ * @param {number} value - The value to normalize.
+ * @param {number} [times=100000000000] - The times for normalizing.
+ * @returns {number} Returns the normalized number.
+ */
+function normalizeDecimalNumber(value) {
+  var times = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 100000000000;
+  return REGEXP_DECIMALS.test(value) ? Math.round(value * times) / times : value;
+}
+
+/**
+ * Get the max sizes in a rectangle under the given aspect ratio.
+ * @param {Object} data - The original sizes.
+ * @param {string} [type='contain'] - The adjust type.
+ * @returns {Object} The result sizes.
+ */
+function getAdjustedSizes(_ref) {
+  var aspectRatio = _ref.aspectRatio,
+    height = _ref.height,
+    width = _ref.width;
+  var type = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'none';
+  var isValidWidth = isPositiveNumber(width);
+  var isValidHeight = isPositiveNumber(height);
+  if (isValidWidth && isValidHeight) {
+    var adjustedWidth = height * aspectRatio;
+    if ((type === 'contain' || type === 'none') && adjustedWidth > width || type === 'cover' && adjustedWidth < width) {
+      height = width / aspectRatio;
+    } else {
+      width = height * aspectRatio;
+    }
+  } else if (isValidWidth) {
+    height = width / aspectRatio;
+  } else if (isValidHeight) {
+    width = height * aspectRatio;
+  }
+  return {
+    width: width,
+    height: height
+  };
+}
+
+/**
+ * Get Exif information from the given array buffer.
+ * @param {ArrayBuffer} arrayBuffer - The array buffer to read.
+ * @returns {Array} The read Exif information.
+ */
+function getExif(arrayBuffer) {
+  var array = toArray(new Uint8Array(arrayBuffer));
+  var length = array.length;
+  var segments = [];
+  var start = 0;
+  while (start + 3 < length) {
+    var value = array[start];
+    var next = array[start + 1];
+
+    // SOS (Start of Scan)
+    if (value === 0xFF && next === 0xDA) {
+      break;
+    }
+
+    // SOI (Start of Image)
+    if (value === 0xFF && next === 0xD8) {
+      start += 2;
+    } else {
+      var offset = array[start + 2] * 256 + array[start + 3];
+      var end = start + offset + 2;
+      var segment = array.slice(start, end);
+      segments.push(segment);
+      start = end;
+    }
+  }
+  return segments.reduce(function (exifArray, current) {
+    if (current[0] === 0xFF && current[1] === 0xE1) {
+      return exifArray.concat(current);
+    }
+    return exifArray;
+  }, []);
+}
+
+/**
+ * Insert Exif information into the given array buffer.
+ * @param {ArrayBuffer} arrayBuffer - The array buffer to transform.
+ * @param {Array} exifArray - The Exif information to insert.
+ * @returns {ArrayBuffer} The transformed array buffer.
+ */
+function insertExif(arrayBuffer, exifArray) {
+  var array = toArray(new Uint8Array(arrayBuffer));
+  if (array[2] !== 0xFF || array[3] !== 0xE0) {
+    return arrayBuffer;
+  }
+  var app0Length = array[4] * 256 + array[5];
+  var newArrayBuffer = [0xFF, 0xD8].concat(exifArray, array.slice(4 + app0Length));
+  return new Uint8Array(newArrayBuffer);
+}
+
+var ArrayBuffer$1 = WINDOW.ArrayBuffer,
+  FileReader = WINDOW.FileReader;
+var URL = WINDOW.URL || WINDOW.webkitURL;
+var REGEXP_EXTENSION = /\.\w+$/;
+var AnotherCompressor = WINDOW.Compressor;
+
+/**
+ * Creates a new image compressor.
+ * @class
+ */
+var Compressor = /*#__PURE__*/function () {
+  /**
+   * The constructor of Compressor.
+   * @param {File|Blob} file - The target image file for compressing.
+   * @param {Object} [options] - The options for compressing.
+   */
+  function Compressor(file, options) {
+    _classCallCheck(this, Compressor);
+    this.file = file;
+    this.exif = [];
+    this.image = new Image();
+    this.options = _objectSpread2(_objectSpread2({}, DEFAULTS), options);
+    this.aborted = false;
+    this.result = null;
+    this.init();
+  }
+  _createClass(Compressor, [{
+    key: "init",
+    value: function init() {
+      var _this = this;
+      var file = this.file,
+        options = this.options;
+      if (!isBlob(file)) {
+        this.fail(new Error('The first argument must be a File or Blob object.'));
+        return;
+      }
+      var mimeType = file.type;
+      if (!isImageType(mimeType)) {
+        this.fail(new Error('The first argument must be an image File or Blob object.'));
+        return;
+      }
+      if (!URL || !FileReader) {
+        this.fail(new Error('The current browser does not support image compression.'));
+        return;
+      }
+      if (!ArrayBuffer$1) {
+        options.checkOrientation = false;
+        options.retainExif = false;
+      }
+      var isJPEGImage = mimeType === 'image/jpeg';
+      var checkOrientation = isJPEGImage && options.checkOrientation;
+      var retainExif = isJPEGImage && options.retainExif;
+      if (URL && !checkOrientation && !retainExif) {
+        this.load({
+          url: URL.createObjectURL(file)
+        });
+      } else {
+        var reader = new FileReader();
+        this.reader = reader;
+        reader.onload = function (_ref) {
+          var target = _ref.target;
+          var result = target.result;
+          var data = {};
+          var orientation = 1;
+          if (checkOrientation) {
+            // Reset the orientation value to its default value 1
+            // as some iOS browsers will render image with its orientation
+            orientation = resetAndGetOrientation(result);
+            if (orientation > 1) {
+              _extends(data, parseOrientation(orientation));
+            }
+          }
+          if (retainExif) {
+            _this.exif = getExif(result);
+          }
+          if (checkOrientation || retainExif) {
+            if (!URL
+
+            // Generate a new URL with the default orientation value 1.
+            || orientation > 1) {
+              data.url = arrayBufferToDataURL(result, mimeType);
+            } else {
+              data.url = URL.createObjectURL(file);
+            }
+          } else {
+            data.url = result;
+          }
+          _this.load(data);
+        };
+        reader.onabort = function () {
+          _this.fail(new Error('Aborted to read the image with FileReader.'));
+        };
+        reader.onerror = function () {
+          _this.fail(new Error('Failed to read the image with FileReader.'));
+        };
+        reader.onloadend = function () {
+          _this.reader = null;
+        };
+        if (checkOrientation || retainExif) {
+          reader.readAsArrayBuffer(file);
+        } else {
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+  }, {
+    key: "load",
+    value: function load(data) {
+      var _this2 = this;
+      var file = this.file,
+        image = this.image;
+      image.onload = function () {
+        _this2.draw(_objectSpread2(_objectSpread2({}, data), {}, {
+          naturalWidth: image.naturalWidth,
+          naturalHeight: image.naturalHeight
+        }));
+      };
+      image.onabort = function () {
+        _this2.fail(new Error('Aborted to load the image.'));
+      };
+      image.onerror = function () {
+        _this2.fail(new Error('Failed to load the image.'));
+      };
+
+      // Match all browsers that use WebKit as the layout engine in iOS devices,
+      // such as Safari for iOS, Chrome for iOS, and in-app browsers.
+      if (WINDOW.navigator && /(?:iPad|iPhone|iPod).*?AppleWebKit/i.test(WINDOW.navigator.userAgent)) {
+        // Fix the `The operation is insecure` error (#57)
+        image.crossOrigin = 'anonymous';
+      }
+      image.alt = file.name;
+      image.src = data.url;
+    }
+  }, {
+    key: "draw",
+    value: function draw(_ref2) {
+      var _this3 = this;
+      var naturalWidth = _ref2.naturalWidth,
+        naturalHeight = _ref2.naturalHeight,
+        _ref2$rotate = _ref2.rotate,
+        rotate = _ref2$rotate === void 0 ? 0 : _ref2$rotate,
+        _ref2$scaleX = _ref2.scaleX,
+        scaleX = _ref2$scaleX === void 0 ? 1 : _ref2$scaleX,
+        _ref2$scaleY = _ref2.scaleY,
+        scaleY = _ref2$scaleY === void 0 ? 1 : _ref2$scaleY;
+      var file = this.file,
+        image = this.image,
+        options = this.options;
+      var canvas = document.createElement('canvas');
+      var context = canvas.getContext('2d');
+      var is90DegreesRotated = Math.abs(rotate) % 180 === 90;
+      var resizable = (options.resize === 'contain' || options.resize === 'cover') && isPositiveNumber(options.width) && isPositiveNumber(options.height);
+      var maxWidth = Math.max(options.maxWidth, 0) || Infinity;
+      var maxHeight = Math.max(options.maxHeight, 0) || Infinity;
+      var minWidth = Math.max(options.minWidth, 0) || 0;
+      var minHeight = Math.max(options.minHeight, 0) || 0;
+      var aspectRatio = naturalWidth / naturalHeight;
+      var width = options.width,
+        height = options.height;
+      if (is90DegreesRotated) {
+        var _ref3 = [maxHeight, maxWidth];
+        maxWidth = _ref3[0];
+        maxHeight = _ref3[1];
+        var _ref4 = [minHeight, minWidth];
+        minWidth = _ref4[0];
+        minHeight = _ref4[1];
+        var _ref5 = [height, width];
+        width = _ref5[0];
+        height = _ref5[1];
+      }
+      if (resizable) {
+        aspectRatio = width / height;
+      }
+      var _getAdjustedSizes = getAdjustedSizes({
+        aspectRatio: aspectRatio,
+        width: maxWidth,
+        height: maxHeight
+      }, 'contain');
+      maxWidth = _getAdjustedSizes.width;
+      maxHeight = _getAdjustedSizes.height;
+      var _getAdjustedSizes2 = getAdjustedSizes({
+        aspectRatio: aspectRatio,
+        width: minWidth,
+        height: minHeight
+      }, 'cover');
+      minWidth = _getAdjustedSizes2.width;
+      minHeight = _getAdjustedSizes2.height;
+      if (resizable) {
+        var _getAdjustedSizes3 = getAdjustedSizes({
+          aspectRatio: aspectRatio,
+          width: width,
+          height: height
+        }, options.resize);
+        width = _getAdjustedSizes3.width;
+        height = _getAdjustedSizes3.height;
+      } else {
+        var _getAdjustedSizes4 = getAdjustedSizes({
+          aspectRatio: aspectRatio,
+          width: width,
+          height: height
+        });
+        var _getAdjustedSizes4$wi = _getAdjustedSizes4.width;
+        width = _getAdjustedSizes4$wi === void 0 ? naturalWidth : _getAdjustedSizes4$wi;
+        var _getAdjustedSizes4$he = _getAdjustedSizes4.height;
+        height = _getAdjustedSizes4$he === void 0 ? naturalHeight : _getAdjustedSizes4$he;
+      }
+      width = Math.floor(normalizeDecimalNumber(Math.min(Math.max(width, minWidth), maxWidth)));
+      height = Math.floor(normalizeDecimalNumber(Math.min(Math.max(height, minHeight), maxHeight)));
+      var destX = -width / 2;
+      var destY = -height / 2;
+      var destWidth = width;
+      var destHeight = height;
+      var params = [];
+      if (resizable) {
+        var srcX = 0;
+        var srcY = 0;
+        var srcWidth = naturalWidth;
+        var srcHeight = naturalHeight;
+        var _getAdjustedSizes5 = getAdjustedSizes({
+          aspectRatio: aspectRatio,
+          width: naturalWidth,
+          height: naturalHeight
+        }, {
+          contain: 'cover',
+          cover: 'contain'
+        }[options.resize]);
+        srcWidth = _getAdjustedSizes5.width;
+        srcHeight = _getAdjustedSizes5.height;
+        srcX = (naturalWidth - srcWidth) / 2;
+        srcY = (naturalHeight - srcHeight) / 2;
+        params.push(srcX, srcY, srcWidth, srcHeight);
+      }
+      params.push(destX, destY, destWidth, destHeight);
+      if (is90DegreesRotated) {
+        var _ref6 = [height, width];
+        width = _ref6[0];
+        height = _ref6[1];
+      }
+      canvas.width = width;
+      canvas.height = height;
+      if (!isImageType(options.mimeType)) {
+        options.mimeType = file.type;
+      }
+      var fillStyle = 'transparent';
+
+      // Converts PNG files over the `convertSize` to JPEGs.
+      if (file.size > options.convertSize && options.convertTypes.indexOf(options.mimeType) >= 0) {
+        options.mimeType = 'image/jpeg';
+      }
+      var isJPEGImage = options.mimeType === 'image/jpeg';
+      if (isJPEGImage) {
+        fillStyle = '#fff';
+      }
+
+      // Override the default fill color (#000, black)
+      context.fillStyle = fillStyle;
+      context.fillRect(0, 0, width, height);
+      if (options.beforeDraw) {
+        options.beforeDraw.call(this, context, canvas);
+      }
+      if (this.aborted) {
+        return;
+      }
+      context.save();
+      context.translate(width / 2, height / 2);
+      context.rotate(rotate * Math.PI / 180);
+      context.scale(scaleX, scaleY);
+      context.drawImage.apply(context, [image].concat(params));
+      context.restore();
+      if (options.drew) {
+        options.drew.call(this, context, canvas);
+      }
+      if (this.aborted) {
+        return;
+      }
+      var callback = function callback(blob) {
+        if (!_this3.aborted) {
+          var done = function done(result) {
+            return _this3.done({
+              naturalWidth: naturalWidth,
+              naturalHeight: naturalHeight,
+              result: result
+            });
+          };
+          if (blob && isJPEGImage && options.retainExif && _this3.exif && _this3.exif.length > 0) {
+            var next = function next(arrayBuffer) {
+              return done(toBlob(arrayBufferToDataURL(insertExif(arrayBuffer, _this3.exif), options.mimeType)));
+            };
+            if (blob.arrayBuffer) {
+              blob.arrayBuffer().then(next).catch(function () {
+                _this3.fail(new Error('Failed to read the compressed image with Blob.arrayBuffer().'));
+              });
+            } else {
+              var reader = new FileReader();
+              _this3.reader = reader;
+              reader.onload = function (_ref7) {
+                var target = _ref7.target;
+                next(target.result);
+              };
+              reader.onabort = function () {
+                _this3.fail(new Error('Aborted to read the compressed image with FileReader.'));
+              };
+              reader.onerror = function () {
+                _this3.fail(new Error('Failed to read the compressed image with FileReader.'));
+              };
+              reader.onloadend = function () {
+                _this3.reader = null;
+              };
+              reader.readAsArrayBuffer(blob);
+            }
+          } else {
+            done(blob);
+          }
+        }
+      };
+      if (canvas.toBlob) {
+        canvas.toBlob(callback, options.mimeType, options.quality);
+      } else {
+        callback(toBlob(canvas.toDataURL(options.mimeType, options.quality)));
+      }
+    }
+  }, {
+    key: "done",
+    value: function done(_ref8) {
+      var naturalWidth = _ref8.naturalWidth,
+        naturalHeight = _ref8.naturalHeight,
+        result = _ref8.result;
+      var file = this.file,
+        image = this.image,
+        options = this.options;
+      if (URL && image.src.indexOf('blob:') === 0) {
+        URL.revokeObjectURL(image.src);
+      }
+      if (result) {
+        // Returns original file if the result is greater than it and without size related options
+        if (options.strict && !options.retainExif && result.size > file.size && options.mimeType === file.type && !(options.width > naturalWidth || options.height > naturalHeight || options.minWidth > naturalWidth || options.minHeight > naturalHeight || options.maxWidth < naturalWidth || options.maxHeight < naturalHeight)) {
+          result = file;
+        } else {
+          var date = new Date();
+          result.lastModified = date.getTime();
+          result.lastModifiedDate = date;
+          result.name = file.name;
+
+          // Convert the extension to match its type
+          if (result.name && result.type !== file.type) {
+            result.name = result.name.replace(REGEXP_EXTENSION, imageTypeToExtension(result.type));
+          }
+        }
+      } else {
+        // Returns original file if the result is null in some cases.
+        result = file;
+      }
+      this.result = result;
+      if (options.success) {
+        options.success.call(this, result);
+      }
+    }
+  }, {
+    key: "fail",
+    value: function fail(err) {
+      var options = this.options;
+      if (options.error) {
+        options.error.call(this, err);
+      } else {
+        throw err;
+      }
+    }
+  }, {
+    key: "abort",
+    value: function abort() {
+      if (!this.aborted) {
+        this.aborted = true;
+        if (this.reader) {
+          this.reader.abort();
+        } else if (!this.image.complete) {
+          this.image.onload = null;
+          this.image.onabort();
+        } else {
+          this.fail(new Error('The compression process has been aborted.'));
+        }
+      }
+    }
+
+    /**
+     * Get the no conflict compressor class.
+     * @returns {Compressor} The compressor class.
+     */
+  }], [{
+    key: "noConflict",
+    value: function noConflict() {
+      window.Compressor = AnotherCompressor;
+      return Compressor;
+    }
+
+    /**
+     * Change the default options.
+     * @param {Object} options - The new default options.
+     */
+  }, {
+    key: "setDefaults",
+    value: function setDefaults(options) {
+      _extends(DEFAULTS, options);
+    }
+  }]);
+  return Compressor;
+}();
+
+module.exports = Compressor;

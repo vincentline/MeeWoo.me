@@ -1,1 +1,375 @@
-!function(){"use strict";window.MeeWoo=window.MeeWoo||{},window.MeeWoo.Exporters=window.MeeWoo.Exporters||{};var e=null,t=!1,o={initWebPXMux:async function(){if(e&&t)return e;if("undefined"==typeof WebPXMux){var o=window.MeeWoo.Core.libraryLoader;if(o&&await o.load(["webpxmux"],!0),"undefined"==typeof WebPXMux)throw new Error("WebPXMux 库加载失败")}return e=WebPXMux("assets/js/lib/webpxmux/webpxmux.wasm"),await e.waitRuntime(),t=!0,console.log("[WebP导出] webpxmux 初始化完成"),e},imageDataToRGBA:function(e){for(var t=e.data,o=e.width*e.height,r=new Uint32Array(o),a=0;a<o;a++){var n=t[4*a],i=t[4*a+1],w=t[4*a+2],l=t[4*a+3];r[a]=n<<24|i<<16|w<<8|l}return r},exportFromBlobs:async function(e,t,o){var r=this,a=t.width||300,n=t.height||300,i=t.fps||30;o=o||function(){};try{o(.3,"init","初始化编码器...");var w=await this.initWebPXMux(),l=document.createElement("canvas");l.width=a,l.height=n;for(var c=l.getContext("2d",{willReadFrequently:!0,alpha:!0}),d=[],h=Math.round(1e3/i),u=0;u<e.length;u++){o(.3+u/e.length*.3,"processing","处理帧 "+(u+1)+"/"+e.length);var s=await createImageBitmap(e[u]);c.clearRect(0,0,a,n),c.drawImage(s,0,0,a,n),s.close();var m=c.getImageData(0,0,a,n),g=r.imageDataToRGBA(m);d.push({duration:h,isKeyframe:0===u,rgba:g})}o(.6,"encoding","编码WebP动画...");var f={frameCount:d.length,width:a,height:n,loopCount:0,bgColor:0,frames:d},b=await w.encodeFrames(f);if(!b||0===b.length)throw new Error("webpxmux编码失败");var p=new Blob([b],{type:"image/webp"});return console.log("[WebP导出] 输出大小:",r.formatBytes(p.size)),r.download(p,"animation.webp"),o(1,"completed","导出完成"),p}catch(e){throw console.error("[WebP导出] 失败:",e),e}},export:async function(e){var t=this;if(!e.getFrame)throw new Error("缺少 getFrame 回调");if(!e.totalFrames||e.totalFrames<=0)throw new Error("帧数无效");var o=e.width||300,r=e.height||300,a=e.fps||30,n=e.totalFrames,i=e.onProgress||function(){},w=e.onError||function(){},l=e.shouldCancel||function(){return!1};try{i(0,"init","初始化编码器...");var c=await this.initWebPXMux();if(l())throw new Error("导出已取消");var d=document.createElement("canvas");d.width=o,d.height=r;var h=d.getContext("2d",{willReadFrequently:!0,alpha:!0});i(.05,"capturing","捕获帧数据...");for(var u=[],s=Math.round(1e3/a),m=0;m<n;m++){if(l())throw new Error("导出已取消");var g=await e.getFrame(m);if(g){h.clearRect(0,0,o,r),h.drawImage(g,0,0,o,r);var f=h.getImageData(0,0,o,r),b=t.imageDataToRGBA(f);u.push({duration:s,isKeyframe:0===m,rgba:b}),i(.05+m/n*.55,"capturing","捕获帧 "+(m+1)+"/"+n)}else console.warn("[WebP导出] 帧 "+m+" 获取失败，跳过")}if(0===u.length)throw new Error("没有捕获到任何帧");console.log("[WebP导出] 捕获完成，共 "+u.length+" 帧"),i(.6,"encoding","编码WebP动画...");var p={frameCount:u.length,width:o,height:r,loopCount:0,bgColor:0,frames:u};if(l())throw new Error("导出已取消");i(.7,"encoding","正在编码...");var v=await c.encodeFrames(p);if(!v||0===v.length)throw new Error("webpxmux编码失败，未生成输出数据");i(.9,"downloading","生成下载文件...");var x=new Blob([v],{type:"image/webp"});return console.log("[WebP导出] 输出文件大小:",t.formatBytes(x.size)),t.download(x,"animation.webp"),i(1,"completed","导出完成"),x}catch(e){throw console.error("[WebP导出] 导出失败:",e),w(e),e}},download:function(e,t){var o=URL.createObjectURL(e),r=document.createElement("a");r.href=o,r.download=t||"animation.webp",document.body.appendChild(r),r.click(),document.body.removeChild(r),window.MeeWoo&&window.MeeWoo.Service&&window.MeeWoo.Service.TimerService?window.MeeWoo.Service.TimerService.createDelay(function(){URL.revokeObjectURL(o)},100,"webp-export"):setTimeout(function(){URL.revokeObjectURL(o)},100)},estimate:function(e){var t=e.width||300,o=e.height||300,r=e.fps||30,a=e.duration||0,n=Math.ceil(a*r),i=t*o*.05*n;return{totalFrames:n,totalBytes:i,fileSizeText:this.formatBytes(i)}},formatBytes:function(e){if(0===e)return"0 B";var t=Math.floor(Math.log(e)/Math.log(1024));return(e/Math.pow(1024,t)).toFixed(2)+" "+["B","KB","MB","GB"][t]}};window.MeeWoo.Exporters.WebPExporter=o}(window);
+/**
+ * WebP导出器模块
+ * 使用 webpxmux.js 编码动画 WebP（支持透明背景，序列帧动画）
+ * 
+ * 使用方式：
+ * WebPExporter.export({
+ *   width: 300,
+ *   height: 300,
+ *   fps: 30,
+ *   totalFrames: 60,
+ *   getFrame: async (frameIndex) => canvas,  // 返回指定帧的canvas
+ *   onProgress: (progress, stage, message) => {},
+ *   onError: (error) => {},
+ *   shouldCancel: () => false  // 返回true时取消导出
+ * });
+ */
+(function(global) {
+    'use strict';
+
+    // Ensure namespace
+    window.MeeWoo = window.MeeWoo || {};
+    window.MeeWoo.Exporters = window.MeeWoo.Exporters || {};
+
+    // webpxmux 实例缓存
+    var xMuxInstance = null;
+    var xMuxReady = false;
+
+    var WebPExporter = {
+        /**
+         * 初始化 webpxmux
+         * @returns {Promise} webpxmux实例
+         */
+        initWebPXMux: async function () {
+            // 如果已初始化，直接返回
+            if (xMuxInstance && xMuxReady) {
+                return xMuxInstance;
+            }
+
+            // 检查webpxmux是否已加载
+            if (typeof WebPXMux === 'undefined') {
+                // 使用library-loader加载
+                var libraryLoader = window.MeeWoo.Core.libraryLoader;
+                if (libraryLoader) {
+                    await libraryLoader.load(['webpxmux'], true);
+                }
+                
+                // 再次检查
+                if (typeof WebPXMux === 'undefined') {
+                    throw new Error('WebPXMux 库加载失败');
+                }
+            }
+
+            // 初始化webpxmux，传入wasm文件路径
+            xMuxInstance = WebPXMux('assets/js/lib/webpxmux/webpxmux.wasm');
+            
+            // 等待运行时就绪
+            await xMuxInstance.waitRuntime();
+            xMuxReady = true;
+            
+            console.log('[WebP导出] webpxmux 初始化完成');
+            return xMuxInstance;
+        },
+
+        /**
+         * 将Canvas ImageData转换为Uint32Array (0xRRGGBBAA格式)
+         * @param {ImageData} imageData Canvas ImageData
+         * @returns {Uint32Array} RGBA数据
+         */
+        imageDataToRGBA: function (imageData) {
+            var data = imageData.data;
+            var pixelCount = imageData.width * imageData.height;
+            var rgba = new Uint32Array(pixelCount);
+            
+            for (var i = 0; i < pixelCount; i++) {
+                var r = data[i * 4];
+                var g = data[i * 4 + 1];
+                var b = data[i * 4 + 2];
+                var a = data[i * 4 + 3];
+                // webpxmux使用0xRRGGBBAA格式
+                rgba[i] = (r << 24) | (g << 16) | (b << 8) | a;
+            }
+            
+            return rgba;
+        },
+
+        /**
+         * 从已捕获的 Blob 数组导出动画 WebP
+         * @param {Blob[]} blobs 帧数据数组
+         * @param {Object} config 配置对象 (width, height, fps)
+         * @param {Function} onProgress 进度回调
+         * @returns {Promise<Blob>} WebP文件Blob
+         */
+        exportFromBlobs: async function(blobs, config, onProgress) {
+            var _this = this;
+            var width = config.width || 300;
+            var height = config.height || 300;
+            var fps = config.fps || 30;
+            var onProgress = onProgress || function() {};
+
+            try {
+                // 1. 初始化webpxmux
+                onProgress(0.3, 'init', '初始化编码器...');
+                var xMux = await this.initWebPXMux();
+
+                // 2. 创建临时canvas用于解码Blob
+                var tempCanvas = document.createElement('canvas');
+                tempCanvas.width = width;
+                tempCanvas.height = height;
+                var tempCtx = tempCanvas.getContext('2d', {
+                    willReadFrequently: true,
+                    alpha: true
+                });
+
+                // 3. 处理帧数据
+                var framesArray = [];
+                var frameDuration = Math.round(1000 / fps);
+
+                for (var i = 0; i < blobs.length; i++) {
+                    onProgress(0.3 + (i / blobs.length) * 0.3, 'processing', '处理帧 ' + (i + 1) + '/' + blobs.length);
+                    
+                    // Blob -> ImageBitmap
+                    var bitmap = await createImageBitmap(blobs[i]);
+                    
+                    // 绘制到canvas
+                    tempCtx.clearRect(0, 0, width, height);
+                    tempCtx.drawImage(bitmap, 0, 0, width, height);
+                    bitmap.close();
+
+                    // 获取ImageData并转换为RGBA
+                    var imageData = tempCtx.getImageData(0, 0, width, height);
+                    var rgba = _this.imageDataToRGBA(imageData);
+
+                    framesArray.push({
+                        duration: frameDuration,
+                        isKeyframe: i === 0,
+                        rgba: rgba
+                    });
+                }
+
+                // 4. 构建Frames对象
+                onProgress(0.6, 'encoding', '编码WebP动画...');
+                var frames = {
+                    frameCount: framesArray.length,
+                    width: width,
+                    height: height,
+                    loopCount: 0,
+                    bgColor: 0x00000000,
+                    frames: framesArray
+                };
+
+                // 5. 编码
+                var webpData = await xMux.encodeFrames(frames);
+
+                if (!webpData || webpData.length === 0) {
+                    throw new Error('webpxmux编码失败');
+                }
+
+                // 6. 生成Blob
+                var blob = new Blob([webpData], { type: 'image/webp' });
+                console.log('[WebP导出] 输出大小:', _this.formatBytes(blob.size));
+
+                // 自动下载
+                _this.download(blob, 'animation.webp');
+
+                onProgress(1, 'completed', '导出完成');
+                return blob;
+
+            } catch (error) {
+                console.error('[WebP导出] 失败:', error);
+                throw error;
+            }
+        },
+
+        /**
+         * 导出动画WebP（使用webpxmux编码）
+         * @param {Object} config 配置对象
+         * @param {Number} config.width 宽度
+         * @param {Number} config.height 高度
+         * @param {Number} config.fps 帧率
+         * @param {Number} config.totalFrames 总帧数
+         * @param {Function} config.getFrame 获取帧的回调函数 (frameIndex) => canvas
+         * @param {Function} config.onProgress 进度回调 (progress, stage, message)
+         * @param {Function} config.onError 错误回调
+         * @param {Function} config.shouldCancel 取消检查回调
+         * @returns {Promise<Blob>} WebP文件Blob
+         */
+        export: async function (config) {
+            var _this = this;
+
+            // 参数校验
+            if (!config.getFrame) throw new Error('缺少 getFrame 回调');
+            if (!config.totalFrames || config.totalFrames <= 0) throw new Error('帧数无效');
+
+            // 使用配置的参数
+            var width = config.width || 300;
+            var height = config.height || 300;
+            var fps = config.fps || 30;
+            var totalFrames = config.totalFrames;
+
+            // 回调函数
+            var onProgress = config.onProgress || function () { };
+            var onError = config.onError || function () { };
+            var shouldCancel = config.shouldCancel || function () { return false; };
+
+            try {
+                // 1. 初始化webpxmux
+                onProgress(0, 'init', '初始化编码器...');
+                var xMux = await this.initWebPXMux();
+
+                if (shouldCancel()) throw new Error('导出已取消');
+
+                // 2. 创建临时canvas用于缩放
+                var tempCanvas = document.createElement('canvas');
+                tempCanvas.width = width;
+                tempCanvas.height = height;
+                var tempCtx = tempCanvas.getContext('2d', {
+                    willReadFrequently: true,
+                    alpha: true
+                });
+
+                // 3. 逐帧捕获并转换为RGBA数据
+                onProgress(0.05, 'capturing', '捕获帧数据...');
+                var framesArray = [];
+                var frameDuration = Math.round(1000 / fps); // 每帧时长（毫秒）
+
+                for (var i = 0; i < totalFrames; i++) {
+                    if (shouldCancel()) throw new Error('导出已取消');
+
+                    // 获取当前帧的canvas
+                    var frameCanvas = await config.getFrame(i);
+                    if (!frameCanvas) {
+                        console.warn('[WebP导出] 帧 ' + i + ' 获取失败，跳过');
+                        continue;
+                    }
+
+                    // 清空canvas（透明背景）
+                    tempCtx.clearRect(0, 0, width, height);
+                    // 绘制到临时canvas（缩放，保留透明通道）
+                    tempCtx.drawImage(frameCanvas, 0, 0, width, height);
+
+                    // 获取ImageData并转换为RGBA
+                    var imageData = tempCtx.getImageData(0, 0, width, height);
+                    var rgba = _this.imageDataToRGBA(imageData);
+
+                    // 添加帧数据
+                    framesArray.push({
+                        duration: frameDuration,
+                        isKeyframe: i === 0, // 第一帧为关键帧
+                        rgba: rgba
+                    });
+
+                    // 更新进度：捕获阶段 5%-60%
+                    var captureProgress = 0.05 + (i / totalFrames) * 0.55;
+                    onProgress(captureProgress, 'capturing', '捕获帧 ' + (i + 1) + '/' + totalFrames);
+                }
+
+                if (framesArray.length === 0) {
+                    throw new Error('没有捕获到任何帧');
+                }
+
+                console.log('[WebP导出] 捕获完成，共 ' + framesArray.length + ' 帧');
+
+                // 4. 构建Frames对象
+                onProgress(0.6, 'encoding', '编码WebP动画...');
+                var frames = {
+                    frameCount: framesArray.length,
+                    width: width,
+                    height: height,
+                    loopCount: 0,           // 0 = 无限循环
+                    bgColor: 0x00000000,    // 透明背景 (0xRRGGBBAA)
+                    frames: framesArray
+                };
+
+                if (shouldCancel()) throw new Error('导出已取消');
+
+                // 5. 使用webpxmux编码动画WebP
+                onProgress(0.7, 'encoding', '正在编码...');
+                var webpData = await xMux.encodeFrames(frames);
+
+                if (!webpData || webpData.length === 0) {
+                    throw new Error('webpxmux编码失败，未生成输出数据');
+                }
+
+                // 6. 创建Blob并下载
+                onProgress(0.9, 'downloading', '生成下载文件...');
+                var blob = new Blob([webpData], { type: 'image/webp' });
+                console.log('[WebP导出] 输出文件大小:', _this.formatBytes(blob.size));
+
+                // 下载文件
+                _this.download(blob, 'animation.webp');
+
+                onProgress(1, 'completed', '导出完成');
+
+                return blob;
+
+            } catch (error) {
+                console.error('[WebP导出] 导出失败:', error);
+                onError(error);
+                throw error;
+            }
+        },
+
+        /**
+         * 下载WebP文件
+         * @param {Blob} blob WebP blob
+         * @param {string} fileName 文件名
+         */
+        download: function (blob, fileName) {
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = fileName || 'animation.webp';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            // 使用定时器服务延迟释放 URL 对象
+            if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+                window.MeeWoo.Service.TimerService.createDelay(function () {
+                    URL.revokeObjectURL(url);
+                }, 100, 'webp-export');
+            } else {
+                // 降级方案：使用原生 setTimeout
+                setTimeout(function () { URL.revokeObjectURL(url); }, 100);
+            }
+        },
+
+        /**
+         * 预估WebP文件大小
+         * @param {Object} config 配置对象
+         * @param {Number} config.width 宽度
+         * @param {Number} config.height 高度
+         * @param {Number} config.fps 帧率
+         * @param {Number} config.duration 时长（秒）
+         * @returns {Object} { totalFrames, totalBytes, fileSizeText }
+         */
+        estimate: function (config) {
+            var width = config.width || 300;
+            var height = config.height || 300;
+            var fps = config.fps || 30;
+            var duration = config.duration || 0;
+
+            var totalFrames = Math.ceil(duration * fps);
+
+            // WebP 压缩系数约 0.05（比 GIF 的 0.13 更小）
+            // 实际大小取决于图像复杂度，这里是粗略估算
+            var compressionFactor = 0.05;
+            var bytesPerFrame = width * height * compressionFactor;
+            var totalBytes = bytesPerFrame * totalFrames;
+
+            return {
+                totalFrames: totalFrames,
+                totalBytes: totalBytes,
+                fileSizeText: this.formatBytes(totalBytes)
+            };
+        },
+
+        /**
+         * 格式化字节数
+         * @param {Number} bytes 字节数
+         * @returns {String} 格式化后的字符串
+         */
+        formatBytes: function (bytes) {
+            if (bytes === 0) return '0 B';
+            var k = 1024;
+            var sizes = ['B', 'KB', 'MB', 'GB'];
+            var i = Math.floor(Math.log(bytes) / Math.log(k));
+            return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+        }
+    };
+
+    // Export
+    window.MeeWoo.Exporters.WebPExporter = WebPExporter;
+
+})(window);

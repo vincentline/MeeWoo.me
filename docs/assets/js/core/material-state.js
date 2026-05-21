@@ -1,1 +1,323 @@
-!function(t){"use strict";t.MeeWoo=t.MeeWoo||{},t.MeeWoo.Core=t.MeeWoo.Core||{};var e={getDefaultEditorState:function(){return{show:!1,targetIndex:-1,loading:!1,viewMode:"fit-height",scale:1,offsetX:0,offsetY:0,exportAreaX:0,exportAreaY:0,baseImage:null,baseImageWidth:0,baseImageHeight:0,defaultBaseImage:null,showRestoreBtn:!1,showImage:!0,showText:!1,textContent:"",textStyle:"",activeElement:"none",lastClickElement:"none",lastClickTime:0,isDragging:!1,dragStartX:0,dragStartY:0,dragStartOffsetX:0,dragStartOffsetY:0,imageOffsetX:0,imageOffsetY:0,imageScale:1,isImageDragging:!1,imageDragStartX:0,imageDragStartY:0,imageDragStartOffsetX:0,imageDragStartOffsetY:0,imageMouseMoved:!1,textPosX:50,textPosY:50,textScale:1,textAlign:"left",isTextDragging:!1,textDragStartX:0,textDragStartY:0,textDragStartPosX:50,textDragStartPosY:50,textMouseMoved:!1,_batchUpdate:!1,_pendingUpdates:{},_batchTimeout:null}},getDefaultMaterialEditStates:function(){return{}},resetEditorState:function(t){var e=this.getDefaultEditorState();for(var a in e)e.hasOwnProperty(a)&&(t[a]=e[a])},updateRestoreButtonState:function(t){var e=!1,a=t.defaultBaseImage;a&&t.baseImage!==a?e=!0:t.showImage?(t.showText||0!==t.imageOffsetX||0!==t.imageOffsetY||Math.abs(t.imageScale-1)>.001)&&(e=!0):e=!0,t.showRestoreBtn=e},saveMaterialEditState:function(t,e,a){t[e]={textContent:a.textContent,textStyle:a.textStyle,showImage:a.showImage,showText:a.showText,textPosX:a.textPosX,textPosY:a.textPosY,textScale:a.textScale,textAlign:a.textAlign,imageOffsetX:a.imageOffsetX,imageOffsetY:a.imageOffsetY,imageScale:a.imageScale,customBaseImage:a.baseImage!==a.defaultBaseImage?a.baseImage:void 0,originalBaseImageWidth:a.baseImageWidth,originalBaseImageHeight:a.baseImageHeight}},restoreMaterialEditState:function(t,e,a){var i=t[e];i&&(a.showImage=i.showImage,a.showText=i.showText,a.textContent=i.textContent||"",a.textStyle=i.textStyle||"",a.textPosX=void 0!==i.textPosX?i.textPosX:50,a.textPosY=void 0!==i.textPosY?i.textPosY:50,a.textScale=void 0!==i.textScale?i.textScale:1,a.textAlign=void 0!==i.textAlign?i.textAlign:"left",a.imageOffsetX=void 0!==i.imageOffsetX?i.imageOffsetX:0,a.imageOffsetY=void 0!==i.imageOffsetY?i.imageOffsetY:0,a.imageScale=void 0!==i.imageScale?i.imageScale:1,i.customBaseImage&&(a.baseImage=i.customBaseImage))},clearMaterialEditState:function(t,e){t[e]&&delete t[e]},startBatchUpdate:function(t){t._batchUpdate=!0,t._pendingUpdates={}},endBatchUpdate:function(t,a,i){i=i||0;t._batchTimeout&&(clearTimeout(t._batchTimeout),t._batchTimeout=null),t._batchTimeout=setTimeout(function(){e.applyBatchUpdates(t),t._batchUpdate=!1,t._batchTimeout=null,"function"==typeof a&&a()},i)},applyBatchUpdates:function(t){if(t._batchUpdate&&0!==Object.keys(t._pendingUpdates).length){for(var e in t._pendingUpdates)t._pendingUpdates.hasOwnProperty(e)&&(t[e]=t._pendingUpdates[e]);t._pendingUpdates={}}},updateEditorState:function(t,e){t._batchUpdate?Object.assign(t._pendingUpdates,e):Object.assign(t,e)},cancelBatchUpdate:function(t){t._batchTimeout&&(clearTimeout(t._batchTimeout),t._batchTimeout=null),t._batchUpdate=!1,t._pendingUpdates={}}};t.MeeWoo.Core.MaterialState=e}(window);
+/**
+ * ==================== 素材编辑器状态管理模块 (Material State Manager) ====================
+ * 
+ * 模块索引：
+ * 1. 【状态定义】 - 素材编辑器状态定义
+ * 2. 【状态管理】 - 素材编辑状态管理相关方法
+ * 3. 【历史记录】 - 编辑历史管理相关方法
+ * 4. 【批处理】 - 状态变更的批处理功能
+ * 
+ * 功能说明：
+ * 提供素材编辑器的状态管理功能，包括：
+ * 1. 编辑器界面状态管理
+ * 2. 素材编辑状态管理
+ * 3. 编辑历史记录管理
+ * 4. 状态变更的批处理
+ * 
+ * 使用方式：
+ * 在 material-editor.js 中引入此文件，并使用 MeeWoo.Core.MaterialState 模块
+ */
+
+(function (window) {
+    'use strict';
+
+    // 确保命名空间
+    window.MeeWoo = window.MeeWoo || {};
+    window.MeeWoo.Core = window.MeeWoo.Core || {};
+
+    /**
+     * 素材编辑器状态管理模块
+     */
+    var MaterialState = {
+        /**
+         * ==================== 【状态定义】 ====================
+         * 素材编辑器状态定义
+         */
+
+        /**
+         * 获取默认的编辑器状态
+         * @returns {Object} 默认编辑器状态
+         */
+        getDefaultEditorState: function () {
+            return {
+                // 编辑器状态
+                show: false,
+                targetIndex: -1,     // 当前编辑的素材索引
+                loading: false,      // 生成中状态
+
+                // 视图状态
+                viewMode: 'fit-height',  // 视图模式：'fit-height'(适应高度) 或 'one-to-one'(1:1显示)
+                scale: 1.0,          // 预览缩放
+                offsetX: 0,          // 预览X位移
+                offsetY: 0,          // 预览Y位移
+                exportAreaX: 0,      // 导出区域在画布中的X位置
+                exportAreaY: 0,      // 导出区域在画布中的Y位置
+
+                // 内容状态
+                baseImage: null,     // 当前底图 (Image Object or DataURL)
+                baseImageWidth: 0,   // 底图原始宽度
+                baseImageHeight: 0,  // 底图原始高度
+                defaultBaseImage: null, // 原始底图 (用于对比是否变更)
+                showRestoreBtn: false,  // 显式控制恢复按钮的显示
+
+                // 编辑状态
+                showImage: true,     // 显示底图
+                showText: false,     // 显示文字
+                textContent: '',     // 文字内容
+                textStyle: '',       // 文字CSS样式
+
+                // 激活状态管理
+                activeElement: 'none',  // 当前激活的元素: 'none'|'image'|'text'
+                lastClickElement: 'none', // 上次点击的元素，用于重叠区域切换
+                lastClickTime: 0,         // 上次点击时间
+
+                // 预览区域拖拽状态
+                isDragging: false,
+                dragStartX: 0,
+                dragStartY: 0,
+                dragStartOffsetX: 0,
+                dragStartOffsetY: 0,
+
+                // 素材图交互状态
+                imageOffsetX: 0,     // 素材图X偏移(像素)
+                imageOffsetY: 0,     // 素材图Y偏移(像素)
+                imageScale: 1.0,     // 素材图缩放
+                isImageDragging: false,
+                imageDragStartX: 0,
+                imageDragStartY: 0,
+                imageDragStartOffsetX: 0,
+                imageDragStartOffsetY: 0,
+                imageMouseMoved: false,  // 标记是否发生了拖拽移动
+
+                // 文字层交互状态
+                textPosX: 50,        // 文字X位置 (百分比 0-100)
+                textPosY: 50,        // 文字Y位置 (百分比 0-100)
+                textScale: 1.0,      // 文字缩放
+                textAlign: 'left',   // 文字对齐方式: 'left' | 'center' | 'right'
+                isTextDragging: false,
+                textDragStartX: 0,
+                textDragStartY: 0,
+                textDragStartPosX: 50,
+                textDragStartPosY: 50,
+                textMouseMoved: false,  // 标记是否发生了拖拽移动
+                
+                // 批处理相关
+                _batchUpdate: false,
+                _pendingUpdates: {},
+                _batchTimeout: null
+            };
+        },
+
+        /**
+         * 获取默认的素材编辑状态映射
+         * @returns {Object} 默认素材编辑状态映射
+         */
+        getDefaultMaterialEditStates: function () {
+            // 存储每个素材的编辑历史
+            // key: imageKey, value: { textContent, textStyle, showImage, showText, textPosX, textPosY, textScale, imageOffsetX, imageOffsetY, imageScale, customBaseImage }
+            return {};
+        },
+
+        /**
+         * ==================== 【状态管理】 ====================
+         * 素材编辑状态管理相关方法
+         */
+
+        /**
+         * 重置编辑器状态为默认值
+         * @param {Object} editorState - 编辑器状态对象
+         */
+        resetEditorState: function (editorState) {
+            var defaultState = this.getDefaultEditorState();
+            for (var key in defaultState) {
+                if (defaultState.hasOwnProperty(key)) {
+                    editorState[key] = defaultState[key];
+                }
+            }
+        },
+
+        /**
+         * 更新恢复按钮的显示状态
+         * @param {Object} editorState - 编辑器状态对象
+         */
+        updateRestoreButtonState: function (editorState) {
+            var show = false;
+
+            // 1. 检查底图是否变更
+            var defaultImg = editorState.defaultBaseImage;
+            if (defaultImg && editorState.baseImage !== defaultImg) show = true;
+
+            // 2. 检查显示开关
+            else if (!editorState.showImage) show = true;
+            else if (editorState.showText) show = true;
+
+            // 3. 检查底图变换
+            else if (editorState.imageOffsetX !== 0) show = true;
+            else if (editorState.imageOffsetY !== 0) show = true;
+            else if (Math.abs(editorState.imageScale - 1.0) > 0.001) show = true;
+
+            editorState.showRestoreBtn = show;
+        },
+
+        /**
+         * ==================== 【历史记录】 ====================
+         * 编辑历史管理相关方法
+         */
+
+        /**
+         * 保存当前素材的编辑状态
+         * @param {Object} materialEditStates - 素材编辑状态映射
+         * @param {string} imageKey - 素材键值
+         * @param {Object} editorState - 当前编辑器状态
+         */
+        saveMaterialEditState: function (materialEditStates, imageKey, editorState) {
+            materialEditStates[imageKey] = {
+                textContent: editorState.textContent,
+                textStyle: editorState.textStyle,
+                showImage: editorState.showImage,
+                showText: editorState.showText,
+                textPosX: editorState.textPosX,
+                textPosY: editorState.textPosY,
+                textScale: editorState.textScale,
+                textAlign: editorState.textAlign,
+                imageOffsetX: editorState.imageOffsetX,
+                imageOffsetY: editorState.imageOffsetY,
+                imageScale: editorState.imageScale,
+                customBaseImage: editorState.baseImage !== editorState.defaultBaseImage ? editorState.baseImage : undefined,
+                originalBaseImageWidth: editorState.baseImageWidth,
+                originalBaseImageHeight: editorState.baseImageHeight
+            };
+        },
+
+        /**
+         * 恢复素材的编辑状态
+         * @param {Object} materialEditStates - 素材编辑状态映射
+         * @param {string} imageKey - 素材键值
+         * @param {Object} editorState - 目标编辑器状态
+         */
+        restoreMaterialEditState: function (materialEditStates, imageKey, editorState) {
+            var savedState = materialEditStates[imageKey];
+            if (savedState) {
+                editorState.showImage = savedState.showImage;
+                editorState.showText = savedState.showText;
+                editorState.textContent = savedState.textContent || '';
+                editorState.textStyle = savedState.textStyle || '';
+                editorState.textPosX = savedState.textPosX !== undefined ? savedState.textPosX : 50;
+                editorState.textPosY = savedState.textPosY !== undefined ? savedState.textPosY : 50;
+                editorState.textScale = savedState.textScale !== undefined ? savedState.textScale : 1.0;
+                editorState.textAlign = savedState.textAlign !== undefined ? savedState.textAlign : 'left';
+                editorState.imageOffsetX = savedState.imageOffsetX !== undefined ? savedState.imageOffsetX : 0;
+                editorState.imageOffsetY = savedState.imageOffsetY !== undefined ? savedState.imageOffsetY : 0;
+                editorState.imageScale = savedState.imageScale !== undefined ? savedState.imageScale : 1.0;
+
+                // 如果保存了自定义底图，则使用它
+                if (savedState.customBaseImage) {
+                    editorState.baseImage = savedState.customBaseImage;
+                }
+            }
+        },
+
+        /**
+         * 清除特定素材的编辑状态
+         * @param {Object} materialEditStates - 素材编辑状态映射
+         * @param {string} imageKey - 素材键值
+         */
+        clearMaterialEditState: function (materialEditStates, imageKey) {
+            if (materialEditStates[imageKey]) {
+                delete materialEditStates[imageKey];
+            }
+        },
+
+        /**
+         * ==================== 【批处理】 ====================
+         * 状态变更的批处理功能
+         */
+
+        /**
+         * 开始批处理更新
+         * @param {Object} editorState - 编辑器状态对象
+         */
+        startBatchUpdate: function (editorState) {
+            editorState._batchUpdate = true;
+            editorState._pendingUpdates = {};
+        },
+
+        /**
+         * 结束批处理更新
+         * @param {Object} editorState - 编辑器状态对象
+         * @param {Function} callback - 批处理完成后的回调函数
+         * @param {number} delay - 批处理延迟时间（毫秒）
+         */
+        endBatchUpdate: function (editorState, callback, delay) {
+            var delay = delay || 0;
+            
+            // 清除之前的批处理定时器
+            if (editorState._batchTimeout) {
+                clearTimeout(editorState._batchTimeout);
+                editorState._batchTimeout = null;
+            }
+            
+            editorState._batchTimeout = setTimeout(function () {
+                MaterialState.applyBatchUpdates(editorState);
+                editorState._batchUpdate = false;
+                editorState._batchTimeout = null;
+                
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            }, delay);
+        },
+
+        /**
+         * 应用批处理更新
+         * @param {Object} editorState - 编辑器状态对象
+         */
+        applyBatchUpdates: function (editorState) {
+            if (!editorState._batchUpdate || Object.keys(editorState._pendingUpdates).length === 0) {
+                return;
+            }
+            
+            // 应用所有待处理的更新
+            for (var key in editorState._pendingUpdates) {
+                if (editorState._pendingUpdates.hasOwnProperty(key)) {
+                    editorState[key] = editorState._pendingUpdates[key];
+                }
+            }
+            
+            // 清空待处理更新
+            editorState._pendingUpdates = {};
+        },
+
+        /**
+         * 更新编辑器状态（支持批处理）
+         * @param {Object} editorState - 编辑器状态对象
+         * @param {Object} updates - 要更新的状态
+         */
+        updateEditorState: function (editorState, updates) {
+            if (editorState._batchUpdate) {
+                // 在批处理模式下，将更新添加到待处理队列
+                Object.assign(editorState._pendingUpdates, updates);
+            } else {
+                // 不在批处理模式下，立即应用更新
+                Object.assign(editorState, updates);
+            }
+        },
+
+        /**
+         * 取消批处理更新
+         * @param {Object} editorState - 编辑器状态对象
+         */
+        cancelBatchUpdate: function (editorState) {
+            if (editorState._batchTimeout) {
+                clearTimeout(editorState._batchTimeout);
+                editorState._batchTimeout = null;
+            }
+            
+            editorState._batchUpdate = false;
+            editorState._pendingUpdates = {};
+        }
+    };
+
+    // 导出模块
+    window.MeeWoo.Core.MaterialState = MaterialState;
+})(window);

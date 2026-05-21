@@ -1,1 +1,579 @@
-!function(i){i.MeeWoo=i.MeeWoo||{},i.MeeWoo.Mixins=i.MeeWoo.Mixins||{},i.MeeWoo.Mixins.PanelMixin={data:function(){return{activeRightPanel:null,dualChannelConfig:{channelMode:"color-left-alpha-right",width:0,height:0,quality:80,fps:30,muted:!0,aspectRatio:1},dualChannelSourceInfo:{name:"",sizeWH:"",duration:"",fileSize:"",fps:30,typeLabel:""},isConvertingToDualChannel:!1,dualChannelProgress:0,dualChannelMessage:"",dualChannelCancelled:!1,toSvgaConfig:{width:0,height:0,quality:80,fps:30,muted:!1,aspectRatio:1},toSvgaSourceInfo:{name:"",sizeWH:"",duration:"",fileSize:"",fps:30,typeLabel:""},isConvertingToSvga:!1,toSvgaProgress:0,toSvgaStage:"",toSvgaMessage:"",toSvgaCancelled:!1,showStandardMp4Panel:!1,isExportingGIF:!1,isExportingFrames:!1,isExportingWebp:!1,isConvertingStandardMp4:!1}},methods:{closeRightPanel:function(){if("to-svga"===this.activeRightPanel&&this.isConvertingToSvga){if(!confirm("正在转换中，确定要取消吗？"))return;this.cancelToSvgaConversion()}else if("dual-channel"===this.activeRightPanel&&this.isConvertingToDualChannel){if(!confirm("正在转换中，确定要取消吗？"))return;this.cancelDualChannelConversion()}else if("gif"===this.activeRightPanel&&this.isExportingGIF){if(!confirm("正在导出GIF中，确定要取消吗？"))return;this.cancelGifExport()}else if("frames"===this.activeRightPanel&&this.isExportingFrames){if(!confirm("正在导出序列帧中，确定要取消吗？"))return;this.cancelFramesExport()}else if("webp"===this.activeRightPanel&&this.isExportingWebp){if(!confirm("正在导出WebP中，确定要取消吗？"))return;this.cancelWebpExport()}else if(this.showStandardMp4Panel&&this.isConvertingStandardMp4){if(!confirm("正在转换中，确定要取消吗？"))return;this.cancelStandardMp4Conversion()}this.activeRightPanel=null,this.showStandardMp4Panel=!1},closeAllPanels:function(){this.closeRightPanel()},openRightPanel:function(i){let e=null,t=!1;if("showStandardMp4Panel"===i)t=!0;else if("gif"===i)e="gif";else if("frames"===i)e="frames";else if("webp"===i)e="webp";else if("to-svga"===i)e="to-svga";else if("dual-channel"===i)e="dual-channel";else if("material"===i)e="material";else if("showMp4ToSvgaPanel"===i||"showLottieToSvgaPanel"===i||"showFramesToSvgaPanel"===i||"showImagesToSvgaPanel"===i||"showYyevaToSvgaPanel"===i)e="to-svga";else if("showMp4ToDualChannelPanel"===i||"showLottieToDualChannelPanel"===i||"showFramesToDualChannelPanel"===i||"showImagesToDualChannelPanel"===i||"showSvgaToDualChannelPanel"===i)e="dual-channel";else if("showGifPanel"===i)e="gif";else if("showFramesPanel"===i)e="frames";else{if("showWebpPanel"!==i)return void console.warn("Unknown panel name:",i);e="webp"}t?this.showStandardMp4Panel?(this.showStandardMp4Panel=!1,this.activeRightPanel=null):(this.activeRightPanel=null,this.showStandardMp4Panel=!0):this.activeRightPanel===e?(this.activeRightPanel=null,this.showStandardMp4Panel=!1):(this.showStandardMp4Panel=!1,this.activeRightPanel=e)},openToSvgaPanel:function(){var i={name:"",sizeWH:"",duration:"",fileSize:"",fps:30,typeLabel:""},e={width:0,height:0,quality:80,fps:30,muted:!1,aspectRatio:1};"mp4"===this.currentModule?(i.name=this.mp4.fileInfo.name||"",i.sizeWH=this.mp4.fileInfo.sizeWH||"",i.duration=this.mp4.fileInfo.duration||"",i.fileSize=this.utils?this.utils.formatBytes(this.mp4.fileInfo.size):"",i.fps=30,i.typeLabel="MP4",e.width=this.mp4.originalWidth||300,e.height=this.mp4.originalHeight||300,e.aspectRatio=this.mp4.originalWidth/this.mp4.originalHeight||1):"lottie"===this.currentModule?(i.name=this.lottie.fileInfo.name||"",i.sizeWH=this.lottie.fileInfo.sizeWH||"",i.duration=this.lottie.fileInfo.duration||"",i.fileSize=this.utils?this.utils.formatBytes(this.lottie.fileInfo.size):"",i.fps=this.lottie.fileInfo.fps||30,i.typeLabel="Lottie",e.width=this.lottie.originalWidth||300,e.height=this.lottie.originalHeight||300,e.fps=this.lottie.fileInfo.fps||30,e.aspectRatio=this.lottie.originalWidth/this.lottie.originalHeight||1):"frames"===this.currentModule?(i.name=this.frames.fileInfo.name||"",i.sizeWH=this.frames.fileInfo.sizeWH||"",i.duration=this.frames.fileInfo.duration||"",i.fileSize=this.utils?this.utils.formatBytes(this.frames.fileInfo.size):"",i.fps=this.frames.fileInfo.fps||25,i.typeLabel="序列帧",e.width=this.frames.originalWidth||300,e.height=this.frames.originalHeight||300,e.fps=this.frames.fileInfo.fps||25,e.aspectRatio=this.frames.originalWidth/this.frames.originalHeight||1):"yyeva"===this.currentModule&&(i.name=this.yyeva.fileInfo.name||"",i.sizeWH=this.yyeva.fileInfo.sizeWH||"",i.duration=this.yyeva.fileInfo.duration||"",i.fileSize=this.utils?this.utils.formatBytes(this.yyeva.fileInfo.size):"",i.fps=this.yyeva.fileInfo.fps||30,i.typeLabel="双通道MP4",e.width=this.yyeva.displayWidth||300,e.height=this.yyeva.displayHeight||300,e.fps=this.yyeva.fileInfo.fps||30,e.aspectRatio=this.yyeva.displayWidth/this.yyeva.displayHeight||1),this.toSvgaSourceInfo=i,this.toSvgaConfig=e,this.activeRightPanel="to-svga",this.loadLibrary&&this.loadLibrary(["ffmpeg"],!0).then(function(){}).catch(function(i){console.error("ffmpeg加载失败:",i)})},handleToSvgaConvert:function(i){this.toSvgaConfig=i,"mp4"===this.currentModule?this.startMp4ToSvgaConversion(i):"lottie"===this.currentModule?this.startLottieToSvgaConversion(i):"frames"===this.currentModule?this.startFramesToSvgaConversion(i):"yyeva"===this.currentModule&&(this.yyevaToSvgaConfig=Object.assign({},this.yyevaToSvgaConfig||{},i),this.startSVGAConversion(i))},cancelToSvgaConversion:function(){this.toSvgaCancelled=!0,this.toSvgaMessage="正在取消...",this.mp4ToSvgaCancelled=!0,this.lottieToSvgaCancelled=!0,this.framesToSvgaCancelled=!0,this.svgaConvertCancelled=!0},openDualChannelPanel:function(){if("dual-channel"===this.activeRightPanel){if(this.isConvertingToDualChannel){if(!confirm("正在转换中，确定要取消吗？"))return;this.cancelDualChannelConversion()}return this.activeRightPanel=null,void(this.showStandardMp4Panel=!1)}var i={name:"",sizeWH:"",duration:"",fileSize:"",fps:30,typeLabel:""},e={channelMode:"color-left-alpha-right",width:0,height:0,quality:80,fps:30,muted:!1,aspectRatio:1};if("svga"===this.currentModule){var t=this.svga||{},n=t.fileInfo||{};i.name=n.name||"",i.sizeWH=n.sizeWH||"",i.duration=n.duration||"",i.fileSize=this.utils&&n.size?this.utils.formatBytes(n.size):"",i.fps=n.fps||30,i.typeLabel="SVGA",e.width=t.originalWidth||300,e.height=t.originalHeight||300,e.fps=n.fps||30,e.aspectRatio=t.originalWidth&&t.originalHeight?t.originalWidth/t.originalHeight:1}else if("mp4"===this.currentModule){var a=this.mp4||{};n=a.fileInfo||{};i.name=n.name||"",i.sizeWH=n.sizeWH||"",i.duration=n.duration||"",i.fileSize=this.utils&&n.size?this.utils.formatBytes(n.size):"",i.fps=30,i.typeLabel="MP4",e.width=a.originalWidth||300,e.height=a.originalHeight||300,e.aspectRatio=a.originalWidth&&a.originalHeight?a.originalWidth/a.originalHeight:1}else if("lottie"===this.currentModule){var s=this.lottie||{};n=s.fileInfo||{};i.name=n.name||"",i.sizeWH=n.sizeWH||"",i.duration=n.duration||"",i.fileSize=this.utils&&n.size?this.utils.formatBytes(n.size):"",i.fps=n.fps||30,i.typeLabel="Lottie",e.width=s.originalWidth||300,e.height=s.originalHeight||300,e.fps=n.fps||30,e.aspectRatio=s.originalWidth&&s.originalHeight?s.originalWidth/s.originalHeight:1,e.muted=!0}else if("frames"===this.currentModule){var l=this.frames||{};n=l.fileInfo||{};i.name=n.name||"",i.sizeWH=n.sizeWH||"",i.duration=n.duration||"",i.fileSize=this.utils&&n.size?this.utils.formatBytes(n.size):"",i.fps=n.fps||25,i.typeLabel="序列帧",e.width=l.originalWidth||300,e.height=l.originalHeight||300,e.fps=n.fps||25,e.aspectRatio=l.originalWidth&&l.originalHeight?l.originalWidth/l.originalHeight:1,e.muted=!0}else if("yyeva"===this.currentModule){var o=this.yyeva||{};n=o.fileInfo||{};i.name=n.name||"",i.sizeWH=n.sizeWH||"",i.duration=n.duration||"",i.fileSize=this.utils&&n.size?this.utils.formatBytes(n.size):"",i.fps=n.fps||30,i.typeLabel="双通道MP4";var h=o||{},r=h.displayWidth,f=h.displayHeight,g=h.originalWidth,u=h.originalHeight,d=r&&isFinite(r)&&r>0?r:g&&isFinite(g)&&g>0?g:300,p=f&&isFinite(f)&&f>0?f:u&&isFinite(u)&&u>0?u:300;d=isFinite(d)?Math.round(d):300,p=isFinite(p)?Math.round(p):300,e.width=d,e.height=p,e.fps=n.fps||30,i.width=d,i.height=p;var c=d/p;e.aspectRatio=isFinite(c)?c:1,e.muted=!this.yyevaHasAudio}i.name=i.name||"",i.sizeWH=i.sizeWH||"",i.duration=i.duration||"",i.fileSize=i.fileSize||"",i.fps=i.fps||30,i.typeLabel=i.typeLabel||"未知",i.width=isFinite(i.width)?i.width:300,i.height=isFinite(i.height)?i.height:300,e.channelMode=e.channelMode||"color-left-alpha-right",e.width=Number(e.width)||300,e.height=Number(e.height)||300,e.quality=Number(e.quality)||80,e.fps=Number(e.fps)||30,e.muted=e.muted||!1,e.aspectRatio=Number(e.aspectRatio)||1,this.dualChannelSourceInfo=i,this.dualChannelConfig=e,this.showStandardMp4Panel=!1,this.activeRightPanel="dual-channel",this.loadLibrary&&this.loadLibrary(["ffmpeg"],!0).catch(function(i){console.error("ffmpeg加载失败:",i)});var v=this;this.$nextTick(function(){v.$forceUpdate&&v.$forceUpdate()})},handleDualChannelConvert:function(i){this.dualChannelConfig=i,this.isConvertingToDualChannel=!0,this.dualChannelProgress=0,this.dualChannelMessage="准备转换...",this.dualChannelCancelled=!1,"svga"===this.currentModule?(this.svgaToDualChannelConfig=Object.assign({},this.svgaToDualChannelConfig||{},i),this.startMP4Conversion(i)):"mp4"===this.currentModule?(this.mp4ToDualChannelConfig=Object.assign({},this.mp4ToDualChannelConfig||{},i),this.startMp4ToDualChannelConversion(i)):"lottie"===this.currentModule?(this.lottieToDualChannelConfig=Object.assign({},this.lottieToDualChannelConfig||{},i),this.startLottieToDualChannelConversion(i)):"frames"===this.currentModule?(this.imagesToDualChannelConfig=Object.assign({},this.imagesToDualChannelConfig||{},i),this.startFramesToDualChannelConversion(i)):"yyeva"===this.currentModule&&(this.yyevaToDualChannelConfig=Object.assign({},this.yyevaToDualChannelConfig||{},i),this.startYyevaToDualChannelConversion(i))},cancelDualChannelConversion:function(){this.dualChannelCancelled=!0,this.dualChannelMessage="正在取消...",this.isConvertingToDualChannel=!1,this.mp4ConvertCancelled=!0,this.framesToDualChannelCancelled=!0},openGifPanel:function(){this.activeRightPanel="gif"},openMp4ToSvgaPanel:function(){this.openToSvgaPanel()},openLottieToSvgaPanel:function(){this.openToSvgaPanel()},openFramesToSvgaPanel:function(){this.openToSvgaPanel()},openMp4ToDualChannelPanel:function(){this.openDualChannelPanel()},openLottieToDualChannelPanel:function(){this.openDualChannelPanel()},openFramesToDualChannelPanel:function(){this.openDualChannelPanel()},openSVGAPanel:function(){this.openToSvgaPanel()},openMP4Panel:function(){this.openDualChannelPanel()},openSvgaToDualChannelPanel:function(){this.openDualChannelPanel()},openYyevaToSvgaPanel:function(){this.openToSvgaPanel()},openLottieToDualChannelPanel:function(){this.openDualChannelPanel()},openFramesToDualChannelPanel:function(){this.openDualChannelPanel()},openStandardMp4Panel:function(){this.showStandardMp4Panel=!0,this.activeRightPanel=null},closeStandardMp4Panel:function(){this.showStandardMp4Panel=!1},openMaterialPanel:function(){this.activeRightPanel="material"},openFramesPanel:function(){this.activeRightPanel="frames"},openWebpPanel:function(){this.activeRightPanel="webp"},openChromaKeyPanel:function(){this.activeRightPanel="chromakey"}}}}(window);
+(function (global) {
+  // 按照项目规范，使用 MeeWoo 作为项目级命名空间
+  global.MeeWoo = global.MeeWoo || {};
+  global.MeeWoo.Mixins = global.MeeWoo.Mixins || {};
+
+  /**
+   * @file panel-mixin.js
+   * @description 右侧面板管理 Mixin
+   * @author MeeWoo Team
+   * @date 2026-01-18
+   * 
+   * 模块索引：
+   * 1. 侧边栏状态管理
+   * 2. 统一转双通道 MP4 配置与逻辑
+   * 3. 统一转 SVGA 配置与逻辑
+   * 4. 侧边栏通用方法
+   * 5. 统一 To SVGA 方法（MP4/Lottie/Frames）
+   * 6. 统一 To Dual Channel 方法（SVGA/MP4/Lottie/Frames）
+   * 7. 旧方法兼容层
+   * 
+   * 职责分工：
+   * - 此 Mixin 负责管理右侧面板的状态和业务逻辑
+   * - components 目录下的组件负责面板的 UI 渲染和用户交互
+   * - 两者通过 activeRightPanel 状态和事件机制进行通信
+   * 
+   * 使用方式：
+   * ```javascript
+   * // 在 Vue 组件中引入并使用
+   * var app = new Vue({
+   *   mixins: [MeeWoo.Mixins.PanelMixin],
+   *   // ...
+   * });
+   * ```
+   */
+  global.MeeWoo.Mixins.PanelMixin = {
+    data: function () {
+      return {
+        // ==================== 侧边栏状态 ====================
+        activeRightPanel: null, // 当前激活的右侧面板: 'to-svga', 'dual-channel', 'gif', 'material'
+
+        // ==================== 统一 转双通道 MP4 (新) ====================
+        dualChannelConfig: {
+          channelMode: 'color-left-alpha-right',
+          width: 0,
+          height: 0,
+          quality: 80,
+          fps: 30,
+          muted: true,
+          aspectRatio: 1
+        },
+        dualChannelSourceInfo: {
+          name: '',
+          sizeWH: '',
+          duration: '',
+          fileSize: '',
+          fps: 30,
+          typeLabel: '' // 'SVGA' | 'MP4' | 'Lottie' | '序列帧'
+        },
+        isConvertingToDualChannel: false,
+        dualChannelProgress: 0,
+        dualChannelMessage: '',
+        dualChannelCancelled: false,
+
+        // ==================== 统一 转 SVGA (新) ====================
+        toSvgaConfig: {
+          width: 0,
+          height: 0,
+          quality: 80,
+          fps: 30,
+          muted: false,
+          aspectRatio: 1
+        },
+        toSvgaSourceInfo: {
+          name: '',
+          sizeWH: '',
+          duration: '',
+          fileSize: '',
+          fps: 30,
+          typeLabel: '' // 'MP4' | 'Lottie' | '序列帧' | '双通道MP4'
+        },
+        isConvertingToSvga: false,
+        toSvgaProgress: 0,
+        toSvgaStage: '',
+        toSvgaMessage: '',
+        toSvgaCancelled: false,
+
+        // ==================== 其他面板状态 (补充默认值，避免undefined) ====================
+        showStandardMp4Panel: false,
+        isExportingGIF: false,
+        isExportingFrames: false,
+        isExportingWebp: false,
+        isConvertingStandardMp4: false
+      };
+    },
+
+    methods: {
+      // ==================== 侧边栏通用方法 ====================
+
+      /**
+       * 关闭右侧面板（统一入口）
+       */
+      closeRightPanel: function () {
+        // 如果正在转换，需要确认
+        if (this.activeRightPanel === 'to-svga' && this.isConvertingToSvga) {
+          if (!confirm('正在转换中，确定要取消吗？')) return;
+          this.cancelToSvgaConversion();
+        } else if (this.activeRightPanel === 'dual-channel' && this.isConvertingToDualChannel) {
+          if (!confirm('正在转换中，确定要取消吗？')) return;
+          this.cancelDualChannelConversion();
+        } else if (this.activeRightPanel === 'gif' && this.isExportingGIF) {
+          if (!confirm('正在导出GIF中，确定要取消吗？')) return;
+          this.cancelGifExport();
+        } else if (this.activeRightPanel === 'frames' && this.isExportingFrames) {
+          if (!confirm('正在导出序列帧中，确定要取消吗？')) return;
+          this.cancelFramesExport();
+        } else if (this.activeRightPanel === 'webp' && this.isExportingWebp) {
+          if (!confirm('正在导出WebP中，确定要取消吗？')) return;
+          this.cancelWebpExport();
+        } else if (this.showStandardMp4Panel && this.isConvertingStandardMp4) {
+          if (!confirm('正在转换中，确定要取消吗？')) return;
+          this.cancelStandardMp4Conversion();
+        }
+
+        // 关闭所有类型的右侧面板
+        this.activeRightPanel = null;
+        this.showStandardMp4Panel = false;
+      },
+
+      /**
+       * 关闭所有弹窗
+       */
+      closeAllPanels: function () {
+        // 关闭右侧面板
+        this.closeRightPanel();
+      },
+
+      /**
+       * 打开/切换右侧面板（通用方法，兼容旧代码）
+       * @param {String} panelName - 面板名称或旧的状态变量名
+       */
+      openRightPanel: function (panelName) {
+        let targetPanel = null;
+        let isStandardMp4 = false;
+
+        // 确定目标面板类型
+        if (panelName === 'showStandardMp4Panel') {
+          isStandardMp4 = true;
+        } else if (panelName === 'gif') {
+          targetPanel = 'gif';
+        } else if (panelName === 'frames') {
+          targetPanel = 'frames';
+        } else if (panelName === 'webp') {
+          targetPanel = 'webp';
+        } else if (panelName === 'to-svga') {
+          targetPanel = 'to-svga';
+        } else if (panelName === 'dual-channel') {
+          targetPanel = 'dual-channel';
+        } else if (panelName === 'material') {
+          targetPanel = 'material';
+        } else if (panelName === 'showMp4ToSvgaPanel' || panelName === 'showLottieToSvgaPanel' || panelName === 'showFramesToSvgaPanel' || panelName === 'showImagesToSvgaPanel' || panelName === 'showYyevaToSvgaPanel') {
+          targetPanel = 'to-svga';
+        } else if (panelName === 'showMp4ToDualChannelPanel' || panelName === 'showLottieToDualChannelPanel' || panelName === 'showFramesToDualChannelPanel' || panelName === 'showImagesToDualChannelPanel' || panelName === 'showSvgaToDualChannelPanel') {
+          targetPanel = 'dual-channel';
+        } else if (panelName === 'showGifPanel') {
+          targetPanel = 'gif';
+        } else if (panelName === 'showFramesPanel') {
+          targetPanel = 'frames';
+        } else if (panelName === 'showWebpPanel') {
+          targetPanel = 'webp';
+        } else {
+          // 默认行为
+          console.warn('Unknown panel name:', panelName);
+          return;
+        }
+
+        // 切换逻辑
+        if (isStandardMp4) {
+          // 处理标准MP4面板
+          if (this.showStandardMp4Panel) {
+            // 如果当前就是标准MP4面板且处于显示状态，则关闭
+            this.showStandardMp4Panel = false;
+            this.activeRightPanel = null;
+          } else {
+            // 否则关闭其他所有面板，打开标准MP4面板
+            this.activeRightPanel = null;
+            this.showStandardMp4Panel = true;
+          }
+        } else {
+          // 处理其他面板
+          if (this.activeRightPanel === targetPanel) {
+            // 如果当前就是目标面板且处于显示状态，则关闭所有面板
+            this.activeRightPanel = null;
+            this.showStandardMp4Panel = false;
+          } else {
+            // 否则关闭其他所有面板，打开目标面板
+            this.showStandardMp4Panel = false;
+            this.activeRightPanel = targetPanel;
+          }
+        }
+      },
+
+      // ==================== 统一：To SVGA (MP4/Lottie/Frames) ====================
+
+      /**
+       * 打开转 SVGA 面板 (统一入口)
+       */
+      openToSvgaPanel: function () {
+        var sourceInfo = {
+          name: '',
+          sizeWH: '',
+          duration: '',
+          fileSize: '',
+          fps: 30,
+          typeLabel: ''
+        };
+        var config = {
+          width: 0,
+          height: 0,
+          quality: 80,
+          fps: 30,
+          muted: false,
+          aspectRatio: 1
+        };
+
+        // 根据当前模块设置源信息
+        if (this.currentModule === 'mp4') {
+          sourceInfo.name = this.mp4.fileInfo.name || '';
+          sourceInfo.sizeWH = this.mp4.fileInfo.sizeWH || '';
+          sourceInfo.duration = this.mp4.fileInfo.duration || '';
+          sourceInfo.fileSize = this.utils ? this.utils.formatBytes(this.mp4.fileInfo.size) : '';
+          sourceInfo.fps = 30; // MP4默认
+          sourceInfo.typeLabel = 'MP4';
+
+          config.width = this.mp4.originalWidth || 300;
+          config.height = this.mp4.originalHeight || 300;
+          config.aspectRatio = (this.mp4.originalWidth / this.mp4.originalHeight) || 1;
+        } else if (this.currentModule === 'lottie') {
+          sourceInfo.name = this.lottie.fileInfo.name || '';
+          sourceInfo.sizeWH = this.lottie.fileInfo.sizeWH || '';
+          sourceInfo.duration = this.lottie.fileInfo.duration || '';
+          sourceInfo.fileSize = this.utils ? this.utils.formatBytes(this.lottie.fileInfo.size) : '';
+          sourceInfo.fps = this.lottie.fileInfo.fps || 30;
+          sourceInfo.typeLabel = 'Lottie';
+
+          config.width = this.lottie.originalWidth || 300;
+          config.height = this.lottie.originalHeight || 300;
+          config.fps = this.lottie.fileInfo.fps || 30;
+          config.aspectRatio = (this.lottie.originalWidth / this.lottie.originalHeight) || 1;
+        } else if (this.currentModule === 'frames') {
+          sourceInfo.name = this.frames.fileInfo.name || '';
+          sourceInfo.sizeWH = this.frames.fileInfo.sizeWH || '';
+          sourceInfo.duration = this.frames.fileInfo.duration || '';
+          sourceInfo.fileSize = this.utils ? this.utils.formatBytes(this.frames.fileInfo.size) : '';
+          sourceInfo.fps = this.frames.fileInfo.fps || 25;
+          sourceInfo.typeLabel = '序列帧';
+
+          config.width = this.frames.originalWidth || 300;
+          config.height = this.frames.originalHeight || 300;
+          config.fps = this.frames.fileInfo.fps || 25;
+          config.aspectRatio = (this.frames.originalWidth / this.frames.originalHeight) || 1;
+        } else if (this.currentModule === 'yyeva') {
+          // 双通道转SVGA也合并进来
+          sourceInfo.name = this.yyeva.fileInfo.name || '';
+          sourceInfo.sizeWH = this.yyeva.fileInfo.sizeWH || '';
+          sourceInfo.duration = this.yyeva.fileInfo.duration || '';
+          sourceInfo.fileSize = this.utils ? this.utils.formatBytes(this.yyeva.fileInfo.size) : '';
+          sourceInfo.fps = this.yyeva.fileInfo.fps || 30;
+          sourceInfo.typeLabel = '双通道MP4';
+
+          config.width = this.yyeva.displayWidth || 300;
+          config.height = this.yyeva.displayHeight || 300;
+          config.fps = this.yyeva.fileInfo.fps || 30;
+          config.aspectRatio = (this.yyeva.displayWidth / this.yyeva.displayHeight) || 1;
+        }
+
+        this.toSvgaSourceInfo = sourceInfo;
+        this.toSvgaConfig = config;
+        this.activeRightPanel = 'to-svga';
+        
+        // 插队加载ffmpeg
+        if (this.loadLibrary) {
+          this.loadLibrary(['ffmpeg'], true).then(function() {
+          }).catch(function(error) {
+            console.error('ffmpeg加载失败:', error);
+          });
+        }
+      },
+
+      /**
+       * 统一处理 转SVGA 逻辑
+       */
+      handleToSvgaConvert: function (config) {
+        this.toSvgaConfig = config;
+
+        // 根据模块分发
+        if (this.currentModule === 'mp4') {
+          this.startMp4ToSvgaConversion(config);
+        } else if (this.currentModule === 'lottie') {
+          this.startLottieToSvgaConversion(config);
+        } else if (this.currentModule === 'frames') {
+          this.startFramesToSvgaConversion(config);
+        } else if (this.currentModule === 'yyeva') {
+          // 注意：双通道转SVGA原有逻辑叫 startSVGAConversion
+          // 这里我们为了统一，需要适配一下
+          // 临时兼容：更新旧配置对象，以便 startSVGAConversion 能读到
+          this.yyevaToSvgaConfig = Object.assign({}, this.yyevaToSvgaConfig || {}, config);
+          this.startSVGAConversion(config);
+        }
+      },
+
+      /**
+       * 取消 转SVGA
+       */
+      cancelToSvgaConversion: function () {
+        this.toSvgaCancelled = true;
+        this.toSvgaMessage = '正在取消...';
+
+        // 兼容旧标志位
+        this.mp4ToSvgaCancelled = true;
+        this.lottieToSvgaCancelled = true;
+        this.framesToSvgaCancelled = true;
+        this.svgaConvertCancelled = true; // 双通道转SVGA
+      },
+
+      // ==================== 统一：To Dual Channel (SVGA/MP4/Lottie/Frames) ====================
+
+      /**
+       * 打开转双通道面板 (统一入口) - 最终修复版
+       */
+      openDualChannelPanel: function () {
+        // 切换逻辑：如果当前已经是双通道面板，则关闭它
+        if (this.activeRightPanel === 'dual-channel') {
+          // 如果正在转换，需要确认
+          if (this.isConvertingToDualChannel) {
+            if (!confirm('正在转换中，确定要取消吗？')) return;
+            this.cancelDualChannelConversion();
+          }
+          // 关闭面板
+          this.activeRightPanel = null;
+          this.showStandardMp4Panel = false;
+          return;
+        }
+
+        var sourceInfo = {
+          name: '',
+          sizeWH: '',
+          duration: '',
+          fileSize: '',
+          fps: 30,
+          typeLabel: ''
+        };
+        var config = {
+          channelMode: 'color-left-alpha-right',
+          width: 0,
+          height: 0,
+          quality: 80,
+          fps: 30,
+          muted: false,
+          aspectRatio: 1
+        };
+
+        // 根据当前模块设置源信息（增加更强大的容错处理）
+        if (this.currentModule === 'svga') {
+          // 安全获取svga相关属性
+          var svga = this.svga || {};
+          var fileInfo = svga.fileInfo || {};
+          sourceInfo.name = fileInfo.name || '';
+          sourceInfo.sizeWH = fileInfo.sizeWH || '';
+          sourceInfo.duration = fileInfo.duration || '';
+          sourceInfo.fileSize = this.utils && fileInfo.size ? this.utils.formatBytes(fileInfo.size) : '';
+          sourceInfo.fps = fileInfo.fps || 30;
+          sourceInfo.typeLabel = 'SVGA';
+
+          config.width = svga.originalWidth || 300;
+          config.height = svga.originalHeight || 300;
+          config.fps = fileInfo.fps || 30;
+          config.aspectRatio = svga.originalWidth && svga.originalHeight ? (svga.originalWidth / svga.originalHeight) : 1;
+        } else if (this.currentModule === 'mp4') {
+          // 安全获取mp4相关属性
+          var mp4 = this.mp4 || {};
+          var fileInfo = mp4.fileInfo || {};
+          sourceInfo.name = fileInfo.name || '';
+          sourceInfo.sizeWH = fileInfo.sizeWH || '';
+          sourceInfo.duration = fileInfo.duration || '';
+          sourceInfo.fileSize = this.utils && fileInfo.size ? this.utils.formatBytes(fileInfo.size) : '';
+          sourceInfo.fps = 30;
+          sourceInfo.typeLabel = 'MP4';
+
+          config.width = mp4.originalWidth || 300;
+          config.height = mp4.originalHeight || 300;
+          config.aspectRatio = mp4.originalWidth && mp4.originalHeight ? (mp4.originalWidth / mp4.originalHeight) : 1;
+        } else if (this.currentModule === 'lottie') {
+          // 安全获取lottie相关属性
+          var lottie = this.lottie || {};
+          var fileInfo = lottie.fileInfo || {};
+          sourceInfo.name = fileInfo.name || '';
+          sourceInfo.sizeWH = fileInfo.sizeWH || '';
+          sourceInfo.duration = fileInfo.duration || '';
+          sourceInfo.fileSize = this.utils && fileInfo.size ? this.utils.formatBytes(fileInfo.size) : '';
+          sourceInfo.fps = fileInfo.fps || 30;
+          sourceInfo.typeLabel = 'Lottie';
+
+          config.width = lottie.originalWidth || 300;
+          config.height = lottie.originalHeight || 300;
+          config.fps = fileInfo.fps || 30;
+          config.aspectRatio = lottie.originalWidth && lottie.originalHeight ? (lottie.originalWidth / lottie.originalHeight) : 1;
+          config.muted = true; // Lottie无声
+        } else if (this.currentModule === 'frames') {
+          // 安全获取frames相关属性
+          var frames = this.frames || {};
+          var fileInfo = frames.fileInfo || {};
+          sourceInfo.name = fileInfo.name || '';
+          sourceInfo.sizeWH = fileInfo.sizeWH || '';
+          sourceInfo.duration = fileInfo.duration || '';
+          sourceInfo.fileSize = this.utils && fileInfo.size ? this.utils.formatBytes(fileInfo.size) : '';
+          sourceInfo.fps = fileInfo.fps || 25;
+          sourceInfo.typeLabel = '序列帧';
+
+          config.width = frames.originalWidth || 300;
+          config.height = frames.originalHeight || 300;
+          config.fps = fileInfo.fps || 25;
+          config.aspectRatio = frames.originalWidth && frames.originalHeight ? (frames.originalWidth / frames.originalHeight) : 1;
+          config.muted = true; // 序列帧无声
+        } else if (this.currentModule === 'yyeva') {
+          // 安全获取yyeva(双通道MP4)相关属性
+          var yyeva = this.yyeva || {};
+          var fileInfo = yyeva.fileInfo || {};
+          sourceInfo.name = fileInfo.name || '';
+          sourceInfo.sizeWH = fileInfo.sizeWH || '';
+          sourceInfo.duration = fileInfo.duration || '';
+          sourceInfo.fileSize = this.utils && fileInfo.size ? this.utils.formatBytes(fileInfo.size) : '';
+          sourceInfo.fps = fileInfo.fps || 30;
+          sourceInfo.typeLabel = '双通道MP4';
+
+          // 使用播放器的显示尺寸（而非原始视频尺寸），添加NaN和0检查
+          var yyevaObj = yyeva || {};
+          var displayW = yyevaObj.displayWidth;
+          var displayH = yyevaObj.displayHeight;
+          var origW = yyevaObj.originalWidth;
+          var origH = yyevaObj.originalHeight;
+          // 安全获取所有值
+          var finalWidth = (displayW && isFinite(displayW) && displayW > 0) ? displayW : ((origW && isFinite(origW) && origW > 0) ? origW : 300);
+          var finalHeight = (displayH && isFinite(displayH) && displayH > 0) ? displayH : ((origH && isFinite(origH) && origH > 0) ? origH : 300);
+          // 确保最终值是有效数字
+          finalWidth = isFinite(finalWidth) ? Math.round(finalWidth) : 300;
+          finalHeight = isFinite(finalHeight) ? Math.round(finalHeight) : 300;
+          config.width = finalWidth;
+          config.height = finalHeight;
+          config.fps = fileInfo.fps || 30;
+          sourceInfo.width = finalWidth;
+          sourceInfo.height = finalHeight;
+          var aspectRatio = finalWidth / finalHeight;
+          config.aspectRatio = isFinite(aspectRatio) ? aspectRatio : 1;
+          config.muted = this.yyevaHasAudio ? false : true;
+        }
+
+        // 强制设置默认值，确保不会是undefined或NaN
+        sourceInfo.name = sourceInfo.name || '';
+        sourceInfo.sizeWH = sourceInfo.sizeWH || '';
+        sourceInfo.duration = sourceInfo.duration || '';
+        sourceInfo.fileSize = sourceInfo.fileSize || '';
+        sourceInfo.fps = sourceInfo.fps || 30;
+        sourceInfo.typeLabel = sourceInfo.typeLabel || '未知';
+        // 确保宽高是有效数字
+        sourceInfo.width = isFinite(sourceInfo.width) ? sourceInfo.width : 300;
+        sourceInfo.height = isFinite(sourceInfo.height) ? sourceInfo.height : 300;
+
+        config.channelMode = config.channelMode || 'color-left-alpha-right';
+        // 使用 Number() 确保返回有效数字
+        config.width = Number(config.width) || 300;
+        config.height = Number(config.height) || 300;
+        config.quality = Number(config.quality) || 80;
+        config.fps = Number(config.fps) || 30;
+        config.muted = config.muted || false;
+        config.aspectRatio = Number(config.aspectRatio) || 1;
+
+        this.dualChannelSourceInfo = sourceInfo;
+        this.dualChannelConfig = config;
+        
+        // 关闭其他面板并打开双通道面板
+        this.showStandardMp4Panel = false;
+        this.activeRightPanel = 'dual-channel';
+
+        // 加载ffmpeg
+        if (this.loadLibrary) {
+          this.loadLibrary(['ffmpeg'], true).catch(function(error) {
+            console.error('ffmpeg加载失败:', error);
+          });
+        }
+        
+        // 强制Vue更新
+        var self = this;
+        this.$nextTick(function() {
+          if (self.$forceUpdate) {
+            self.$forceUpdate();
+          }
+        });
+      },
+
+      /**
+       * 统一处理 转双通道 逻辑
+       */
+      handleDualChannelConvert: function (config) {
+        this.dualChannelConfig = config;
+
+        // 标记转换状态
+        this.isConvertingToDualChannel = true;
+        this.dualChannelProgress = 0;
+        this.dualChannelMessage = '准备转换...';
+        this.dualChannelCancelled = false;
+
+        // 根据模块分发（增加容错，避免undefined）
+        if (this.currentModule === 'svga') {
+          // 兼容旧逻辑：startMP4Conversion 使用 svgaToDualChannelConfig
+          this.svgaToDualChannelConfig = Object.assign({}, this.svgaToDualChannelConfig || {}, config);
+          this.startMP4Conversion(config);
+        } else if (this.currentModule === 'mp4') {
+          this.mp4ToDualChannelConfig = Object.assign({}, this.mp4ToDualChannelConfig || {}, config);
+          this.startMp4ToDualChannelConversion(config);
+        } else if (this.currentModule === 'lottie') {
+          this.lottieToDualChannelConfig = Object.assign({}, this.lottieToDualChannelConfig || {}, config);
+          this.startLottieToDualChannelConversion(config);
+        } else if (this.currentModule === 'frames') {
+          this.imagesToDualChannelConfig = Object.assign({}, this.imagesToDualChannelConfig || {}, config);
+          this.startFramesToDualChannelConversion(config);
+        } else if (this.currentModule === 'yyeva') {
+          this.yyevaToDualChannelConfig = Object.assign({}, this.yyevaToDualChannelConfig || {}, config);
+          this.startYyevaToDualChannelConversion(config);
+        }
+      },
+
+      /**
+       * 取消 转双通道
+       */
+      cancelDualChannelConversion: function () {
+        this.dualChannelCancelled = true;
+        this.dualChannelMessage = '正在取消...';
+        this.isConvertingToDualChannel = false;
+
+        // 兼容旧标志位
+        this.mp4ConvertCancelled = true; // SVGA/MP4/Lottie 都用这个
+        this.framesToDualChannelCancelled = true; // 序列帧单独用这个
+      },
+
+      /**
+       * 打开GIF导出面板
+       */
+      openGifPanel: function () {
+        this.activeRightPanel = 'gif';
+      },
+
+      // ==================== 旧方法兼容层 (重定向到新方法) ====================
+      openMp4ToSvgaPanel: function () { this.openToSvgaPanel(); },
+      openLottieToSvgaPanel: function () { this.openToSvgaPanel(); },
+      openFramesToSvgaPanel: function () { this.openToSvgaPanel(); },
+      openMp4ToDualChannelPanel: function () { this.openDualChannelPanel(); },
+      openLottieToDualChannelPanel: function () { this.openDualChannelPanel(); },
+      openFramesToDualChannelPanel: function () { this.openDualChannelPanel(); },
+
+      // 注意：openSVGAPanel 原来是打开“双通道转SVGA”，现在也统一到 to-svga-panel
+      openSVGAPanel: function () { this.openToSvgaPanel(); },
+
+      // 注意：openMP4Panel 原来是打开"SVGA转双通道"，现在统一到 dual-channel-panel
+      openMP4Panel: function () { this.openDualChannelPanel(); },
+      
+      // 添加SVGA转双通道MP4的方法重定向
+      openSvgaToDualChannelPanel: function () { this.openDualChannelPanel(); },
+      openYyevaToSvgaPanel: function () { this.openToSvgaPanel(); },
+      openLottieToDualChannelPanel: function () { this.openDualChannelPanel(); },
+      openFramesToDualChannelPanel: function () { this.openDualChannelPanel(); },
+      openStandardMp4Panel: function () { this.showStandardMp4Panel = true; this.activeRightPanel = null; },
+      closeStandardMp4Panel: function () { this.showStandardMp4Panel = false; },
+      openMaterialPanel: function () { this.activeRightPanel = 'material'; },
+      openFramesPanel: function () { this.activeRightPanel = 'frames'; },
+      openWebpPanel: function () { this.activeRightPanel = 'webp'; },
+      openChromaKeyPanel: function () { this.activeRightPanel = 'chromakey'; }
+    }
+  };
+})(window);

@@ -1,1 +1,391 @@
-!function(e){"use strict";window.MeeWoo=window.MeeWoo||{},window.MeeWoo.Exporters=window.MeeWoo.Exporters||{};const r={encoder:null,export:async function(e){if(!e.getFrame)throw new Error("缺少 getFrame 回调");if(!e.totalFrames||e.totalFrames<=0)throw new Error("帧数无效");if("undefined"==typeof GIF){if(!(window.MeeWoo&&window.MeeWoo.Core&&window.MeeWoo.Core.libraryLoader))throw new Error("库加载器不可用");try{await window.MeeWoo.Core.libraryLoader.load("gif",!0)}catch(e){throw new Error("GIF.js库加载失败: "+e.message)}}var r=e.width||300,o=e.height||300,t=e.fps||30,n=e.totalFrames,a=Math.round(1e3/t),i=e.transparent||!1,f=e.dither||!1,s=e.ditherColor||"#ffffff",c=31-Math.max(1,Math.min(30,e.quality||10)),d=e.onProgress||function(){},w=e.onComplete||function(){},h=e.onError||function(){},u=e.shouldCancel||function(){return!1},l=document.createElement("canvas");l.width=r,l.height=o;var m=l.getContext("2d",{willReadFrequently:!0,alpha:!0});if("undefined"==typeof Worker)throw new Error("浏览器不支持Web Worker，无法导出GIF");var g=navigator.hardwareConcurrency||2,p=Math.max(1,Math.min(Math.floor(g/2),4)),v=window.location.origin,M={workers:p,workerScript:new URL("assets/js/service/gif/gif.worker.js",v).href,quality:Math.min(c,20),width:r,height:o,repeat:0,background:"#ffffff"};i?M.transparent=0:("transparent"===(F=e.backgroundColor||"#ffffff")&&(F="#ffffff"),M.background=F);var b=new GIF(M),E=new Promise(function(e,r){b.on("progress",function(e){d(50+Math.floor(50*e),"encoding","编码中...")}),b.on("finished",function(o){o&&"object"==typeof o&&o.size?e(o):r(new Error("GIF编码器生成的blob无效"))}),b.on("abort",function(){r(new Error("用户取消"))}),b.on("error",function(e){e.message&&(e.message.includes("Worker")||e.message.includes("worker"))?r(new Error("Worker相关错误: "+(e.message||e)+"，请尝试禁用Worker重试")):r(new Error("GIF编码失败: "+(e.message||e)))})});try{for(var y=0;y<n;y++){if(u())throw b.abort(),new Error("用户取消");var F,I=await e.getFrame(y);if(!I)throw new Error("无法获取帧 "+y);if(m.clearRect(0,0,r,o),!i)"transparent"===(F=e.backgroundColor||"#ffffff")&&(F="#ffffff"),m.fillStyle=F,m.fillRect(0,0,r,o);m.globalCompositeOperation="source-over",m.drawImage(I,0,0,r,o),i&&(f&&s?this._processDither(m,r,o,s):this._processAlphaThreshold(m,r,o));var W=m.getImageData(0,0,r,o);if(!W||!W.data||0===W.data.length)throw new Error("处理后的图像数据无效");var k={delay:a};i&&(k.transparent=!0),b.addFrame(W,k);var x=Math.floor(y/n*50);d(x,"capturing","捕获帧 "+(y+1)+"/"+n)}d(50,"encoding","编码中...");try{b.render()}catch(e){throw console.error("[GIF Exporter] 编码启动失败:",e),new Error("编码启动失败: "+e.message)}var C=new Promise(function(e,r){setTimeout(function(){if(b)try{b.abort()}catch(e){console.warn("[GIF Exporter] 取消编码时出错:",e)}r(new Error("GIF编码超时，可能是由于GIF.js库问题或文件过大导致"))},12e4)}),G=await Promise.race([E,C]);if(!G||"object"!=typeof G||!G.size)throw new Error("生成的GIF blob无效");return w(G,G.size),G}catch(e){throw h(e),e}},_processDither:function(e,r,o,t){for(var n=e.getImageData(0,0,r,o),a=n.data,i=t.replace("#",""),f=parseInt(i.substr(0,2),16),s=parseInt(i.substr(2,2),16),c=parseInt(i.substr(4,2),16),d=0;d<a.length;d+=4){var w=a[d+3]/255;w>0&&w<1&&(a[d]=Math.round(a[d]*w+f*(1-w)),a[d+1]=Math.round(a[d+1]*w+s*(1-w)),a[d+2]=Math.round(a[d+2]*w+c*(1-w)),a[d+3]=255)}e.putImageData(n,0,0)},_processAlphaThreshold:function(e,r,o){for(var t=e.getImageData(0,0,r,o),n=t.data,a=0;a<n.length;a+=4){var i=n[a+3];i>0&&i<255&&(n[a+3]=i<128?0:255)}e.putImageData(t,0,0)},download:function(e,r){var o=URL.createObjectURL(e),t=document.createElement("a");t.href=o,t.download=r||"animation.gif",document.body.appendChild(t),t.click(),document.body.removeChild(t),window.MeeWoo&&window.MeeWoo.Service&&window.MeeWoo.Service.TimerService?window.MeeWoo.Service.TimerService.createDelay(function(){URL.revokeObjectURL(o)},100,"gif-export"):setTimeout(function(){URL.revokeObjectURL(o)},100)},estimate:function(e){var r=e.width||100,o=e.height||100,t=e.fps||30,n=e.duration||0,a=Math.ceil(n*t),i=e.transparent||!1,f=e.dither||!1,s=i?.16:.13;i&&f&&(s=.18);var c=r*o*s*a,d="？";return a>0&&(d=c>=1048576?(c/1024/1024).toFixed(2)+"M":Math.round(c/1024)+"kb"),{frames:a,duration:n,fileSize:d,fileSizeBytes:c}},formatBytes:function(e){return e>=1048576?(e/1024/1024).toFixed(2)+" MB":e>=1024?(e/1024).toFixed(1)+" KB":e+" B"}};e.MeeWoo.Exporters.GifExporter=r}("undefined"!=typeof window?window:this);
+/**
+ * GIF导出器模块
+ * 封装GIF编码、帧添加、进度管理、下载等核心逻辑
+ * 
+ * 使用方式：
+ * GIFExporter.export({
+ *   width: 300,
+ *   height: 300,
+ *   fps: 30,
+ *   totalFrames: 60,
+ *   transparent: false,
+ *   dither: false,
+ *   ditherColor: '#ffffff',
+ *   getFrame: async (frameIndex) => canvas,  // 返回当前帧的canvas
+ *   onProgress: (progress, stage, message) => {},
+ *   onComplete: (blob, size) => {},
+ *   onError: (error) => {},
+ *   shouldCancel: () => false  // 返回true时取消导出
+ * });
+ */
+(function(global) {
+    'use strict';
+
+    // Ensure namespace
+// 初始化命名空间
+    window.MeeWoo = window.MeeWoo || {};
+    window.MeeWoo.Exporters = window.MeeWoo.Exporters || {};
+
+    const GIFExporter = {
+        // GIF编码器实例
+        encoder: null,
+
+    /**
+     * 导出GIF
+     * @param {Object} config 配置对象
+     * @param {Number} config.quality GIF质量 (1-30，数字越小质量越高，文件越大)
+     * @returns {Promise<Blob>} GIF blob
+     */
+    export: async function (config) {
+      var _this = this;
+
+      // 参数校验
+      if (!config.getFrame) throw new Error('缺少 getFrame 回调');
+      if (!config.totalFrames || config.totalFrames <= 0) throw new Error('帧数无效');
+
+      // 确保GIF.js库已加载
+      if (typeof GIF === 'undefined') {
+        if (window.MeeWoo && window.MeeWoo.Core && window.MeeWoo.Core.libraryLoader) {
+          try {
+            await window.MeeWoo.Core.libraryLoader.load('gif', true);
+          } catch (error) {
+            throw new Error('GIF.js库加载失败: ' + error.message);
+          }
+        } else {
+          throw new Error('库加载器不可用');
+        }
+      }
+
+      // 使用弹窗设置的尺寸、帧率和帧数
+      var width = config.width || 300;
+      var height = config.height || 300;
+      var fps = config.fps || 30;
+      var totalFrames = config.totalFrames;
+      var frameDelay = Math.round(1000 / fps);
+      var transparent = config.transparent || false;
+      var dither = config.dither || false;
+      var ditherColor = config.ditherColor || '#ffffff';
+      // quality: 1-30，数字越小质量越高（文件越大），默认10
+      // 修复：用户输入1-30（通常认为1是低质量/小文件，30是高质量/大文件）
+      // 但gif.js内部实现是：1是最佳质量（不降采样），30是最差质量（最大降采样）
+      // 为了符合用户直觉（数值越大质量越好），我们需要反转这个值
+      // 映射关系：用户输入 1(低) -> gif.js 30(差)；用户输入 30(高) -> gif.js 1(好)
+      var userQuality = Math.max(1, Math.min(30, config.quality || 10)); // 使用默认值10，限制在1-30之间
+      var quality = 31 - userQuality;
+
+      // 回调函数
+      var onProgress = config.onProgress || function () { };
+      var onComplete = config.onComplete || function () { };
+      var onError = config.onError || function () { };
+      var shouldCancel = config.shouldCancel || function () { return false; };
+
+      // 创建输出canvas
+      var outputCanvas = document.createElement('canvas');
+      outputCanvas.width = width;
+      outputCanvas.height = height;
+      var outputCtx = outputCanvas.getContext('2d', {
+        willReadFrequently: true,
+        alpha: true
+      });
+
+      // 检查浏览器是否支持Web Worker
+      if (typeof Worker === 'undefined') {
+        throw new Error('浏览器不支持Web Worker，无法导出GIF');
+      }
+      
+      // 支持Web Worker：使用多线程编码
+      var availableCores = navigator.hardwareConcurrency || 2;
+      var workerCount = Math.max(1, Math.min(Math.floor(availableCores / 2), 4));
+      
+      // 构建worker脚本的路径
+      var workerScriptPath = 'assets/js/service/gif/gif.worker.js';
+      var baseUrl = window.location.origin;
+      var fullWorkerPath = new URL(workerScriptPath, baseUrl).href;
+      
+      // 创建GIF实例
+      var gifOptions = {
+        workers: workerCount,
+        workerScript: fullWorkerPath,
+        quality: Math.min(quality, 20),
+        width: width,
+        height: height,
+        repeat: 0,
+        background: '#ffffff'
+      };
+      
+      if (transparent) {
+        gifOptions.transparent = 0x000000; // 使用RGB格式的透明颜色，GIF只支持RGB格式
+      } else {
+        // 不透明模式：使用背景色
+        var bgColor = config.backgroundColor || '#ffffff';
+        if (bgColor === 'transparent') bgColor = '#ffffff';
+        gifOptions.background = bgColor;
+      }
+      
+      var gif = new GIF(gifOptions);
+
+      // 编码完成Promise
+      var encodingPromise = new Promise(function (resolve, reject) {
+        gif.on('progress', function (p) {
+          // 编码阶段：50%-100%
+          onProgress(50 + Math.floor(p * 50), 'encoding', '编码中...');
+        });
+
+        gif.on('finished', function (blob) {
+          if (!blob || typeof blob !== 'object' || !blob.size) {
+            reject(new Error('GIF编码器生成的blob无效'));
+          } else {
+            resolve(blob);
+          }
+        });
+
+        gif.on('abort', function () {
+          reject(new Error('用户取消'));
+        });
+
+        gif.on('error', function (error) {
+          // 检查是否是Worker相关的错误
+          if (error.message && (error.message.includes('Worker') || error.message.includes('worker'))) {
+            reject(new Error('Worker相关错误: ' + (error.message || error) + '，请尝试禁用Worker重试'));
+          } else {
+            reject(new Error('GIF编码失败: ' + (error.message || error)));
+          }
+        });
+      });
+
+      try {
+        // 帧捕获阶段
+        for (var i = 0; i < totalFrames; i++) {
+          // 检查取消
+          if (shouldCancel()) {
+            gif.abort();
+            throw new Error('用户取消');
+          }
+
+          // 获取当前帧
+          var sourceCanvas = await config.getFrame(i);
+          if (!sourceCanvas) {
+            throw new Error('无法获取帧 ' + i);
+          }
+
+          // 清空输出画布
+          outputCtx.clearRect(0, 0, width, height);
+
+          // 不透明模式：填充背景色
+          if (!transparent) {
+            var bgColor = config.backgroundColor || '#ffffff';
+            if (bgColor === 'transparent') bgColor = '#ffffff';
+            outputCtx.fillStyle = bgColor;
+            outputCtx.fillRect(0, 0, width, height);
+          }
+
+          // 绘制源帧
+          outputCtx.globalCompositeOperation = 'source-over';
+          outputCtx.drawImage(sourceCanvas, 0, 0, width, height);
+
+          // 透明模式：处理半透明像素
+          if (transparent) {
+            if (dither && ditherColor) {
+              // 杂色边模式：半透明像素与背景色混合
+              _this._processDither(outputCtx, width, height, ditherColor);
+            } else {
+              // 非杂色边模式：半透明像素设为完全透明（避免黑色杂边）
+              _this._processAlphaThreshold(outputCtx, width, height);
+            }
+          }
+
+          // 处理完透明后，手动获取处理后的 ImageData
+          var processedImageData = outputCtx.getImageData(0, 0, width, height);
+
+          // 验证图像数据是否有效
+          if (!processedImageData || !processedImageData.data || processedImageData.data.length === 0) {
+            throw new Error('处理后的图像数据无效');
+          }
+
+          // 直接使用 ImageData 而不是 canvas，确保传递处理后的数据
+          var frameOptions = { delay: frameDelay };
+          if (transparent) {
+            frameOptions.transparent = true;
+          }
+          gif.addFrame(processedImageData, frameOptions);
+          
+
+
+          // 更新进度：捕获阶段0%-50%
+          var progress = Math.floor((i / totalFrames) * 50);
+          onProgress(progress, 'capturing', '捕获帧 ' + (i + 1) + '/' + totalFrames);
+        }
+
+        // 开始编码
+        onProgress(50, 'encoding', '编码中...');
+        
+        try {
+          gif.render();
+        } catch (renderError) {
+          console.error('[GIF Exporter] 编码启动失败:', renderError);
+          throw new Error('编码启动失败: ' + renderError.message);
+        }
+
+        // 添加超时机制，避免编码过程无限卡住
+        var timeoutPromise = new Promise(function (resolve, reject) {
+          setTimeout(function () {
+            // 尝试取消编码
+            if (gif) {
+              try {
+                gif.abort();
+              } catch (e) {
+                console.warn('[GIF Exporter] 取消编码时出错:', e);
+              }
+            }
+            reject(new Error('GIF编码超时，可能是由于GIF.js库问题或文件过大导致'));
+          }, 120000); // 120秒超时
+        });
+        
+        // 等待编码完成或超时
+        var blob = await Promise.race([encodingPromise, timeoutPromise]);
+        
+        // 检查blob是否有效
+        if (!blob || typeof blob !== 'object' || !blob.size) {
+          throw new Error('生成的GIF blob无效');
+        }
+        
+        // 触发完成回调
+        onComplete(blob, blob.size);
+
+        return blob;
+
+      } catch (err) {
+        onError(err);
+        throw err;
+      }
+    },
+
+    /**
+     * 处理杂色边（半透明像素与背景色混合）
+     */
+    _processDither: function (ctx, width, height, ditherColor) {
+      var imageData = ctx.getImageData(0, 0, width, height);
+      var data = imageData.data;
+
+      // 解析杂色边颜色
+      var hexColor = ditherColor.replace('#', '');
+      var ditherR = parseInt(hexColor.substr(0, 2), 16);
+      var ditherG = parseInt(hexColor.substr(2, 2), 16);
+      var ditherB = parseInt(hexColor.substr(4, 2), 16);
+
+      // Alpha混合：半透明像素与背景色混合
+      for (var j = 0; j < data.length; j += 4) {
+        var alpha = data[j + 3] / 255;
+        if (alpha > 0 && alpha < 1) {
+          data[j] = Math.round(data[j] * alpha + ditherR * (1 - alpha));
+          data[j + 1] = Math.round(data[j + 1] * alpha + ditherG * (1 - alpha));
+          data[j + 2] = Math.round(data[j + 2] * alpha + ditherB * (1 - alpha));
+          data[j + 3] = 255;
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+    },
+
+    /**
+     * 处理Alpha通道：半透明像素设为完全透明（避免黑色杂边）
+     * GIF格式不支持半透明，只支持完全透明或完全不透明
+     * 将alpha < 128的像素设为完全透明，alpha >= 128的像素设为完全不透明
+     */
+    _processAlphaThreshold: function (ctx, width, height) {
+      var imageData = ctx.getImageData(0, 0, width, height);
+      var data = imageData.data;
+
+      for (var j = 0; j < data.length; j += 4) {
+        var alpha = data[j + 3];
+        if (alpha > 0 && alpha < 255) {
+          // 半透明像素：alpha阈值处理
+          data[j + 3] = alpha < 128 ? 0 : 255;
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+    },
+
+    /**
+     * 下载GIF文件
+     * @param {Blob} blob GIF blob
+     * @param {string} fileName 文件名
+     */
+    download: function (blob, fileName) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = fileName || 'animation.gif';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // 使用定时器服务延迟释放 URL 对象
+      if (window.MeeWoo && window.MeeWoo.Service && window.MeeWoo.Service.TimerService) {
+        window.MeeWoo.Service.TimerService.createDelay(function () {
+          URL.revokeObjectURL(url);
+        }, 100, 'gif-export');
+      } else {
+        // 降级方案：使用原生 setTimeout
+        setTimeout(function () { URL.revokeObjectURL(url); }, 100);
+      }
+    },
+
+    /**
+     * 预估GIF文件大小
+     * @param {Object} config 配置对象
+     * @returns {Object} { frames, duration, fileSize, fileSizeBytes }
+     */
+    estimate: function (config) {
+      var width = config.width || 100;
+      var height = config.height || 100;
+      var fps = config.fps || 30;
+      var duration = config.duration || 0;
+      var totalFrames = Math.ceil(duration * fps);
+      var transparent = config.transparent || false;
+      var dither = config.dither || false;
+
+      // 压缩系数（根据实际测试调整）
+      var compressionFactor = transparent ? 0.16 : 0.13;
+      if (transparent && dither) {
+        compressionFactor = 0.18;
+      }
+
+      var bytesPerFrame = width * height * compressionFactor;
+      var totalBytes = bytesPerFrame * totalFrames;
+
+      var fileSizeText = '？';
+      if (totalFrames > 0) {
+        if (totalBytes >= 1024 * 1024) {
+          fileSizeText = (totalBytes / 1024 / 1024).toFixed(2) + 'M';
+        } else {
+          fileSizeText = Math.round(totalBytes / 1024) + 'kb';
+        }
+      }
+
+      return {
+        frames: totalFrames,
+        duration: duration,
+        fileSize: fileSizeText,
+        fileSizeBytes: totalBytes
+      };
+    },
+
+    /**
+     * 格式化字节数
+     */
+    formatBytes: function (bytes) {
+      if (bytes >= 1024 * 1024) {
+        return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+      } else if (bytes >= 1024) {
+        return (bytes / 1024).toFixed(1) + ' KB';
+      }
+      return bytes + ' B';
+    }
+  };
+
+  // 导出到全局命名空间
+  global.MeeWoo.Exporters.GifExporter = GIFExporter;
+
+})(typeof window !== 'undefined' ? window : this);
