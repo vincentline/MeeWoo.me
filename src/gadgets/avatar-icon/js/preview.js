@@ -566,18 +566,28 @@ class AvatarPreviewer {
     exportLayer.draw();
     
     const dataURL = exportStage.toDataURL({ pixelRatio: 1 });
-    
-    const baseName = this.imageAFileName.replace(/\.[^/.]+$/, '');
-    const fileName = 'btn_' + baseName + '.png';
-    
-    const link = document.createElement('a');
-    link.download = fileName;
-    link.href = dataURL;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
     exportStage.destroy();
+    
+    const iconSize = 198;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = iconSize;
+      canvas.height = iconSize;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, iconSize, iconSize);
+      
+      const baseName = this.imageAFileName.replace(/\.[^/.]+$/, '');
+      const fileName = 'btn_' + baseName + '.png';
+      
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+    img.src = dataURL;
   }
   
   exportSingleLayer(type) {
