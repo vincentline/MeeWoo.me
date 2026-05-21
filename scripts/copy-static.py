@@ -244,14 +244,27 @@ def main():
         if os.path.exists(source):
             copy_directory(source, dest)
     
-    # 复制 gadgets 目录（使用 shutil.copytree 直接复制，不受排除规则影响）
+    # 复制 gadgets 目录（跳过 .html 文件，保留 Vite 构建生成的 HTML）
     gadgets_source = os.path.join(src_dir, 'gadgets')
     gadgets_dest = os.path.join(docs_dir, 'gadgets')
     if os.path.exists(gadgets_source):
-        if os.path.exists(gadgets_dest):
-            shutil.rmtree(gadgets_dest)
-        shutil.copytree(gadgets_source, gadgets_dest)
-        print_info(f"复制目录完成: {gadgets_source} -> {gadgets_dest}")
+        if not os.path.exists(gadgets_dest):
+            os.makedirs(gadgets_dest)
+        for root, dirs, files in os.walk(gadgets_source):
+            rel_root = os.path.relpath(root, gadgets_source)
+            dest_root = os.path.join(gadgets_dest, rel_root) if rel_root != '.' else gadgets_dest
+            for d in dirs:
+                dest_dir = os.path.join(dest_root, d)
+                if not os.path.exists(dest_dir):
+                    os.makedirs(dest_dir)
+            for f in files:
+                if f.endswith('.html'):
+                    print_info(f"跳过 HTML 文件（保留 Vite 构建产物）: {f}")
+                    continue
+                src_path = os.path.join(root, f)
+                dest_path = os.path.join(dest_root, f)
+                shutil.copy2(src_path, dest_path)
+        print_info(f"复制 gadgets 静态资源完成（已跳过 HTML）: {gadgets_source} -> {gadgets_dest}")
     
     # 复制 src 根目录文件（现在会走copy_file的排除规则）
     if os.path.exists(src_dir):
