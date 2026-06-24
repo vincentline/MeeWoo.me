@@ -375,6 +375,8 @@
           config.height = svga.originalHeight || 300;
           config.fps = fileInfo.fps || 30;
           config.aspectRatio = svga.originalWidth && svga.originalHeight ? (svga.originalWidth / svga.originalHeight) : 1;
+          sourceInfo.width = svga.originalWidth || 300;
+          sourceInfo.height = svga.originalHeight || 300;
         } else if (this.currentModule === 'mp4') {
           // 安全获取mp4相关属性
           var mp4 = this.mp4 || {};
@@ -389,6 +391,8 @@
           config.width = mp4.originalWidth || 300;
           config.height = mp4.originalHeight || 300;
           config.aspectRatio = mp4.originalWidth && mp4.originalHeight ? (mp4.originalWidth / mp4.originalHeight) : 1;
+          sourceInfo.width = mp4.originalWidth || 300;
+          sourceInfo.height = mp4.originalHeight || 300;
         } else if (this.currentModule === 'lottie') {
           // 安全获取lottie相关属性
           var lottie = this.lottie || {};
@@ -405,6 +409,8 @@
           config.fps = fileInfo.fps || 30;
           config.aspectRatio = lottie.originalWidth && lottie.originalHeight ? (lottie.originalWidth / lottie.originalHeight) : 1;
           config.muted = true; // Lottie无声
+          sourceInfo.width = lottie.originalWidth || 300;
+          sourceInfo.height = lottie.originalHeight || 300;
         } else if (this.currentModule === 'frames') {
           // 安全获取frames相关属性
           var frames = this.frames || {};
@@ -421,6 +427,8 @@
           config.fps = fileInfo.fps || 25;
           config.aspectRatio = frames.originalWidth && frames.originalHeight ? (frames.originalWidth / frames.originalHeight) : 1;
           config.muted = true; // 序列帧无声
+          sourceInfo.width = frames.originalWidth || 300;
+          sourceInfo.height = frames.originalHeight || 300;
         } else if (this.currentModule === 'yyeva') {
           // 安全获取yyeva(双通道MP4)相关属性
           var yyeva = this.yyeva || {};

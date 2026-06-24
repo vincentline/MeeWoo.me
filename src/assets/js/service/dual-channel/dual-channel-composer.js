@@ -1023,11 +1023,13 @@
 
             try {
               // 创建临时Canvas
+              // yuv420p 要求宽高均为偶数，奇数高度会导致 FFmpeg 编码失败输出空文件
+              const paddedHeight = height % 2 === 0 ? height : height + 1;
               const blackBgCanvas = document.createElement('canvas');
               blackBgCanvas.width = width * 2;
-              blackBgCanvas.height = height;
+              blackBgCanvas.height = paddedHeight;
               const blackBgCtx = blackBgCanvas.getContext('2d');
-              const blackBgImageData = blackBgCtx.createImageData(width * 2, height);
+              const blackBgImageData = blackBgCtx.createImageData(width * 2, paddedHeight);
               blackBgImageData.data.set(batchResult[i].blackBgData);
               blackBgCtx.putImageData(blackBgImageData, 0, 0);
 

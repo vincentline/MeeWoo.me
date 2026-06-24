@@ -863,6 +863,9 @@
                     '-r', String(fps)        // 输出帧率
                 );
 
+                // yuv420p 要求宽高均为偶数，pad 滤镜自动补齐奇数维度（偶数时为零开销）
+                args.push('-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2');
+
                 // 音频编码参数
                 if (hasAudio) {
                     args.push('-c:a', 'aac', '-b:a', '128k');
