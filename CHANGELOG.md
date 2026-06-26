@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.2.0](https://github.com/vincentline/MeeWoo.me/compare/v1.1.0...v1.2.0) (2026-06-26)
+
+
+### Features
+
+* **avatar-icon:** 重构预览器为基于Konva的画布编辑器 ([2662d6b](https://github.com/vincentline/MeeWoo.me/commit/2662d6b65cd97799ab304cfb47115137d873ce34))
+* **ui:** 添加Avatar小图标生成工具入口 ([62135b6](https://github.com/vincentline/MeeWoo.me/commit/62135b68dce4486b86d1e0b0b3eb0f85823c63e6))
+* 支持英/阿双语图片生成与下载 ([9acebd8](https://github.com/vincentline/MeeWoo.me/commit/9acebd8110b0ac8a41c773fb4f1ba7e20eae9fdf))
+* 新增头像框素材与CSS转换增强，升级预览器功能 ([84f71ea](https://github.com/vincentline/MeeWoo.me/commit/84f71ea9a4d2bc63fcb3b75bef55002f06bb5d7b))
+* 活动图片生成器使用腾讯云素材 ([26e08e0](https://github.com/vincentline/MeeWoo.me/commit/26e08e033b0cc4e85589157e1b7c11a9d40690da))
+* 添加知识引擎模块和文档索引结构 ([31ead18](https://github.com/vincentline/MeeWoo.me/commit/31ead1873fb8b549b1cde901cf36a4d0b01d6119))
+
+
+### Bug Fixes
+
+* **avatar-icon:** 修复生成图标按钮输出 750×750 而非 198×198 的问题 ([a6c1f1d](https://github.com/vincentline/MeeWoo.me/commit/a6c1f1dabc6b6dafb15b0df290d9f9ed3f1f46d2))
+* **build:** 修复 copy-static.py 覆盖 Vite 构建产物导致 avatar-icon 线上报错 ([2181549](https://github.com/vincentline/MeeWoo.me/commit/2181549ef3fb87eac3e6983c54fc3323d209a41c))
+* **ui:** Avatar图标预览器肤色改为#fff0e5 ([d13c91e](https://github.com/vincentline/MeeWoo.me/commit/d13c91ebe1cfe74bc9c78a55dd99fd1ed99e5b6f))
+* 修复FFmpeg编码和双通道合成的宽高适配问题 ([adb247f](https://github.com/vincentline/MeeWoo.me/commit/adb247f43296884357a67869b8cc7ca0fb1cbcc0))
+
 ## [1.1.0](https://github.com/vincentline/MeeWoo.me/compare/v1.0.0...v1.1.0) (2026-03-30)
 
 
