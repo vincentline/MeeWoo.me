@@ -428,6 +428,10 @@
       btn.classList.toggle('active', parseInt(btn.dataset.quality) === quality);
     });
 
+    // 收起自定义面板，取消自定义按钮高亮
+    els.qualityCustomPanel.style.display = 'none';
+    els.presetCustomBtn.classList.remove('active');
+
     // 同时更新弹窗内的预设按钮
     var modalPresetBtns = document.querySelectorAll('.compare-quality-picker .preset-btn[data-quality]');
     modalPresetBtns.forEach(function (btn) {
@@ -437,14 +441,13 @@
   }
 
   function toggleCustomPanel() {
-    var show = els.qualityCustomPanel.style.display === 'none' || !els.qualityCustomPanel.style.display;
-    els.qualityCustomPanel.style.display = show ? 'flex' : 'none';
-    els.presetCustomBtn.classList.toggle('active', show);
-    if (!show) {
-      // 关闭自定义面板时取消所有预设高亮
-      var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
-      presetBtns.forEach(function (btn) { btn.classList.remove('active'); });
-    }
+    var isVisible = els.qualityCustomPanel.style.display === 'flex';
+    if (isVisible) return; // 已展开，不取消——点击其他预设才切换
+    els.qualityCustomPanel.style.display = 'flex';
+    els.presetCustomBtn.classList.add('active');
+    // 取消其他预设高亮
+    var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
+    presetBtns.forEach(function (btn) { btn.classList.remove('active'); });
   }
 
   // ==================== 压缩流程 ====================
