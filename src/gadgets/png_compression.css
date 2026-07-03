@@ -901,17 +901,6 @@ body {
   pointer-events: none;
 }
 
-/* 对比操作区（隐藏，保留 DOM 兼容旧逻辑） */
-.compare-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-5);
-  border-top: 1px solid var(--border-light);
-  flex-shrink: 0;
-}
-
 /* 浮层气泡 */
 .compare-popover {
   position: absolute;

@@ -66,8 +66,6 @@
     els.compareImageRight = document.getElementById('compareImageRight');
     els.compareDivider = document.getElementById('compareDivider');
     els.comparePlaceholder = document.getElementById('comparePlaceholder');
-    els.compareCompressBtn = document.getElementById('compareCompressBtn');
-    els.compareQualityInput = document.getElementById('compareQualityInput');
     els.compareTabs = document.getElementById('compareTabs');
     els.compareConfirm = document.getElementById('compareConfirm');
     els.compareConfirmBtn = document.getElementById('compareConfirmBtn');
