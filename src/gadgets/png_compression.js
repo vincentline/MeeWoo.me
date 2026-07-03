@@ -464,11 +464,16 @@
 
     var quality = getCurrentQuality();
 
+    // 有勾选图片时只压缩勾选的，否则压缩全部
+    var selectedImages = app.images.filter(function (img) { return img.selected; });
+    var targetImages = selectedImages.length > 0 ? selectedImages : app.images;
+    var targetTotal = targetImages.length;
+
     // 逐张压缩
-    for (var i = 0; i < app.images.length; i++) {
+    for (var i = 0; i < targetImages.length; i++) {
       if (app.cancelled) break;
 
-      var image = app.images[i];
+      var image = targetImages[i];
       image.status = 'compressing';
       image.progress = 0;
       image.compressedData = null;
@@ -501,7 +506,8 @@
 
       app.compressedCount++;
       updateImageCard(image);
-      updateOverallProgress();
+      updateOverallProgress(targetTotal);
+
     }
 
     app.isCompressing = false;
@@ -517,8 +523,8 @@
     showToast('正在取消...');
   }
 
-  function updateOverallProgress() {
-    var total = app.images.length;
+  function updateOverallProgress(total) {
+    total = total || app.images.length;
     var pct = total > 0 ? Math.round((app.compressedCount / total) * 100) : 0;
     els.overallProgressFill.style.width = pct + '%';
     els.overallProgressStats.textContent = app.compressedCount + ' / ' + total + ' 张';
