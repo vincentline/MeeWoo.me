@@ -631,7 +631,11 @@
   }
 
   function buildCompareTabs(image) {
-    els.compareTabs.innerHTML = '';
+    // 只清除 tab 按钮，保留浮层 DOM
+    var existingTabs = els.compareTabs.querySelectorAll('.compare-tab');
+    for (var ti = 0; ti < existingTabs.length; ti++) {
+      existingTabs[ti].remove();
+    }
     var qualities = Object.keys(image.trialResults).map(Number).sort(function (a, b) { return a - b; });
 
     // 渲染已有压缩结果 tab（方形卡片）
