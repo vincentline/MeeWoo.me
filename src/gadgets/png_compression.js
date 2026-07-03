@@ -361,7 +361,7 @@
     var confirmedEl = card.querySelector('.image-card-confirmed');
     if (image.confirmedQuality !== null) {
       confirmedEl.style.display = 'block';
-      confirmedEl.textContent = '已确认版本: ' + image.confirmedQuality + ' 质量';
+      confirmedEl.textContent = '已确认压缩质量: ' + getQualityLabel(image.confirmedQuality);
     } else {
       confirmedEl.style.display = 'none';
     }
@@ -596,7 +596,7 @@
       var toRecompress = targetImages.filter(function (img) { return !keepIds[img.id]; });
 
       if (toRecompress.length === 0) {
-        showToast('全部图片保留确认版本，无需重新压缩');
+        showToast('全部图片保留已确认压缩质量，无需重新压缩');
         showDownloadSection();
         return;
       }
@@ -786,7 +786,7 @@
         '<span class="compare-tab-quality-label">压缩质量：</span>' +
         '<span class="compare-tab-quality-value">' + getQualityLabel(q) + '</span>' +
         '<span class="compare-tab-size-before">' + formatSize(image.size) + '</span>' +
-        '<span class="compare-tab-size-after">→' + formatSize(image.trialResults[q].length) + '</span>';
+        '<span class="compare-tab-size-after">→ ' + formatSize(image.trialResults[q].length) + '</span>';
       tab.addEventListener('click', function () {
         selectCompareTab(image, q);
       });
@@ -947,7 +947,7 @@
     showDownloadSection();
     closeCompareModal();
 
-    showToast('已确认版本: ' + getQualityLabel(quality) + ' (' + formatSize(data.length) + ')');
+    showToast('已确认压缩质量: ' + getQualityLabel(quality) + ' (' + formatSize(data.length) + ')');
   }
 
   // ==================== 分割线拖拽 ====================

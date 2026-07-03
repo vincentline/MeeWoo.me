@@ -782,6 +782,17 @@ body {
 }
 .compare-modal-close:hover { background: rgba(0, 0, 0, 0.4); }
 
+/* 覆盖确认弹窗的关闭按钮——在白色 --bg-elevated 上需用浅底深色 ×，
+   不能复用 .compare-modal-close 的黑底白×（那是为深色棋盘格视口设计的） */
+#overwriteClose {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+#overwriteClose:hover {
+  background: var(--border-medium);
+  color: var(--text-primary);
+}
+
 .compare-modal-title {
   padding: var(--space-4) var(--space-5);
   font-size: var(--font-size-lg);
@@ -1051,7 +1062,7 @@ body {
   opacity: 0.6;
 }
 
-/* 第 4 行：压缩后文件大小（小字，激活时跟随主色） */
+/* 第 4 行：压缩后文件大小（小字，激活时通过继承父级 .compare-tab.active 的 color 跟随主色） */
 .compare-tab-size-after {
   font-size: var(--font-size-xs);
   font-weight: 500;
@@ -1314,6 +1325,25 @@ body.dark-mode .overwrite-item:hover {
 
 body.dark-mode .overwrite-thumb {
   background: repeating-conic-gradient(#333 0% 25%, #2a2a2a 0% 50%) 50% / 8px 8px;
+}
+
+/* 暗黑模式下 --btn-dark (#5b5b5b) 用作文字/边框色时对比度不足，
+   需对具体位置单独覆盖为浅色（不影响按钮背景仍使用 --btn-dark） */
+body.dark-mode .compare-tab--add:hover {
+  border-color: #aaaaaa;
+  color: #cccccc;
+}
+body.dark-mode .overwrite-meta .quality {
+  color: #b0b0b0;
+}
+/* 暗黑模式下覆盖弹窗关闭按钮需深底浅× */
+body.dark-mode #overwriteClose {
+  background: #404040;
+  color: #cccccc;
+}
+body.dark-mode #overwriteClose:hover {
+  background: #555555;
+  color: #ffffff;
 }
 
 /* ---------- 暗黑模式 ---------- */

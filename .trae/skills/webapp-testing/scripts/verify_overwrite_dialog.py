@@ -116,10 +116,10 @@ def main():
         print(f'  覆盖确认弹窗可见: {is_visible}')
         assert is_visible, '覆盖确认弹窗未出现！'
 
-        # 5. 验证标题
+        # 5. 验证标题（请求 E 改为"是否保留已确认压缩质量的图片？"）
         title = page.locator('#overwriteTitle').text_content()
         print(f'  标题: {title}')
-        assert '2' in title, f'标题应含 2 张，实际: {title}'
+        assert title == '是否保留已确认压缩质量的图片？', f'标题不符，实际: {title}'
 
         # 6. 验证列表项
         items = page.locator('.overwrite-item')
