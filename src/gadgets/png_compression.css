@@ -170,7 +170,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 160px;
+  min-height: 60vh;
   /* 列表出现后缩小 */
 }
 
@@ -377,6 +377,9 @@ body {
 
 /* 按钮 */
 .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: 34px;
   padding: 0 18px;
   background: var(--primary-blue);
@@ -386,6 +389,7 @@ body {
   font-size: var(--font-size-md);
   cursor: pointer;
   transition: all var(--transition-base);
+  white-space: nowrap;
 }
 
 .btn-primary:hover {
@@ -398,6 +402,9 @@ body {
 }
 
 .btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: 34px;
   padding: 0 18px;
   background: var(--primary-red);
@@ -407,6 +414,7 @@ body {
   font-size: var(--font-size-md);
   cursor: pointer;
   transition: all var(--transition-base);
+  white-space: nowrap;
 }
 
 .btn-danger:hover {
@@ -414,6 +422,9 @@ body {
 }
 
 .btn-large-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: 44px;
   padding: 0 24px;
   background: var(--primary-blue);
@@ -431,7 +442,10 @@ body {
 }
 
 .btn-secondary-outline {
-  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
   padding: 0 24px;
   background: transparent;
   border: 1px solid var(--border-medium);
