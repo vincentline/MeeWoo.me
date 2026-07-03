@@ -271,6 +271,7 @@
     checkbox.addEventListener('change', function () {
       image.selected = checkbox.checked;
       card.classList.toggle('image-card--selected', image.selected);
+      updateDownloadButton();
     });
 
     card.querySelector('.image-card-delete').addEventListener('click', function (e) {
@@ -557,6 +558,8 @@
       '<p>压缩前总大小: ' + formatSize(app.totalSizeBefore) + '</p>' +
       '<p>压缩后总大小: ' + formatSize(app.totalSizeAfter) + '</p>' +
       '<p>总压缩率: ' + totalRate + '%</p>';
+
+    updateDownloadButton();
   }
 
   // ==================== 对比预览弹窗 ====================
@@ -770,13 +773,55 @@
 
   // ==================== 下载 ====================
 
-  function downloadSelected() {
-    var selected = app.images.filter(function (img) {
-      return img.selected && img.compressedData;
-    });
+  /**
+   * 动态更新下载按钮文字和状态
+   */
+  function updateDownloadButton() {
+    var btn = els.downloadSelectedBtn;
+    if (!btn) return;
+
+    var selected = app.images.filter(function (img) { return img.selected; });
+    var selectedCompressed = selected.filter(function (img) { return img.compressedData; });
+    var allCompressed = app.images.filter(function (img) { return img.compressedData; });
 
     if (selected.length === 0) {
-      showToast('请勾选至少一张已完成压缩的图片');
+      // 没选中任何图：下载全部已压缩的
+      if (allCompressed.length > 0) {
+        btn.disabled = false;
+        btn.textContent = '打包下载所有已压缩图片（' + allCompressed.length + '）';
+      } else {
+        btn.disabled = true;
+        btn.textContent = '打包下载已压缩图片（无）';
+      }
+    } else if (selectedCompressed.length === 0) {
+      // 选中了但都没压缩
+      btn.disabled = true;
+      btn.textContent = '打包下载已压缩图片（无）';
+    } else {
+      // 选中的有压缩过的
+      btn.disabled = false;
+      btn.textContent = '打包下载已压缩图片（' + selectedCompressed.length + '）';
+    }
+  }
+
+  function downloadSelected() {
+    var btn = els.downloadSelectedBtn;
+
+    if (btn.disabled) {
+      showToast('选中的图片尚未压缩，请先压缩后再下载');
+      return;
+    }
+
+    var selected = app.images.filter(function (img) { return img.selected; });
+    var hasSelection = selected.length > 0;
+
+    // 没选中 → 下载全部已压缩；有选中 → 下载选中中已压缩的
+    var targets = hasSelection
+      ? selected.filter(function (img) { return img.compressedData; })
+      : app.images.filter(function (img) { return img.compressedData; });
+
+    if (targets.length === 0) {
+      showToast('没有可下载的已压缩图片');
       return;
     }
 
@@ -786,9 +831,9 @@
     }
 
     var zip = new JSZip();
-    selected.forEach(function (img) {
-      var qualityLabel = img.confirmedQuality !== null
-        ? '_' + getQualityLabel(img.confirmedQuality)
+    targets.forEach(function (img) {
+      var qualityLabel = img.compressedQuality !== null
+        ? '_' + getQualityLabel(img.compressedQuality)
         : '';
       var name = img.name.replace(/\.png$/i, '') + qualityLabel + '_compressed.png';
       zip.file(name, img.compressedData);
@@ -804,7 +849,7 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      showToast('下载完成（' + selected.length + ' 张）');
+      showToast('下载完成（' + targets.length + ' 张）');
     }).catch(function (error) {
       console.error('打包下载失败:', error);
       showToast('打包下载失败');
