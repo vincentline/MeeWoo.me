@@ -250,7 +250,7 @@
       '</div>' +
       '<img class="image-card-thumb" alt="' + image.name + '">' +
       '<div class="image-card-info">' +
-        '<span class="image-card-name">' + image.name + '</span>' +
+        '<span class="image-card-name" title="' + image.name + '">' + image.name + '</span>' +
         '<div class="image-card-meta">' +
           '<span class="image-card-dims">' + (image.width ? image.width + ' × ' + image.height : '读取中...') + '</span>' +
           '<span>·</span>' +

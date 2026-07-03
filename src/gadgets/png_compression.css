@@ -447,6 +447,9 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--space-4);
   margin-bottom: var(--space-5);
+  max-height: 500px;
+  overflow-y: auto;
+  padding: var(--space-1);
 }
 
 .empty-hint {
@@ -536,7 +539,7 @@ body {
 }
 
 .image-card-name {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-lg);
   font-weight: 500;
   color: var(--text-primary);
   overflow: hidden;
@@ -545,20 +548,20 @@ body {
 }
 
 .image-card-meta {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--text-tertiary);
   display: flex;
   gap: var(--space-2);
 }
 
 .image-card-result {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--success);
   display: none;
 }
 
 .image-card-confirmed {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--primary-blue);
   display: none;
 }
@@ -587,7 +590,7 @@ body {
 /* 状态标签 */
 .image-card-status {
   display: inline-block;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: 500;
   padding: 1px 8px;
   border-radius: 10px;
@@ -724,7 +727,7 @@ body {
   border-radius: var(--radius-lg);
   width: 90vw;
   max-width: 1100px;
-  max-height: 90vh;
+  height: 80vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
