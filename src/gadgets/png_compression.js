@@ -857,9 +857,6 @@
 
     // 弹窗关闭
     els.compareModalClose.addEventListener('click', closeCompareModal);
-    els.compareModalOverlay.addEventListener('click', function (e) {
-      if (e.target === els.compareModalOverlay) closeCompareModal();
-    });
 
     // 弹窗对比压缩
     els.compareCompressBtn.addEventListener('click', runTrialCompress);
