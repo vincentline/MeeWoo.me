@@ -456,9 +456,9 @@
   // ==================== 压缩流程 ====================
 
   function getQualityLabel(quality) {
-    if (quality <= 40) return '极致';
-    if (quality <= 70) return '推荐';
-    if (quality <= 90) return '高质';
+    if (quality === 40) return '极致';
+    if (quality === 70) return '推荐';
+    if (quality === 90) return '高质';
     return String(quality);
   }
 
