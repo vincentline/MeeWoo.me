@@ -2,122 +2,180 @@
 <html lang="zh-CN">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PNG 压缩工具</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PNG 压缩工具</title>
 
-    <!-- 引入设计系统样式 -->
-    <link rel="stylesheet" href="../assets/css/styles.css">
+  <!-- 引入设计系统样式 -->
+  <link rel="stylesheet" href="../assets/css/styles.css">
 
-    <!-- 引入自定义样式 -->
-    <link rel="stylesheet" href="png_compression.css">
+  <!-- 引入自定义样式 -->
+  <link rel="stylesheet" href="png_compression.css">
 </head>
 
 <body>
-    <div id="app">
-        <!-- 顶部区域 -->
-        <header class="header">
-            <div class="header-container">
-                <div class="header-left">
-                    <a href="../index.html?type=internal" class="logo-link" title="回到主页">
-                    <img class="logo-img" src="../assets/img/logo.png" alt="MeeWoo Logo" width="24" height="24">
-                </a>
-                    <h1 class="header-title">PNG 压缩工具</h1>
-                </div>
-                <div class="header-actions">
-                    <button class="theme-toggle" title="切换主题">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path
-                                d="M12 3V5M12 19V21M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M3 12H5M19 12H21M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22M12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17Z"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                    </button>
-                </div>
+  <div id="app">
+    <!-- 顶部区域 -->
+    <header class="header">
+      <div class="header-container">
+        <div class="header-left">
+          <a href="../index.html?type=internal" class="logo-link" title="回到主页">
+            <img class="logo-img" src="../assets/img/logo.png" alt="MeeWoo Logo" width="24" height="24">
+          </a>
+          <h1 class="header-title">PNG 压缩工具</h1>
+        </div>
+        <div class="header-actions">
+          <button class="theme-toggle" title="切换主题">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3V5M12 19V21M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M3 12H5M19 12H21M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22M12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17Z"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="main-content">
+      <!-- 文件输入区：始终可见 -->
+      <section class="drag-area" id="dragArea">
+        <div class="drag-area-content">
+          <svg class="drag-icon" width="64" height="64" viewBox="0 0 24 24" fill="none">
+            <path d="M21 15V19C21 20.1 20.1 21 19 21H5C3.9 21 3 20.1 3 19V15" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M17 8L12 3L7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+            <path d="M12 3V15" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+          <h2 class="drag-title">拖入 PNG 图片进行压缩</h2>
+          <p class="drag-description">或</p>
+          <button class="btn-select-files" id="selectFilesBtn">选择文件</button>
+          <input type="file" id="fileInput" multiple accept="image/png" style="display: none;">
+          <p class="drag-hint" id="addMoreHint" style="display: none;">继续拖入或点击添加更多图片</p>
+        </div>
+      </section>
+
+      <!-- 图片列表 + 操作区 -->
+      <section class="image-list-section" id="imageListSection" style="display: none;">
+        <!-- 工具栏：压缩级别 + 操作按钮 -->
+        <div class="toolbar">
+          <div class="toolbar-quality">
+            <span class="toolbar-label">压缩级别</span>
+            <div class="quality-presets">
+              <button class="preset-btn" data-quality="40">极致压缩</button>
+              <button class="preset-btn active" data-quality="70">推荐</button>
+              <button class="preset-btn" data-quality="90">高质量</button>
+              <button class="preset-btn preset-custom" id="presetCustomBtn">自定义 ▾</button>
             </div>
-        </header>
+            <div class="quality-custom" id="qualityCustomPanel" style="display: none;">
+              <input type="range" id="compressionQuality" class="compression-slider" min="10" max="100" value="70">
+              <span class="compression-value" id="compressionValue">70</span>
+            </div>
+          </div>
+          <div class="toolbar-actions">
+            <button class="btn-primary" id="compressBtn">开始压缩</button>
+            <button class="btn-danger" id="cancelBtn" style="display: none;">取消压缩</button>
+          </div>
+        </div>
 
-        <!-- 主要内容区 -->
-        <main class="main-content">
-            <!-- 拖拽区域 -->
-            <section class="drag-area" id="dragArea">
-                <div class="drag-area-content">
-                    <svg class="drag-icon" width="64" height="64" viewBox="0 0 24 24" fill="none">
-                        <path d="M21 15V19C21 20.1 20.1 21 19 21H5C3.9 21 3 20.1 3 19V15" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M17 8L12 3L7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round" />
-                        <path d="M12 3V15" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round" />
-                    </svg>
-                    <h2 class="drag-title">拖入 PNG 图片进行压缩</h2>
-                    <p class="drag-description">支持批量拖入多张 PNG 图片，自动进行压缩</p>
-                    <p class="drag-hint">或将图片文件拖到此处</p>
-                </div>
-            </section>
+        <!-- 图片卡片列表 -->
+        <div class="image-grid" id="imageGrid"></div>
 
-            <!-- 图片列表区域 -->
-            <section class="image-list-section" id="imageListSection" style="display: none;">
-                <div class="section-header">
-                    <h2 class="section-title">已添加的图片</h2>
-                    <div class="section-header-actions">
-                        <div class="compression-slider-container">
-                            <label for="compressionQuality" class="compression-label">压缩级别:</label>
-                            <input type="range" id="compressionQuality" class="compression-slider" min="10" max="100"
-                                value="80">
-                            <span id="compressionValue" class="compression-value">80</span>
-                        </div>
-                        <button class="btn-secondary btn-clear" id="clearBtn">清空列表</button>
-                    </div>
-                </div>
+        <!-- 空列表占位 -->
+        <div class="empty-hint" id="emptyHint">暂无图片，请在上方拖入或选择 PNG 文件</div>
 
-                <!-- 图片列表 -->
-                <div class="image-list" id="imageList"></div>
+        <!-- 整体进度 -->
+        <div class="overall-progress" id="overallProgress" style="display: none;">
+          <div class="overall-progress-text">整体压缩进度</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="overallProgressFill" style="width: 0%"></div>
+          </div>
+          <div class="overall-progress-stats" id="overallProgressStats">0 / 0 张</div>
+        </div>
 
-                <!-- 操作按钮区 -->
-                <div class="action-buttons">
-                    <button class="btn-large-primary" id="compressBtn">开始压缩</button>
-                </div>
+        <!-- 下载区域 -->
+        <div class="download-section" id="downloadSection" style="display: none;">
+          <div class="download-stats" id="downloadStats"></div>
+          <div class="download-actions">
+            <button class="btn-large-primary" id="downloadSelectedBtn">打包下载选中</button>
+            <button class="btn-secondary-outline" id="clearBtn">清空列表</button>
+          </div>
+        </div>
+      </section>
 
-                <!-- 整体进度显示 -->
-                <div class="overall-progress" id="overallProgress" style="display: none;">
-                    <div class="overall-progress-text">整体压缩进度</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="overallProgressFill" style="width: 0%"></div>
-                    </div>
-                    <div class="overall-progress-stats" id="overallProgressStats">0/0 图片</div>
-                </div>
+      <!-- 底部区域 -->
+      <footer class="footer">
+        <div class="footer-content">
+          <p class="footer-text">&copy; 2026 MeeWoo. All rights reserved.</p>
+          <a href="#" class="footer-link">帮助文档</a>
+        </div>
+      </footer>
+    </main>
+  </div>
 
-                <!-- 下载按钮区 -->
-                <div class="download-section" id="downloadSection" style="display: none;">
-                    <div class="download-buttons">
-                        <button class="btn-large-secondary" id="downloadAllBtn">打包下载</button>
-                    </div>
-                    <div class="section-header">
-                        <h2 class="section-title">压缩完成</h2>
-                    </div>
-                    <div class="download-stats" id="downloadStats"></div>
+  <!-- 对比预览弹窗 -->
+  <div class="compare-modal-overlay" id="compareModalOverlay" style="display: none;">
+    <div class="compare-modal" id="compareModal">
+      <!-- 关闭按钮 -->
+      <button class="compare-modal-close" id="compareModalClose">&times;</button>
 
-                </div>
-            </section>
-            <!-- 底部区域 -->
-            <footer class="footer">
-                <div class="footer-content">
-                    <p class="footer-text">© 2026 MeeWoo. All rights reserved.</p>
-                    <a href="#" class="footer-link">帮助文档</a>
-                </div>
-            </footer>
-        </main>
+      <!-- 标题 -->
+      <div class="compare-modal-title" id="compareModalTitle">对比预览</div>
 
+      <!-- 图片对比区 -->
+      <div class="compare-viewport" id="compareViewport">
+        <!-- 左侧：原图 -->
+        <div class="compare-image compare-image--left" id="compareImageLeft">
+          <div class="compare-label">原图</div>
+        </div>
+        <!-- 右侧：压缩后 -->
+        <div class="compare-image compare-image--right" id="compareImageRight">
+          <div class="compare-label">压缩后</div>
+        </div>
+        <!-- 分割线 -->
+        <div class="compare-divider" id="compareDivider">
+          <div class="compare-divider-handle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M10 8L6 12L10 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M14 8L18 12L14 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <!-- 初始状态：右侧空白时的提示 -->
+        <div class="compare-placeholder" id="comparePlaceholder">
+          <p>点击下方「对比压缩」开始试压</p>
+        </div>
+      </div>
 
+      <!-- 压缩率选择 + 对比压缩按钮 -->
+      <div class="compare-actions">
+        <div class="compare-quality-picker" id="compareQualityPicker">
+          <button class="preset-btn preset-btn--sm" data-quality="40">极致</button>
+          <button class="preset-btn preset-btn--sm active" data-quality="70">推荐</button>
+          <button class="preset-btn preset-btn--sm" data-quality="90">高质</button>
+          <input type="number" class="compare-quality-input" id="compareQualityInput" min="10" max="100" value="70" placeholder="自定义">
+        </div>
+        <button class="btn-primary" id="compareCompressBtn">对比压缩</button>
+      </div>
+
+      <!-- 压缩率 Tab -->
+      <div class="compare-tabs" id="compareTabs" style="display: none;"></div>
+
+      <!-- 确认按钮 -->
+      <div class="compare-confirm" id="compareConfirm" style="display: none;">
+        <button class="btn-large-primary" id="compareConfirmBtn">确认此版本</button>
+      </div>
     </div>
+  </div>
 
-    <!-- 引入必要的 JavaScript 库 -->
-    <script src="../assets/js/lib/pako.min.js"></script>
-    <script src="../assets/js/lib/jszip.min.js"></script>
-    <script src="../assets/js/service/image-compression-service.js"></script>
+  <!-- 引入必要的 JavaScript 库 -->
+  <script src="../assets/js/lib/pako.min.js"></script>
+  <script src="../assets/js/lib/jszip.min.js"></script>
+  <script src="../assets/js/service/image-compression-service.js"></script>
 
-    <!-- 引入自定义 JavaScript -->
-    <script src="png_compression.js"></script>
+  <!-- 引入自定义 JavaScript -->
+  <script src="png_compression.js"></script>
 </body>
 
 </html>

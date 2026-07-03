@@ -1,591 +1,911 @@
 /**
- * PNG压缩工具
- * 功能：支持批量拖拽PNG图片进行压缩，显示压缩进度，支持打包下载
+ * PNG 压缩工具 - 交互重构版
+ * 
+ * 功能：
+ * - 拖拽 + 点击选择 PNG 文件
+ * - 图片卡片列表：缩略图/尺寸/大小/勾选/删除
+ * - 预设压缩档位 + 自定义滑块
+ * - 逐张压缩 + 取消机制（图间跳过）
+ * - 对比预览弹窗：分割线拖拽对比 + 多压缩率试压 tab + 确认版本
+ * - 多选打包下载（只下载确认版本）
  */
+(function () {
+  'use strict';
 
-// 全局变量
-const app = {
-    images: [], // 存储图片数据
-    isCompressing: false, // 是否正在压缩
-    compressedCount: 0, // 已压缩完成的图片数量
-    totalSizeBefore: 0, // 压缩前总大小
-    totalSizeAfter: 0, // 压缩后总大小
-    theme: 'light' // 当前主题
-};
+  // ==================== 状态管理 ====================
 
-// 初始化主题
-try {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        app.theme = savedTheme;
-    }
-} catch (e) {
-    console.error('获取主题失败:', e);
-}
+  const app = {
+    images: [],
+    isCompressing: false,
+    cancelled: false,
+    compressedCount: 0,
+    totalSizeBefore: 0,
+    totalSizeAfter: 0,
+    currentQuality: 70,
+    theme: 'light',
+    // 对比弹窗状态
+    compareImageId: null,
+    compareCurrentQuality: null
+  };
 
-// DOM元素
-const elements = {
-    dragArea: document.getElementById('dragArea'),
-    imageListSection: document.getElementById('imageListSection'),
-    imageList: document.getElementById('imageList'),
-    clearBtn: document.getElementById('clearBtn'),
-    compressBtn: document.getElementById('compressBtn'),
-    compressionQuality: document.getElementById('compressionQuality'),
-    compressionValue: document.getElementById('compressionValue'),
-    overallProgress: document.getElementById('overallProgress'),
-    overallProgressFill: document.getElementById('overallProgressFill'),
-    overallProgressStats: document.getElementById('overallProgressStats'),
-    downloadSection: document.getElementById('downloadSection'),
-    downloadStats: document.getElementById('downloadStats'),
-    downloadAllBtn: document.getElementById('downloadAllBtn'),
-    themeToggle: document.querySelector('.theme-toggle'),
-    logoImg: document.querySelector('.logo-img'),
-    logoLink: document.querySelector('.logo-link')
-};
+  // ==================== DOM 引用 ====================
 
-// 初始化应用
-function init() {
-    // 初始化主题
-    setTheme(app.theme);
+  const els = {};
 
-    // 设置初始logo图片
-    updateLogoImage();
+  function cacheElements() {
+    els.dragArea = document.getElementById('dragArea');
+    els.fileInput = document.getElementById('fileInput');
+    els.selectFilesBtn = document.getElementById('selectFilesBtn');
+    els.addMoreHint = document.getElementById('addMoreHint');
+    els.imageListSection = document.getElementById('imageListSection');
+    els.imageGrid = document.getElementById('imageGrid');
+    els.emptyHint = document.getElementById('emptyHint');
+    els.compressBtn = document.getElementById('compressBtn');
+    els.cancelBtn = document.getElementById('cancelBtn');
+    els.clearBtn = document.getElementById('clearBtn');
+    els.compressionQuality = document.getElementById('compressionQuality');
+    els.compressionValue = document.getElementById('compressionValue');
+    els.qualityCustomPanel = document.getElementById('qualityCustomPanel');
+    els.presetCustomBtn = document.getElementById('presetCustomBtn');
+    els.overallProgress = document.getElementById('overallProgress');
+    els.overallProgressFill = document.getElementById('overallProgressFill');
+    els.overallProgressStats = document.getElementById('overallProgressStats');
+    els.downloadSection = document.getElementById('downloadSection');
+    els.downloadStats = document.getElementById('downloadStats');
+    els.downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
+    els.themeToggle = document.querySelector('.theme-toggle');
+    els.logoImg = document.querySelector('.logo-img');
+    els.logoLink = document.querySelector('.logo-link');
+    // 对比弹窗
+    els.compareModalOverlay = document.getElementById('compareModalOverlay');
+    els.compareModal = document.getElementById('compareModal');
+    els.compareModalClose = document.getElementById('compareModalClose');
+    els.compareModalTitle = document.getElementById('compareModalTitle');
+    els.compareViewport = document.getElementById('compareViewport');
+    els.compareImageLeft = document.getElementById('compareImageLeft');
+    els.compareImageRight = document.getElementById('compareImageRight');
+    els.compareDivider = document.getElementById('compareDivider');
+    els.comparePlaceholder = document.getElementById('comparePlaceholder');
+    els.compareCompressBtn = document.getElementById('compareCompressBtn');
+    els.compareQualityInput = document.getElementById('compareQualityInput');
+    els.compareTabs = document.getElementById('compareTabs');
+    els.compareConfirm = document.getElementById('compareConfirm');
+    els.compareConfirmBtn = document.getElementById('compareConfirmBtn');
+  }
 
-    // 绑定事件
-    bindEvents();
+  // ==================== 工具函数 ====================
 
-    // 初始化压缩服务
-    initCompressionService();
-}
-
-// 更新Logo图片
-function updateLogoImage() {
-    const isDarkMode = document.body.classList.contains('dark-mode');
-    if (isDarkMode) {
-        elements.logoImg.src = '../assets/img/logo_dark.png';
-    } else {
-        elements.logoImg.src = '../assets/img/logo.png';
-    }
-}
-
-// 处理压缩质量改变
-function handleCompressionQualityChange() {
-    const quality = elements.compressionQuality.value;
-    elements.compressionValue.textContent = quality;
-}
-
-// 处理Logo鼠标进入事件
-function handleLogoMouseEnter() {
-    const isDarkMode = document.body.classList.contains('dark-mode');
-    if (isDarkMode) {
-        elements.logoImg.src = '../assets/img/logo_hover_dark.png';
-    } else {
-        elements.logoImg.src = '../assets/img/logo_hover.png';
-    }
-}
-
-// 处理Logo鼠标离开事件
-function handleLogoMouseLeave() {
-    const isDarkMode = document.body.classList.contains('dark-mode');
-    if (isDarkMode) {
-        elements.logoImg.src = '../assets/img/logo_dark.png';
-    } else {
-        elements.logoImg.src = '../assets/img/logo.png';
-    }
-}
-
-// 绑定事件
-function bindEvents() {
-    // 拖拽事件
-    elements.dragArea.addEventListener('dragenter', handleDragEnter);
-    elements.dragArea.addEventListener('dragover', handleDragOver);
-    elements.dragArea.addEventListener('drop', handleDrop);
-    elements.dragArea.addEventListener('dragleave', handleDragLeave);
-
-    // 按钮事件
-    elements.clearBtn.addEventListener('click', clearImageList);
-    elements.compressBtn.addEventListener('click', startCompression);
-    elements.downloadAllBtn.addEventListener('click', downloadAll);
-    elements.themeToggle.addEventListener('click', toggleTheme);
-
-    // 滑块事件
-    elements.compressionQuality.addEventListener('input', handleCompressionQualityChange);
-
-    // Logo事件
-    elements.logoLink.addEventListener('mouseenter', handleLogoMouseEnter);
-    elements.logoLink.addEventListener('mouseleave', handleLogoMouseLeave);
-}
-
-// 初始化压缩服务
-async function initCompressionService() {
-    try {
-        // 初始化图像压缩服务
-        await window.MeeWoo.Services.ImageCompressionService.init();
-        console.log('图像压缩服务初始化成功');
-    } catch (error) {
-        console.error('图像压缩服务初始化失败:', error);
-        showToast('图像压缩服务初始化失败，部分功能可能不可用');
-    }
-}
-
-// 拖拽事件处理
-function handleDragEnter(e) {
-    e.preventDefault();
-    elements.dragArea.classList.add('drag-over');
-}
-
-function handleDragOver(e) {
-    e.preventDefault();
-    elements.dragArea.classList.add('drag-over');
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    elements.dragArea.classList.remove('drag-over');
-
-    // 获取拖入的文件
-    const files = Array.from(e.dataTransfer.files);
-    processFiles(files);
-}
-
-function handleDragLeave(e) {
-    e.preventDefault();
-    // 检查是否完全离开拖拽区域
-    if (e.currentTarget === e.target) {
-        elements.dragArea.classList.remove('drag-over');
-    }
-}
-
-// 处理拖入的文件
-function processFiles(files) {
-    // 过滤出PNG文件
-    const pngFiles = files.filter(file => file.type === 'image/png' || file.name.toLowerCase().endsWith('.png'));
-
-    if (pngFiles.length === 0) {
-        showToast('请拖入PNG格式的图片');
-        return;
-    }
-
-    // 处理每个PNG文件
-    pngFiles.forEach(file => {
-        addImage(file);
-    });
-
-    // 显示图片列表
-    elements.imageListSection.style.display = 'block';
-}
-
-// 添加图片到列表
-function addImage(file) {
-    // 创建图片对象
-    const image = {
-        id: Date.now() + Math.random().toString(36).substr(2, 9),
-        file: file,
-        name: file.name,
-        size: file.size,
-        compressedSize: 0,
-        compressionRate: 0,
-        status: 'pending', // pending, compression, completed, failed
-        progress: 0,
-        compressedData: null
-    };
-
-    // 添加到图片列表
-    app.images.push(image);
-    app.totalSizeBefore += image.size;
-
-    // 创建DOM元素
-    const imageItem = createImageItem(image);
-    elements.imageList.appendChild(imageItem);
-
-    // 显示图片预览
-    showImagePreview(image);
-}
-
-// 创建图片项DOM元素
-function createImageItem(image) {
-    const div = document.createElement('div');
-    div.className = 'image-item';
-    div.dataset.id = image.id;
-
-    div.innerHTML = `
-        <div class="image-item-header">
-            <div class="status ${image.status}">${getStatusText(image.status)}</div>
-            <div class="image-info">
-                <div class="image-filename">${image.name}</div>
-                <div class="image-stats">
-                    <span class="original-size">${formatSize(image.size)}</span>
-                    <span class="compressed-size" style="display: none;"></span>
-                    <span class="compression-rate" style="display: none;"></span>
-                </div>
-            </div>
-        </div>
-        <img class="image-thumbnail" alt="${image.name}">
-        <div class="progress-container" style="display: none;">
-            <div class="progress-label">
-                <span>压缩进度</span>
-                <span class="progress-percentage">0%</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: 0%"></div>
-            </div>
-        </div>
-        <div class="download-buttons" style="display: none;">
-            <button class="btn-primary btn-download" data-id="${image.id}">下载</button>
-        </div>
-    `;
-
-    return div;
-}
-
-// 显示图片预览
-function showImagePreview(image) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const imageItem = document.querySelector(`.image-item[data-id="${image.id}"]`);
-        const thumbnail = imageItem.querySelector('.image-thumbnail');
-        thumbnail.src = e.target.result;
-    };
-    reader.readAsDataURL(image.file);
-}
-
-// 获取状态文本
-function getStatusText(status) {
-    const statusMap = {
-        pending: '等待',
-        compression: '压缩中',
-        completed: '完成',
-        failed: '失败'
-    };
-    return statusMap[status] || status;
-}
-
-// 格式化文件大小
-function formatSize(bytes) {
+  function formatSize(bytes) {
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
+  }
 
-// 清空图片列表
-function clearImageList() {
-    if (app.isCompressing) {
-        showToast('正在压缩中，无法清空列表');
-        return;
+  function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-message';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(function () {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 3000);
+  }
+
+  /**
+   * 读取图片尺寸
+   */
+  function getImageDimensions(file) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        resolve({ width: 0, height: 0 });
+      };
+      img.src = url;
+    });
+  }
+
+  /**
+   * 读取文件为 ArrayBuffer
+   */
+  function readFileAsArrayBuffer(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function (e) { resolve(e.target.result); };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  /**
+   * 读取文件为 Data URL（用于预览）
+   */
+  function readFileAsDataURL(file) {
+    return new Promise(function (resolve) {
+      var reader = new FileReader();
+      reader.onload = function (e) { resolve(e.target.result); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * 获取当前质量值
+   */
+  function getCurrentQuality() {
+    return app.currentQuality;
+  }
+
+  // ==================== 主题管理 ====================
+
+  function setTheme(theme) {
+    app.theme = theme;
+    try { localStorage.setItem('theme', theme); } catch (e) { /* ignore */ }
+    if (theme === 'dark') {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+    updateLogoImage();
+  }
+
+  function toggleTheme() {
+    setTheme(app.theme === 'light' ? 'dark' : 'light');
+  }
+
+  function updateLogoImage() {
+    if (!els.logoImg) return;
+    var isDark = document.body.classList.contains('dark-mode');
+    els.logoImg.src = isDark ? '../assets/img/logo_dark.png' : '../assets/img/logo.png';
+  }
+
+  // ==================== 文件处理 ====================
+
+  /**
+   * 处理文件列表（来自拖拽或 input）
+   */
+  function processFiles(files) {
+    var pngFiles = [];
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      if (f.type === 'image/png' || f.name.toLowerCase().endsWith('.png')) {
+        pngFiles.push(f);
+      }
     }
 
-    // 重置状态
+    if (pngFiles.length === 0) {
+      showToast('仅支持 PNG 格式的图片');
+      return;
+    }
+
+    // 异步添加每张图
+    pngFiles.forEach(function (file) {
+      addImage(file);
+    });
+
+    updateListView();
+  }
+
+  function addImage(file) {
+    var image = {
+      id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+      file: file,
+      name: file.name,
+      size: file.size,
+      width: 0,
+      height: 0,
+      status: 'pending',
+      progress: 0,
+      compressedData: null,
+      compressedSize: 0,
+      compressionRate: 0,
+      confirmedQuality: null,
+      trialResults: {},
+      selected: false,
+      dataUrl: null
+    };
+
+    app.images.push(image);
+    app.totalSizeBefore += image.size;
+
+    // 异步读取图片尺寸和预览
+    getImageDimensions(file).then(function (dim) {
+      image.width = dim.width;
+      image.height = dim.height;
+      updateImageCardMeta(image);
+      checkResolutionLarge(image);
+    });
+
+    readFileAsDataURL(file).then(function (dataUrl) {
+      image.dataUrl = dataUrl;
+      updateImageCardThumb(image);
+    });
+
+    renderImageCard(image);
+  }
+
+  function checkResolutionLarge(image) {
+    if (image.width > 3000 || image.height > 3000) {
+      showToast('"' + image.name + '" 分辨率较大（' + image.width + '×' + image.height + '），压缩可能较慢');
+    }
+  }
+
+  // ==================== 图片卡片渲染 ====================
+
+  function renderImageCard(image) {
+    var card = document.createElement('div');
+    card.className = 'image-card';
+    card.dataset.id = image.id;
+
+    card.innerHTML =
+      '<div class="image-card-header">' +
+        '<input type="checkbox" class="image-card-checkbox" title="选择下载">' +
+        '<button class="image-card-delete" title="删除">&times;</button>' +
+      '</div>' +
+      '<img class="image-card-thumb" alt="' + image.name + '">' +
+      '<div class="image-card-info">' +
+        '<span class="image-card-name">' + image.name + '</span>' +
+        '<div class="image-card-meta">' +
+          '<span class="image-card-dims">' + (image.width ? image.width + ' × ' + image.height : '读取中...') + '</span>' +
+          '<span>·</span>' +
+          '<span>' + formatSize(image.size) + '</span>' +
+        '</div>' +
+        '<span class="image-card-status image-card-status--pending">等待</span>' +
+        '<span class="image-card-result"></span>' +
+        '<span class="image-card-confirmed"></span>' +
+      '</div>' +
+      '<div class="image-card-progress">' +
+        '<div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>' +
+      '</div>';
+
+    // 绑定事件
+    var checkbox = card.querySelector('.image-card-checkbox');
+    checkbox.addEventListener('change', function () {
+      image.selected = checkbox.checked;
+      card.classList.toggle('image-card--selected', image.selected);
+    });
+
+    card.querySelector('.image-card-delete').addEventListener('click', function (e) {
+      e.stopPropagation();
+      removeImage(image.id);
+    });
+
+    card.querySelector('.image-card-thumb').addEventListener('click', function () {
+      openCompareModal(image.id);
+    });
+
+    els.imageGrid.appendChild(card);
+  }
+
+  function getImageCard(id) {
+    return els.imageGrid.querySelector('.image-card[data-id="' + id + '"]');
+  }
+
+  function getImageById(id) {
+    for (var i = 0; i < app.images.length; i++) {
+      if (app.images[i].id === id) return app.images[i];
+    }
+    return null;
+  }
+
+  function updateImageCardThumb(image) {
+    var card = getImageCard(image.id);
+    if (!card || !image.dataUrl) return;
+    var thumb = card.querySelector('.image-card-thumb');
+    if (thumb) thumb.src = image.dataUrl;
+  }
+
+  function updateImageCardMeta(image) {
+    var card = getImageCard(image.id);
+    if (!card) return;
+    var dimsEl = card.querySelector('.image-card-dims');
+    if (dimsEl) dimsEl.textContent = image.width + ' × ' + image.height;
+  }
+
+  function updateImageCard(image) {
+    var card = getImageCard(image.id);
+    if (!card) return;
+
+    // 状态标签
+    var statusEl = card.querySelector('.image-card-status');
+    statusEl.className = 'image-card-status image-card-status--' + image.status;
+    var statusText = { pending: '等待', compressing: '压缩中...', completed: '已完成', failed: '失败' };
+    statusEl.textContent = statusText[image.status] || image.status;
+
+    // 压缩中脉冲动画
+    card.classList.toggle('image-card--compressing', image.status === 'compressing');
+
+    // 进度条
+    var progressEl = card.querySelector('.image-card-progress');
+    if (image.status === 'compressing') {
+      progressEl.style.display = 'block';
+      progressEl.querySelector('.progress-fill').style.width = image.progress + '%';
+    } else {
+      progressEl.style.display = 'none';
+    }
+
+    // 压缩结果
+    var resultEl = card.querySelector('.image-card-result');
+    if (image.status === 'completed' && image.compressedSize > 0) {
+      resultEl.style.display = 'block';
+      resultEl.textContent = '压缩后: ' + formatSize(image.compressedSize) + ' (-' + image.compressionRate + '%)';
+    } else {
+      resultEl.style.display = 'none';
+    }
+
+    // 确认版本
+    var confirmedEl = card.querySelector('.image-card-confirmed');
+    if (image.confirmedQuality !== null) {
+      confirmedEl.style.display = 'block';
+      confirmedEl.textContent = '已确认版本: ' + image.confirmedQuality + ' 质量';
+    } else {
+      confirmedEl.style.display = 'none';
+    }
+  }
+
+  function removeImage(id) {
+    if (app.isCompressing) {
+      showToast('正在压缩中，无法删除');
+      return;
+    }
+
+    var card = getImageCard(id);
+    if (card) card.remove();
+
+    app.images = app.images.filter(function (img) {
+      if (img.id === id) {
+        app.totalSizeBefore -= img.size;
+        if (img.compressedSize > 0) app.totalSizeAfter -= img.compressedSize;
+        return false;
+      }
+      return true;
+    });
+
+    updateListView();
+  }
+
+  function clearAllImages() {
+    if (app.isCompressing) {
+      showToast('正在压缩中，无法清空');
+      return;
+    }
+
     app.images = [];
     app.compressedCount = 0;
     app.totalSizeBefore = 0;
     app.totalSizeAfter = 0;
+    els.imageGrid.innerHTML = '';
 
-    // 清空DOM
-    elements.imageList.innerHTML = '';
-    elements.imageListSection.style.display = 'none';
-    elements.downloadSection.style.display = 'none';
-    elements.overallProgress.style.display = 'none';
-}
+    updateListView();
+  }
 
-// 开始压缩
-async function startCompression() {
-    if (app.isCompressing) {
-        showToast('正在压缩中，请稍候');
-        return;
+  // ==================== 列表视图控制 ====================
+
+  function updateListView() {
+    var hasImages = app.images.length > 0;
+
+    els.imageListSection.style.display = hasImages ? 'block' : 'none';
+    els.emptyHint.style.display = hasImages ? 'none' : 'block';
+    els.dragArea.classList.toggle('has-images', hasImages);
+    els.addMoreHint.style.display = hasImages ? 'block' : 'none';
+
+    // 有图但全部删除后隐藏下载区
+    if (!hasImages) {
+      els.downloadSection.style.display = 'none';
+      els.overallProgress.style.display = 'none';
+      els.compressBtn.disabled = false;
     }
+  }
 
+  // ==================== 压缩级别控制 ====================
+
+  function setQualityPreset(quality) {
+    app.currentQuality = quality;
+    els.compressionQuality.value = quality;
+    els.compressionValue.textContent = quality;
+
+    // 更新预设按钮激活状态
+    var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
+    presetBtns.forEach(function (btn) {
+      btn.classList.toggle('active', parseInt(btn.dataset.quality) === quality);
+    });
+
+    // 同时更新弹窗内的预设按钮
+    var modalPresetBtns = document.querySelectorAll('.compare-quality-picker .preset-btn[data-quality]');
+    modalPresetBtns.forEach(function (btn) {
+      btn.classList.toggle('active', parseInt(btn.dataset.quality) === quality);
+    });
+    els.compareQualityInput.value = quality;
+  }
+
+  function toggleCustomPanel() {
+    var show = els.qualityCustomPanel.style.display === 'none' || !els.qualityCustomPanel.style.display;
+    els.qualityCustomPanel.style.display = show ? 'flex' : 'none';
+    els.presetCustomBtn.classList.toggle('active', show);
+    if (!show) {
+      // 关闭自定义面板时取消所有预设高亮
+      var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
+      presetBtns.forEach(function (btn) { btn.classList.remove('active'); });
+    }
+  }
+
+  // ==================== 压缩流程 ====================
+
+  function getQualityLabel(quality) {
+    if (quality <= 40) return '极致压缩';
+    if (quality <= 70) return '推荐';
+    if (quality <= 90) return '高质量';
+    return '自定义';
+  }
+
+  async function startCompression() {
+    if (app.isCompressing) return;
     if (app.images.length === 0) {
-        showToast('请先添加PNG图片');
-        return;
+      showToast('请先添加 PNG 图片');
+      return;
     }
 
-    // 初始化压缩状态
     app.isCompressing = true;
+    app.cancelled = false;
     app.compressedCount = 0;
     app.totalSizeAfter = 0;
 
-    // 显示整体进度
-    elements.overallProgress.style.display = 'block';
-    elements.downloadSection.style.display = 'none';
+    // UI 状态
+    els.compressBtn.style.display = 'none';
+    els.cancelBtn.style.display = 'inline-flex';
+    els.overallProgress.style.display = 'block';
+    els.downloadSection.style.display = 'none';
 
-    // 禁用按钮
-    elements.compressBtn.disabled = true;
-    elements.clearBtn.disabled = true;
+    var quality = getCurrentQuality();
 
-    // 遍历图片列表，开始压缩
-    for (let i = 0; i < app.images.length; i++) {
-        await compressImage(app.images[i], i);
-    }
+    // 逐张压缩
+    for (var i = 0; i < app.images.length; i++) {
+      if (app.cancelled) break;
 
-    // 压缩完成
-    app.isCompressing = false;
+      var image = app.images[i];
+      image.status = 'compressing';
+      image.progress = 0;
+      image.compressedData = null;
+      image.compressedSize = 0;
+      image.compressionRate = 0;
+      image.confirmedQuality = null;
+      image.trialResults = {};
+      updateImageCard(image);
 
-    // 启用按钮
-    elements.compressBtn.disabled = false;
-    elements.clearBtn.disabled = false;
+      try {
+        var arrayBuffer = await readFileAsArrayBuffer(image.file);
+        var uint8Array = new Uint8Array(arrayBuffer);
 
-    // 显示下载区域
-    showDownloadSection();
-}
+        // TinyPNG WASM 是同步阻塞的——压缩期间 JS 定时器不触发
+        // 但 CSS animation（脉冲动画）仍能运行，提供视觉反馈
+        var compressedData = await window.MeeWoo.Services.ImageCompressionService.compressImage(uint8Array, quality);
 
-// 压缩单个图片
-async function compressImage(image, index) {
-    try {
-        // 更新状态
-        updateImageStatus(image, 'compression');
-
-        // 读取文件数据
-        const arrayBuffer = await readFileAsArrayBuffer(image.file);
-        const uint8Array = new Uint8Array(arrayBuffer);
-
-        // 获取压缩级别
-        const quality = parseInt(elements.compressionQuality.value);
-
-        // 调用压缩服务
-        const compressedData = await window.MeeWoo.Services.ImageCompressionService.compressImage(uint8Array, quality);
-
-        // 更新压缩结果
-        image.compressedSize = compressedData.length;
-        image.compressionRate = Math.round((1 - image.compressedSize / image.size) * 100);
         image.status = 'completed';
         image.progress = 100;
         image.compressedData = compressedData;
+        image.compressedSize = compressedData.length;
+        image.compressionRate = Math.round((1 - compressedData.length / image.size) * 100);
 
-        // 更新总大小
-        app.totalSizeAfter += image.compressedSize;
-
-    } catch (error) {
-        console.error('压缩图片失败:', error);
+        app.totalSizeAfter += compressedData.length;
+      } catch (error) {
+        console.error('压缩失败:', image.name, error);
         image.status = 'failed';
-    } finally {
-        // 更新进度
-        app.compressedCount++;
-        updateOverallProgress();
-        updateImageItem(image);
-    }
-}
+        image.compressedData = null;
+      }
 
-// 读取文件为ArrayBuffer
-function readFileAsArrayBuffer(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(file);
+      app.compressedCount++;
+      updateImageCard(image);
+      updateOverallProgress();
+    }
+
+    app.isCompressing = false;
+
+    els.compressBtn.style.display = 'inline-flex';
+    els.cancelBtn.style.display = 'none';
+
+    showDownloadSection();
+  }
+
+  function cancelCompression() {
+    app.cancelled = true;
+    showToast('正在取消...');
+  }
+
+  function updateOverallProgress() {
+    var total = app.images.length;
+    var pct = total > 0 ? Math.round((app.compressedCount / total) * 100) : 0;
+    els.overallProgressFill.style.width = pct + '%';
+    els.overallProgressStats.textContent = app.compressedCount + ' / ' + total + ' 张';
+  }
+
+  function showDownloadSection() {
+    els.downloadSection.style.display = 'block';
+
+    var completed = app.images.filter(function (img) { return img.status === 'completed'; }).length;
+    var failed = app.images.filter(function (img) { return img.status === 'failed'; }).length;
+    var totalRate = app.totalSizeBefore > 0
+      ? Math.round((1 - app.totalSizeAfter / app.totalSizeBefore) * 100)
+      : 0;
+
+    els.downloadStats.innerHTML =
+      '<p>压缩完成！成功 ' + completed + ' 张' + (failed > 0 ? '，失败 ' + failed + ' 张' : '') + '</p>' +
+      '<p>压缩前总大小: ' + formatSize(app.totalSizeBefore) + '</p>' +
+      '<p>压缩后总大小: ' + formatSize(app.totalSizeAfter) + '</p>' +
+      '<p>总压缩率: ' + totalRate + '%</p>';
+  }
+
+  // ==================== 对比预览弹窗 ====================
+
+  function openCompareModal(imageId) {
+    var image = getImageById(imageId);
+    if (!image || !image.dataUrl) return;
+
+    app.compareImageId = imageId;
+    app.compareCurrentQuality = null;
+
+    els.compareModalTitle.textContent = image.name;
+    els.comparePlaceholder.style.display = 'block';
+    els.compareTabs.style.display = 'none';
+    els.compareTabs.innerHTML = '';
+    els.compareConfirm.style.display = 'none';
+
+    // 重置分割线到中间
+    els.compareDivider.style.left = '50%';
+    els.compareImageLeft.style.clipPath = 'inset(0 calc(50% + 1px) 0 0)';
+
+    // 加载左侧原图
+    var leftImg = els.compareImageLeft.querySelector('img');
+    if (!leftImg) {
+      leftImg = document.createElement('img');
+      els.compareImageLeft.appendChild(leftImg);
+    }
+    leftImg.src = image.dataUrl;
+
+    // 清空右侧
+    var rightImg = els.compareImageRight.querySelector('img');
+    if (!rightImg) {
+      rightImg = document.createElement('img');
+      els.compareImageRight.appendChild(rightImg);
+    }
+    rightImg.src = '';
+
+    // 同步弹窗内预设按钮
+    var modalPresetBtns = document.querySelectorAll('.compare-quality-picker .preset-btn[data-quality]');
+    modalPresetBtns.forEach(function (btn) {
+      btn.classList.toggle('active', parseInt(btn.dataset.quality) === app.currentQuality);
     });
-}
+    els.compareQualityInput.value = app.currentQuality;
 
-// 更新图片状态
-function updateImageStatus(image, status) {
-    image.status = status;
-    updateImageItem(image);
-}
+    // 构建已有试压结果的 tab
+    buildCompareTabs(image);
 
-// 更新图片项DOM
-function updateImageItem(image) {
-    const imageItem = document.querySelector(`.image-item[data-id="${image.id}"]`);
-    if (!imageItem) return;
+    els.compareModalOverlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
 
-    // 更新状态
-    const statusEl = imageItem.querySelector('.status');
-    statusEl.className = `status ${image.status}`;
-    statusEl.textContent = getStatusText(image.status);
+  function closeCompareModal() {
+    els.compareModalOverlay.style.display = 'none';
+    document.body.style.overflow = '';
+    app.compareImageId = null;
+  }
 
-    // 更新进度
-    const progressContainer = imageItem.querySelector('.progress-container');
-    const progressFill = imageItem.querySelector('.progress-fill');
-    const progressPercentage = imageItem.querySelector('.progress-percentage');
+  function buildCompareTabs(image) {
+    els.compareTabs.innerHTML = '';
+    var qualities = Object.keys(image.trialResults).map(Number).sort(function (a, b) { return a - b; });
+    if (qualities.length === 0) return;
 
-    if (image.status === 'compression') {
-        progressContainer.style.display = 'block';
-        progressFill.style.width = `${image.progress}%`;
-        progressPercentage.textContent = `${image.progress}%`;
-    } else {
-        progressContainer.style.display = 'none';
+    els.compareTabs.style.display = 'flex';
+
+    qualities.forEach(function (q) {
+      var tab = document.createElement('button');
+      tab.className = 'compare-tab';
+      tab.innerHTML =
+        '<span>' + getQualityLabel(q) + '</span>' +
+        '<span class="compare-tab-size">' + formatSize(image.trialResults[q].length) + '</span>';
+      tab.addEventListener('click', function () {
+        selectCompareTab(image, q);
+      });
+      els.compareTabs.appendChild(tab);
+    });
+
+    // 默认选中第一个
+    if (!app.compareCurrentQuality || !image.trialResults[app.compareCurrentQuality]) {
+      app.compareCurrentQuality = qualities[0];
+    }
+    updateCompareTabHighlight(image);
+    showCompareResult(image, app.compareCurrentQuality);
+  }
+
+  function selectCompareTab(image, quality) {
+    app.compareCurrentQuality = quality;
+    updateCompareTabHighlight(image);
+    showCompareResult(image, quality);
+  }
+
+  function updateCompareTabHighlight(image) {
+    var tabs = els.compareTabs.querySelectorAll('.compare-tab');
+    tabs.forEach(function (tab, idx) {
+      var qualities = Object.keys(image.trialResults).map(Number).sort(function (a, b) { return a - b; });
+      tab.classList.toggle('active', qualities[idx] === app.compareCurrentQuality);
+    });
+  }
+
+  function showCompareResult(image, quality) {
+    var data = image.trialResults[quality];
+    if (!data) return;
+
+    var blob = new Blob([data], { type: 'image/png' });
+    var url = URL.createObjectURL(blob);
+
+    var rightImg = els.compareImageRight.querySelector('img');
+    if (rightImg) {
+      rightImg.src = url;
     }
 
-    // 更新统计信息
-    const originalSizeEl = imageItem.querySelector('.original-size');
-    const compressedSizeEl = imageItem.querySelector('.compressed-size');
-    const compressionRateEl = imageItem.querySelector('.compression-rate');
+    els.comparePlaceholder.style.display = 'none';
+    els.compareConfirm.style.display = 'flex';
+  }
 
-    if (image.status === 'completed') {
-        compressedSizeEl.textContent = `${formatSize(image.compressedSize)}`;
-        compressedSizeEl.style.display = 'inline';
+  async function runTrialCompress() {
+    var image = getImageById(app.compareImageId);
+    if (!image) return;
 
-        compressionRateEl.textContent = `(${image.compressionRate}% 压缩率)`;
-        compressionRateEl.style.display = 'inline';
+    // 获取弹窗内的压缩率
+    var modalQuality = parseInt(els.compareQualityInput.value) || getCurrentQuality();
 
-        // 显示下载按钮
-        const downloadButtons = imageItem.querySelector('.download-buttons');
-        downloadButtons.style.display = 'flex';
+    // 边界检查
+    modalQuality = Math.max(10, Math.min(100, modalQuality));
 
-        // 绑定下载事件
-        const downloadBtn = imageItem.querySelector('.btn-download');
-        downloadBtn.addEventListener('click', () => downloadImage(image));
+    // 避免重复压缩同一质量
+    if (image.trialResults[modalQuality]) {
+      app.compareCurrentQuality = modalQuality;
+      buildCompareTabs(image);
+      selectCompareTab(image, modalQuality);
+      return;
     }
-}
 
-// 更新整体进度
-function updateOverallProgress() {
-    const progress = Math.round((app.compressedCount / app.images.length) * 100);
-    elements.overallProgressFill.style.width = `${progress}%`;
-    elements.overallProgressStats.textContent = `${app.compressedCount}/${app.images.length} 图片`;
-}
+    // 达到缓存上限
+    if (Object.keys(image.trialResults).length >= 4) {
+      showToast('最多支持 4 个压缩率对比，请先确认或关闭弹窗');
+      return;
+    }
 
-// 显示下载区域
-function showDownloadSection() {
-    elements.downloadSection.style.display = 'block';
-
-    // 计算总压缩率
-    const totalCompressionRate = Math.round((1 - app.totalSizeAfter / app.totalSizeBefore) * 100);
-
-    // 更新统计信息
-    elements.downloadStats.innerHTML = `
-        <p>压缩完成！共压缩 ${app.images.length} 张图片</p>
-        <p>压缩前总大小: ${formatSize(app.totalSizeBefore)}</p>
-        <p>压缩后总大小: ${formatSize(app.totalSizeAfter)}</p>
-        <p>总压缩率: ${totalCompressionRate}%</p>
-    `;
-}
-
-// 下载单个图片
-function downloadImage(image) {
-    if (!image.compressedData) return;
-
-    // 创建Blob对象
-    const blob = new Blob([image.compressedData], { type: 'image/png' });
-
-    // 创建下载链接
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${image.name.split('.')[0]}_compressed.png`;
-
-    // 触发下载
-    document.body.appendChild(a);
-    a.click();
-
-    // 清理
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-// 打包下载所有图片
-async function downloadAll() {
-    if (app.compressedCount === 0) return;
+    els.compareCompressBtn.disabled = true;
+    els.compareCompressBtn.textContent = '压缩中...';
 
     try {
-        // 检查JSZip是否可用
-        if (typeof JSZip === 'undefined') {
-            throw new Error('JSZip库未加载');
-        }
+      var arrayBuffer = await readFileAsArrayBuffer(image.file);
+      var uint8Array = new Uint8Array(arrayBuffer);
+      var compressedData = await window.MeeWoo.Services.ImageCompressionService.compressImage(uint8Array, modalQuality);
 
-        // 创建JSZip实例
-        const zip = new JSZip();
+      image.trialResults[modalQuality] = compressedData;
+      app.compareCurrentQuality = modalQuality;
 
-        // 添加压缩后的图片到zip
-        app.images.forEach(image => {
-            if (image.status === 'completed' && image.compressedData) {
-                zip.file(`${image.name.split('.')[0]}_compressed.png`, image.compressedData);
-            }
-        });
-
-        // 生成zip文件
-        const content = await zip.generateAsync({ type: 'blob' });
-
-        // 创建下载链接
-        const url = URL.createObjectURL(content);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `compressed_pngs_${new Date().getTime()}.zip`;
-
-        // 触发下载
-        document.body.appendChild(a);
-        a.click();
-
-        // 清理
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        showToast('打包下载成功');
+      buildCompareTabs(image);
+      showCompareResult(image, modalQuality);
     } catch (error) {
-        console.error('打包下载失败:', error);
-        showToast('打包下载失败');
+      console.error('试压失败:', error);
+      showToast('试压失败');
     }
-}
 
-// 显示提示信息
-function showToast(message) {
-    // 创建toast元素
-    const toast = document.createElement('div');
-    toast.className = 'toast-message';
-    toast.textContent = message;
+    els.compareCompressBtn.disabled = false;
+    els.compareCompressBtn.textContent = '对比压缩';
+  }
 
-    // 添加到页面
-    document.body.appendChild(toast);
+  function confirmCompareVersion() {
+    var image = getImageById(app.compareImageId);
+    if (!image || app.compareCurrentQuality === null) return;
 
-    // 样式
-    Object.assign(toast.style, {
-        position: 'fixed',
-        top: '48px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        background: 'rgba(0, 0, 0, 0.8)',
-        color: 'white',
-        padding: '12px 20px',
-        borderRadius: '8px',
-        zIndex: '9999',
-        fontSize: '14px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-        animation: 'fadeInOut 3s ease-in-out'
+    var quality = app.compareCurrentQuality;
+    var data = image.trialResults[quality];
+    if (!data) return;
+
+    // 将试压结果写入图片数据
+    image.compressedData = data;
+    image.compressedSize = data.length;
+    image.compressionRate = Math.round((1 - data.length / image.size) * 100);
+    image.confirmedQuality = quality;
+    image.status = 'completed';
+
+    // 更新压缩后总大小
+    app.totalSizeAfter += data.length;
+    if (app.compressedCount < app.images.length) app.compressedCount++;
+
+    updateImageCard(image);
+    updateOverallProgress();
+    showDownloadSection();
+    closeCompareModal();
+
+    showToast('已确认版本: ' + getQualityLabel(quality) + ' (' + formatSize(data.length) + ')');
+  }
+
+  // ==================== 分割线拖拽 ====================
+
+  var isDragging = false;
+
+  function startDrag(e) {
+    isDragging = true;
+    e.preventDefault();
+  }
+
+  function onDrag(e) {
+    if (!isDragging) return;
+    var rect = els.compareViewport.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    var pct = Math.max(5, Math.min(95, (x / rect.width) * 100));
+
+    els.compareDivider.style.left = pct + '%';
+    els.compareImageLeft.style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
+  }
+
+  function stopDrag() {
+    isDragging = false;
+  }
+
+  // ==================== 下载 ====================
+
+  function downloadSelected() {
+    var selected = app.images.filter(function (img) {
+      return img.selected && img.compressedData;
     });
 
-    // 添加动画样式
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-            10% { opacity: 1; transform: translateX(-50%) translateY(0); }
-            90% { opacity: 1; transform: translateX(-50%) translateY(0); }
-            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-        }
-    `;
-    document.head.appendChild(style);
+    if (selected.length === 0) {
+      showToast('请勾选至少一张已完成压缩的图片');
+      return;
+    }
 
-    // 3秒后移除
-    setTimeout(() => {
-        document.body.removeChild(toast);
-        document.head.removeChild(style);
-    }, 3000);
-}
+    if (typeof JSZip === 'undefined') {
+      showToast('JSZip 库未加载，无法打包下载');
+      return;
+    }
 
-// 设置主题
-function setTheme(theme) {
-    app.theme = theme;
+    var zip = new JSZip();
+    selected.forEach(function (img) {
+      var qualityLabel = img.confirmedQuality !== null
+        ? '_' + getQualityLabel(img.confirmedQuality)
+        : '';
+      var name = img.name.replace(/\.png$/i, '') + qualityLabel + '_compressed.png';
+      zip.file(name, img.compressedData);
+    });
+
+    zip.generateAsync({ type: 'blob' }).then(function (content) {
+      var url = URL.createObjectURL(content);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'compressed_pngs_' + new Date().getTime() + '.zip';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('下载完成（' + selected.length + ' 张）');
+    }).catch(function (error) {
+      console.error('打包下载失败:', error);
+      showToast('打包下载失败');
+    });
+  }
+
+  // ==================== 事件绑定 ====================
+
+  function bindEvents() {
+    // 文件输入：点击选择
+    els.selectFilesBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      els.fileInput.click();
+    });
+
+    els.fileInput.addEventListener('change', function () {
+      if (els.fileInput.files.length > 0) {
+        processFiles(els.fileInput.files);
+        els.fileInput.value = '';
+      }
+    });
+
+    // 拖拽
+    els.dragArea.addEventListener('dragenter', function (e) { e.preventDefault(); els.dragArea.classList.add('drag-over'); });
+    els.dragArea.addEventListener('dragover', function (e) { e.preventDefault(); els.dragArea.classList.add('drag-over'); });
+    els.dragArea.addEventListener('dragleave', function (e) {
+      if (e.currentTarget === e.target) els.dragArea.classList.remove('drag-over');
+    });
+    els.dragArea.addEventListener('drop', function (e) {
+      e.preventDefault();
+      els.dragArea.classList.remove('drag-over');
+      processFiles(e.dataTransfer.files);
+    });
+
+    // 工具栏按钮
+    els.compressBtn.addEventListener('click', startCompression);
+    els.cancelBtn.addEventListener('click', cancelCompression);
+    els.clearBtn.addEventListener('click', clearAllImages);
+
+    // 压缩级别
+    els.compressionQuality.addEventListener('input', function () {
+      var val = parseInt(els.compressionQuality.value);
+      els.compressionValue.textContent = val;
+      app.currentQuality = val;
+      // 取消所有预设高亮
+      var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
+      presetBtns.forEach(function (btn) { btn.classList.remove('active'); });
+    });
+
+    // 预设档位点击
+    document.querySelector('.toolbar-quality .quality-presets').addEventListener('click', function (e) {
+      var btn = e.target.closest('button');
+      if (!btn) return;
+      if (btn.id === 'presetCustomBtn') {
+        toggleCustomPanel();
+        return;
+      }
+      var quality = parseInt(btn.dataset.quality);
+      if (!isNaN(quality)) setQualityPreset(quality);
+    });
+
+    // 主题切换
+    els.themeToggle.addEventListener('click', toggleTheme);
+
+    // 弹窗关闭
+    els.compareModalClose.addEventListener('click', closeCompareModal);
+    els.compareModalOverlay.addEventListener('click', function (e) {
+      if (e.target === els.compareModalOverlay) closeCompareModal();
+    });
+
+    // 弹窗对比压缩
+    els.compareCompressBtn.addEventListener('click', runTrialCompress);
+    els.compareConfirmBtn.addEventListener('click', confirmCompareVersion);
+
+    // 弹窗内预设按钮
+    document.querySelector('.compare-quality-picker').addEventListener('click', function (e) {
+      var btn = e.target.closest('button');
+      if (!btn) return;
+      var quality = parseInt(btn.dataset.quality);
+      if (!isNaN(quality)) {
+        els.compareQualityInput.value = quality;
+        // 高亮当前预设
+        var btns = document.querySelectorAll('.compare-quality-picker .preset-btn[data-quality]');
+        btns.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+      }
+    });
+
+    // 分割线拖拽
+    els.compareDivider.addEventListener('mousedown', startDrag);
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('mouseup', stopDrag);
+
+    // 下载
+    els.downloadSelectedBtn.addEventListener('click', downloadSelected);
+  }
+
+  // ==================== 初始化 ====================
+
+  async function init() {
+    cacheElements();
+
+    // 读取保存的主题
     try {
-        localStorage.setItem('theme', theme);
-    } catch (e) {
-        console.error('存储主题失败:', e);
+      var savedTheme = localStorage.getItem('theme');
+      if (savedTheme) app.theme = savedTheme;
+    } catch (e) { /* ignore */ }
+    setTheme(app.theme);
+
+    // 绑定事件
+    bindEvents();
+
+    // 初始化压缩服务
+    try {
+      await window.MeeWoo.Services.ImageCompressionService.init();
+      console.log('图像压缩服务初始化成功');
+    } catch (error) {
+      console.error('图像压缩服务初始化失败:', error);
+      showToast('压缩服务初始化失败，部分功能可能不可用');
     }
+  }
 
-    if (theme === 'dark') {
-        document.body.classList.add('dark-mode');
-    } else {
-        document.body.classList.remove('dark-mode');
-    }
-
-    // 更新Logo图片
-    updateLogoImage();
-}
-
-// 切换主题
-function toggleTheme() {
-    const newTheme = app.theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-}
-
-// 初始化应用
-document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', init);
+})();
