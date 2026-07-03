@@ -195,9 +195,11 @@
     updateListView();
   }
 
+  var idCounter = 0;
+
   function addImage(file) {
     var image = {
-      id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+      id: Date.now() + '_' + (idCounter++) + '_' + Math.random().toString(36).substr(2, 5),
       file: file,
       name: file.name,
       size: file.size,
@@ -627,13 +629,16 @@
     // 构建已有试压结果的 tab
     buildCompareTabs(image);
 
-    els.compareModalOverlay.style.display = 'flex';
+    // 保存并锁定背景滚动
+    app._savedBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    els.compareModalOverlay.style.display = 'flex';
   }
 
   function closeCompareModal() {
     els.compareModalOverlay.style.display = 'none';
-    document.body.style.overflow = '';
+    // 恢复背景滚动
+    document.body.style.overflow = app._savedBodyOverflow || '';
     app.compareImageId = null;
   }
 
@@ -685,8 +690,12 @@
     var blob = new Blob([data], { type: 'image/png' });
     var url = URL.createObjectURL(blob);
 
-    var rightImg = els.compareImageRight.querySelector('img');
+    var rightImg = els.compareInnerRight.querySelector('img');
     if (rightImg) {
+      // 回收旧 blob URL，避免内存泄漏
+      if (rightImg.src && rightImg.src.startsWith('blob:')) {
+        URL.revokeObjectURL(rightImg.src);
+      }
       rightImg.src = url;
     }
 
@@ -749,6 +758,11 @@
     if (!data) return;
 
     // 将试压结果写入图片数据
+    // 更新压缩后总大小：先减旧值再加新值，避免双重累加
+    if (image.compressedSize > 0) {
+      app.totalSizeAfter -= image.compressedSize;
+    }
+
     image.compressedData = data;
     image.compressedSize = data.length;
     image.compressionRate = Math.round((1 - data.length / image.size) * 100);
@@ -756,7 +770,6 @@
     image.confirmedQuality = quality;
     image.status = 'completed';
 
-    // 更新压缩后总大小
     app.totalSizeAfter += data.length;
     if (app.compressedCount < app.images.length) app.compressedCount++;
 
@@ -869,7 +882,7 @@
 
   function onComparePanEnd() {
     isPanning = false;
-    els.compareViewport.style.cursor = '';
+    els.compareViewport.style.cursor = 'grab';
   }
 
   // ==================== 下载 ====================
