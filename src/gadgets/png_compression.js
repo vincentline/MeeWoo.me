@@ -71,6 +71,9 @@
     els.compareTabs = document.getElementById('compareTabs');
     els.compareConfirm = document.getElementById('compareConfirm');
     els.compareConfirmBtn = document.getElementById('compareConfirmBtn');
+    els.compareZoomLabel = document.getElementById('compareZoomLabel');
+    els.compareInnerLeft = els.compareImageLeft.querySelector('.compare-image-inner');
+    els.compareInnerRight = els.compareImageRight.querySelector('.compare-image-inner');
   }
 
   // ==================== 工具函数 ====================
@@ -586,20 +589,23 @@
     els.compareDivider.style.left = '50%';
     els.compareImageLeft.style.clipPath = 'inset(0 calc(50% + 1px) 0 0)';
 
-    // 加载左侧原图
-    var leftImg = els.compareImageLeft.querySelector('img');
+    // 加载左侧原图到内层容器
+    var leftImg = els.compareInnerLeft.querySelector('img');
     if (!leftImg) {
       leftImg = document.createElement('img');
-      els.compareImageLeft.appendChild(leftImg);
+      els.compareInnerLeft.appendChild(leftImg);
     }
     leftImg.src = image.dataUrl;
 
-    // 右侧：如果已有批量压缩结果，自动加载
-    var rightImg = els.compareImageRight.querySelector('img');
+    // 右侧到内层容器
+    var rightImg = els.compareInnerRight.querySelector('img');
     if (!rightImg) {
       rightImg = document.createElement('img');
-      els.compareImageRight.appendChild(rightImg);
+      els.compareInnerRight.appendChild(rightImg);
     }
+
+    // 重置缩放状态
+    resetCompareZoom();
 
     if (image.compressedData && image.compressedQuality !== null) {
       // 将批量压缩结果写入试压缓存（不覆盖已有同质量试压结果）
@@ -785,6 +791,87 @@
     isDragging = false;
   }
 
+  // ==================== 图片缩放与平移 ====================
+
+  var compareZoom = 1;
+  var compareOffsetX = 0;
+  var compareOffsetY = 0;
+  var isPanning = false;
+  var panStartX = 0;
+  var panStartY = 0;
+  var panStartOffsetX = 0;
+  var panStartOffsetY = 0;
+
+  function resetCompareZoom() {
+    compareZoom = 1;
+    compareOffsetX = 0;
+    compareOffsetY = 0;
+    applyCompareTransform();
+    els.compareZoomLabel.textContent = '100%';
+  }
+
+  function applyCompareTransform() {
+    var t = 'translate(' + compareOffsetX + 'px, ' + compareOffsetY + 'px) scale(' + compareZoom + ')';
+    els.compareInnerLeft.style.transform = t;
+    els.compareInnerRight.style.transform = t;
+  }
+
+  function updateZoomLabel() {
+    els.compareZoomLabel.textContent = Math.round(compareZoom * 100) + '%';
+  }
+
+  /**
+   * 滚轮缩放——以鼠标位置为中心
+   */
+  function onCompareWheel(e) {
+    e.preventDefault();
+    var rect = els.compareViewport.getBoundingClientRect();
+    var mx = e.clientX - rect.left;
+    var my = e.clientY - rect.top;
+
+    var delta = -Math.sign(e.deltaY) * 0.01; // 步进 1%
+    var newZoom = compareZoom + delta;
+    newZoom = Math.max(0.5, Math.min(5, newZoom)); // 限制 50%~500%
+
+    if (newZoom === compareZoom) return;
+
+    // 以鼠标位置为中心缩放：调整偏移使鼠标下的点不动
+    var ratio = newZoom / compareZoom;
+    compareOffsetX = mx - (mx - compareOffsetX) * ratio;
+    compareOffsetY = my - (my - compareOffsetY) * ratio;
+    compareZoom = newZoom;
+
+    applyCompareTransform();
+    updateZoomLabel();
+  }
+
+  /**
+   * 鼠标拖拽平移
+   */
+  function onComparePanStart(e) {
+    // 不拦截分割线拖拽
+    if (e.target.closest('#compareDivider')) return;
+    isPanning = true;
+    panStartX = e.clientX;
+    panStartY = e.clientY;
+    panStartOffsetX = compareOffsetX;
+    panStartOffsetY = compareOffsetY;
+    els.compareViewport.style.cursor = 'grabbing';
+    e.preventDefault();
+  }
+
+  function onComparePanMove(e) {
+    if (!isPanning) return;
+    compareOffsetX = panStartOffsetX + (e.clientX - panStartX);
+    compareOffsetY = panStartOffsetY + (e.clientY - panStartY);
+    applyCompareTransform();
+  }
+
+  function onComparePanEnd() {
+    isPanning = false;
+    els.compareViewport.style.cursor = '';
+  }
+
   // ==================== 下载 ====================
 
   /**
@@ -953,6 +1040,15 @@
     els.compareDivider.addEventListener('mousedown', startDrag);
     document.addEventListener('mousemove', onDrag);
     document.addEventListener('mouseup', stopDrag);
+
+    // 图片缩放与平移
+    els.compareViewport.addEventListener('wheel', onCompareWheel, { passive: false });
+    els.compareViewport.addEventListener('mousedown', onComparePanStart);
+    document.addEventListener('mousemove', onComparePanMove);
+    document.addEventListener('mouseup', onComparePanEnd);
+
+    // 缩放百分比点击重置
+    els.compareZoomLabel.addEventListener('click', resetCompareZoom);
 
     // 下载
     els.downloadSelectedBtn.addEventListener('click', downloadSelected);
