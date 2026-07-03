@@ -7,6 +7,11 @@
   --primary-red: #ff4444;
   --primary-red-hover: #ff6666;
 
+  /* 深色按钮——参照设计系统 .btn-secondary / .btn-large-secondary */
+  --btn-dark: #5b5b5b;
+  --btn-dark-hover: #555555;
+  --btn-dark-active: #333333;
+
   --text-primary: #333333;
   --text-secondary: #818181;
   --text-tertiary: #999999;
@@ -247,7 +252,7 @@ body {
   justify-content: center;
   height: 36px;
   padding: 0 20px;
-  background: var(--primary-blue);
+  background: var(--btn-dark);
   border: none;
   border-radius: var(--radius-sm);
   color: #ffffff;
@@ -257,7 +262,7 @@ body {
 }
 
 .btn-select-files:hover {
-  background: var(--primary-blue-hover);
+  background: var(--btn-dark-hover);
 }
 
 /* ---------- 图片列表区域 ---------- */
@@ -380,7 +385,7 @@ body {
   justify-content: center;
   height: 34px;
   padding: 0 18px;
-  background: var(--primary-blue);
+  background: var(--btn-dark);
   border: none;
   border-radius: var(--radius-sm);
   color: #ffffff;
@@ -391,7 +396,7 @@ body {
 }
 
 .btn-primary:hover {
-  background: var(--primary-blue-hover);
+  background: var(--btn-dark-hover);
 }
 
 .btn-primary:disabled {
@@ -425,7 +430,7 @@ body {
   justify-content: center;
   height: 44px;
   padding: 0 24px;
-  background: var(--primary-blue);
+  background: var(--btn-dark);
   border: none;
   border-radius: var(--radius-md);
   color: #ffffff;
@@ -433,10 +438,12 @@ body {
   cursor: pointer;
   transition: all var(--transition-base);
   min-width: 140px;
+  max-width: 320px;
+  width: auto;
 }
 
 .btn-large-primary:hover {
-  background: var(--primary-blue-hover);
+  background: var(--btn-dark-hover);
 }
 
 .btn-secondary-outline {
@@ -900,10 +907,10 @@ body {
   pointer-events: none;
 }
 
-/* 浮层气泡 */
+/* 浮层气泡——在 tabs 上方弹出 */
 .compare-popover {
   position: absolute;
-  top: calc(100% + 8px);
+  bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
@@ -911,14 +918,14 @@ body {
 
 .compare-popover-arrow {
   position: absolute;
-  top: -6px;
+  bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
   width: 12px;
   height: 6px;
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
-  border-bottom: 6px solid var(--bg-elevated);
+  border-top: 6px solid var(--bg-elevated);
 }
 
 .compare-popover-body {
@@ -958,6 +965,26 @@ body {
   border-color: var(--primary-blue);
 }
 
+/* 浮层内压缩按钮——用同色外阴影 box-shadow 填充 border-radius 圆角外的透明区域，
+   避免圆角处透出白色背景显得按钮内部有白色细线；
+   同时去 focus outline 防点击后白环 */
+#comparePopoverCompressBtn {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  border: none;
+  box-shadow: 0 0 0 2px var(--btn-dark);
+}
+
+#comparePopoverCompressBtn:focus,
+#comparePopoverCompressBtn:focus-visible {
+  outline: none;
+}
+
+#comparePopoverCompressBtn:hover {
+  box-shadow: 0 0 0 2px var(--btn-dark-hover);
+}
+
 /* 压缩率 Tab */
 .compare-tabs {
   display: flex;
@@ -969,10 +996,11 @@ body {
   position: relative;
 }
 
+/* tab 容器：调宽调高以容纳 4 行内容 */
 .compare-tab {
-  width: 90px;
-  min-height: 48px;
-  padding: var(--space-1) var(--space-2);
+  width: 116px;
+  min-height: 96px;
+  padding: var(--space-2) var(--space-2);
   background: var(--bg-input);
   border: 1px solid var(--border-base);
   border-radius: var(--radius-sm);
@@ -985,6 +1013,7 @@ body {
   justify-content: center;
   text-align: center;
   flex-shrink: 0;
+  gap: 2px;
 }
 
 .compare-tab:hover {
@@ -998,30 +1027,60 @@ body {
   color: var(--primary-blue);
 }
 
-.compare-tab-label {
+/* 第 1 行：质量标签（小字灰色） */
+.compare-tab-quality-label {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  line-height: 1.2;
+  opacity: 0.7;
+}
+
+/* 第 2 行：质量值（突出显示，大字加粗） */
+.compare-tab-quality-value {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 2px 0;
+}
+
+/* 第 3 行：压缩前文件大小（小字灰色） */
+.compare-tab-size-before {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  line-height: 1.2;
+  opacity: 0.6;
+}
+
+/* 第 4 行：压缩后文件大小（小字，激活时跟随主色） */
+.compare-tab-size-after {
   font-size: var(--font-size-xs);
   font-weight: 500;
   line-height: 1.2;
-}
-
-.compare-tab-size {
-  font-size: var(--font-size-xs);
-  font-weight: 400;
-  opacity: 0.7;
-  line-height: 1.2;
+  opacity: 0.85;
 }
 
 /* + 号 tab */
 .compare-tab--add {
   border-style: dashed;
-  font-size: 18px;
-  font-weight: 300;
   color: var(--text-muted);
 }
 
+.compare-tab-add-icon {
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.compare-tab-add-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
 .compare-tab--add:hover {
-  border-color: var(--primary-blue);
-  color: var(--primary-blue);
+  border-color: var(--btn-dark);
+  color: var(--btn-dark);
 }
 
 /* 确认按钮区 */
@@ -1060,6 +1119,201 @@ body {
   10% { opacity: 1; transform: translateX(-50%) translateY(0); }
   90% { opacity: 1; transform: translateX(-50%) translateY(0); }
   100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+}
+
+/* ---------- 覆盖确认弹窗 ---------- */
+/* 点"开始压缩"时，若有已确认版本图片则弹窗询问是否保留 */
+.overwrite-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fade-in 0.2s ease;
+}
+
+.overwrite-modal {
+  position: relative;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  width: 600px;
+  max-width: 92vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  padding: var(--space-6);
+}
+
+.overwrite-header {
+  margin-bottom: var(--space-4);
+  /* 给右上角关闭按钮留出空间 */
+  padding-right: var(--space-6);
+}
+
+.overwrite-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.overwrite-hint {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* 快捷操作按钮区 */
+.overwrite-toolbar {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.overwrite-toolbar .btn-secondary-outline {
+  height: 28px;
+  min-width: auto;
+  padding: 0 14px;
+  font-size: var(--font-size-sm);
+}
+
+/* 列表区——支持滚动 */
+.overwrite-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  min-height: 80px;
+  max-height: 50vh;
+}
+
+/* 单行——checkbox + 缩略图 + 信息 */
+.overwrite-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.overwrite-item:last-child {
+  border-bottom: none;
+}
+
+.overwrite-item:hover {
+  background-color: var(--bg-hover);
+}
+
+.overwrite-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--btn-dark);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.overwrite-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: repeating-conic-gradient(#f0f0f0 0% 25%, #ffffff 0% 50%) 50% / 8px 8px;
+  flex-shrink: 0;
+}
+
+.overwrite-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.overwrite-name {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overwrite-meta {
+  display: flex;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.overwrite-meta .quality {
+  color: var(--btn-dark);
+  font-weight: 500;
+}
+
+.overwrite-meta .rate {
+  color: var(--success);
+}
+
+/* 底部操作区 */
+.overwrite-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+/* 取消与开始压缩按钮——高度/圆角/最小宽度统一 */
+.overwrite-actions .btn-secondary-outline,
+.overwrite-actions .btn-large-primary {
+  height: 44px;
+  border-radius: var(--radius-md);
+  min-width: 120px;
+  max-width: 220px;
+  width: auto;
+}
+
+/* 列表滚动条 */
+.overwrite-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.overwrite-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overwrite-list::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 4px;
+}
+
+.overwrite-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* 覆盖确认弹窗——暗黑模式适配 */
+body.dark-mode .overwrite-modal {
+  background: #2a2a2a;
+}
+
+body.dark-mode .overwrite-list {
+  border-color: #404040;
+}
+
+body.dark-mode .overwrite-item {
+  border-bottom-color: #404040;
+}
+
+body.dark-mode .overwrite-item:hover {
+  background-color: #333333;
+}
+
+body.dark-mode .overwrite-thumb {
+  background: repeating-conic-gradient(#333 0% 25%, #2a2a2a 0% 50%) 50% / 8px 8px;
 }
 
 /* ---------- 暗黑模式 ---------- */

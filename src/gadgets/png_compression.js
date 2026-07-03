@@ -75,6 +75,15 @@
     els.compareZoomLabel = document.getElementById('compareZoomLabel');
     els.compareInnerLeft = els.compareImageLeft.querySelector('.compare-image-inner');
     els.compareInnerRight = els.compareImageRight.querySelector('.compare-image-inner');
+    // 覆盖确认弹窗
+    els.overwriteOverlay = document.getElementById('overwriteOverlay');
+    els.overwriteClose = document.getElementById('overwriteClose');
+    els.overwriteTitle = document.getElementById('overwriteTitle');
+    els.overwriteList = document.getElementById('overwriteList');
+    els.overwriteKeepAll = document.getElementById('overwriteKeepAll');
+    els.overwriteRecompressAll = document.getElementById('overwriteRecompressAll');
+    els.overwriteCancel = document.getElementById('overwriteCancel');
+    els.overwriteStart = document.getElementById('overwriteStart');
   }
 
   // ==================== 工具函数 ====================
@@ -458,6 +467,101 @@
     return String(quality);
   }
 
+  /**
+   * 显示覆盖确认弹窗——点开始压缩时，若有已确认版本图片则询问是否保留
+   * @param {Array} confirmedImages - 已确认版本的图片数组
+   * @returns {Promise<Array<boolean>|null>} 每张图对应的保留标志（true=保留），用户取消返回 null
+   */
+  function showConfirmOverwriteDialog(confirmedImages) {
+    return new Promise(function (resolve) {
+      // 标题
+      els.overwriteTitle.textContent = '是否保留已确认压缩质量的图片？';
+
+      // 渲染列表
+      els.overwriteList.innerHTML = '';
+      var checkboxes = [];
+      confirmedImages.forEach(function (img) {
+        var item = document.createElement('label');
+        item.className = 'overwrite-item';
+
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = true; // 默认勾选保留——保护用户已投入的调参成果
+        cb.dataset.imageId = img.id;
+        checkboxes.push(cb);
+
+        var thumb = document.createElement('img');
+        thumb.className = 'overwrite-thumb';
+        thumb.src = img.dataUrl || '';
+        thumb.alt = '';
+
+        var info = document.createElement('div');
+        info.className = 'overwrite-info';
+
+        var name = document.createElement('div');
+        name.className = 'overwrite-name';
+        name.textContent = img.name;
+        name.title = img.name;
+
+        var meta = document.createElement('div');
+        meta.className = 'overwrite-meta';
+        var qualityText = getQualityLabel(img.confirmedQuality) + ' ' + img.confirmedQuality + '质量';
+        var sizesText = formatSize(img.size) + ' → ' + formatSize(img.compressedSize);
+        var rateText = '省 ' + img.compressionRate + '%';
+        meta.innerHTML = '<span class="quality">' + qualityText + '</span>' +
+                         '<span class="sizes">' + sizesText + '</span>' +
+                         '<span class="rate">' + rateText + '</span>';
+
+        info.appendChild(name);
+        info.appendChild(meta);
+
+        item.appendChild(cb);
+        item.appendChild(thumb);
+        item.appendChild(info);
+
+        els.overwriteList.appendChild(item);
+      });
+
+      // 显示弹窗
+      els.overwriteOverlay.style.display = 'flex';
+
+      // 清理事件绑定——避免重复调用时叠加
+      var cleanup = function () {
+        els.overwriteKeepAll.onclick = null;
+        els.overwriteRecompressAll.onclick = null;
+        els.overwriteCancel.onclick = null;
+        els.overwriteStart.onclick = null;
+        els.overwriteClose.onclick = null;
+        els.overwriteOverlay.style.display = 'none';
+      };
+
+      // 全部保留
+      els.overwriteKeepAll.onclick = function () {
+        checkboxes.forEach(function (cb) { cb.checked = true; });
+      };
+
+      // 全部重压
+      els.overwriteRecompressAll.onclick = function () {
+        checkboxes.forEach(function (cb) { cb.checked = false; });
+      };
+
+      // 取消（含关闭按钮）
+      var onCancel = function () {
+        cleanup();
+        resolve(null);
+      };
+      els.overwriteCancel.onclick = onCancel;
+      els.overwriteClose.onclick = onCancel;
+
+      // 开始压缩——收集勾选状态
+      els.overwriteStart.onclick = function () {
+        var keepFlags = checkboxes.map(function (cb) { return cb.checked; });
+        cleanup();
+        resolve(keepFlags);
+      };
+    });
+  }
+
   async function startCompression() {
     if (app.isCompressing) return;
     if (app.images.length === 0) {
@@ -465,10 +569,48 @@
       return;
     }
 
+    var quality = getCurrentQuality();
+
+    // 有勾选图片时只压缩勾选的，否则压缩全部
+    var selectedImages = app.images.filter(function (img) { return img.selected; });
+    var targetImages = selectedImages.length > 0 ? selectedImages : app.images;
+
+    // 检测目标范围内已确认版本的图片——若有则弹窗询问是否保留
+    // 避免静默覆盖用户在对比弹窗里精心调好的版本
+    var confirmedImages = targetImages.filter(function (img) { return img.confirmedQuality !== null; });
+    var keptImages = []; // 被用户选择保留的已确认图片
+    if (confirmedImages.length > 0) {
+      var keepFlags = await showConfirmOverwriteDialog(confirmedImages);
+      if (keepFlags === null) {
+        // 用户取消
+        return;
+      }
+      // 勾选=保留确认版本，不勾选=重新压缩
+      var keepIds = {};
+      confirmedImages.forEach(function (img, i) {
+        if (keepFlags[i]) {
+          keepIds[img.id] = true;
+          keptImages.push(img);
+        }
+      });
+      var toRecompress = targetImages.filter(function (img) { return !keepIds[img.id]; });
+
+      if (toRecompress.length === 0) {
+        showToast('全部图片保留确认版本，无需重新压缩');
+        showDownloadSection();
+        return;
+      }
+      targetImages = toRecompress;
+    }
+
     app.isCompressing = true;
     app.cancelled = false;
     app.compressedCount = 0;
     app.totalSizeAfter = 0;
+    // 被保留的已确认图片，其压缩大小应计入总大小（否则下载统计会少算）
+    keptImages.forEach(function (img) {
+      app.totalSizeAfter += img.compressedSize || 0;
+    });
 
     // UI 状态
     els.compressBtn.style.display = 'none';
@@ -476,11 +618,6 @@
     els.overallProgress.style.display = 'block';
     els.downloadSection.style.display = 'none';
 
-    var quality = getCurrentQuality();
-
-    // 有勾选图片时只压缩勾选的，否则压缩全部
-    var selectedImages = app.images.filter(function (img) { return img.selected; });
-    var targetImages = selectedImages.length > 0 ? selectedImages : app.images;
     var targetTotal = targetImages.length;
 
     // 逐张压缩
@@ -575,10 +712,13 @@
 
     els.compareModalTitle.textContent = image.name;
 
-    // 重置状态
+    // 重置状态——只清除 tab 按钮，保留 #comparePopover 浮层 DOM
     els.comparePlaceholder.style.display = 'block';
     els.compareTabs.style.display = 'none';
-    els.compareTabs.innerHTML = '';
+    var oldTabs = els.compareTabs.querySelectorAll('.compare-tab');
+    for (var oi = 0; oi < oldTabs.length; oi++) {
+      oldTabs[oi].remove();
+    }
     els.compareConfirm.style.display = 'none';
     hideComparePopover();
 
@@ -638,24 +778,26 @@
     }
     var qualities = Object.keys(image.trialResults).map(Number).sort(function (a, b) { return a - b; });
 
-    // 渲染已有压缩结果 tab（方形卡片）
+    // 渲染已有压缩结果 tab（4 行：质量标签 / 质量值 / 压缩前 / 压缩后）
     qualities.forEach(function (q) {
       var tab = document.createElement('button');
       tab.className = 'compare-tab';
       tab.innerHTML =
-        '<span class="compare-tab-label">压缩质量: ' + getQualityLabel(q) + '</span>' +
-        '<span class="compare-tab-size">' + formatSize(image.trialResults[q].length) + '</span>';
+        '<span class="compare-tab-quality-label">压缩质量：</span>' +
+        '<span class="compare-tab-quality-value">' + getQualityLabel(q) + '</span>' +
+        '<span class="compare-tab-size-before">' + formatSize(image.size) + '</span>' +
+        '<span class="compare-tab-size-after">→' + formatSize(image.trialResults[q].length) + '</span>';
       tab.addEventListener('click', function () {
         selectCompareTab(image, q);
       });
       els.compareTabs.appendChild(tab);
     });
 
-    // + 号 tab：添加压缩图片
+    // + 号 tab：添加压缩图片——上 + 下文字
     var addTab = document.createElement('button');
     addTab.className = 'compare-tab compare-tab--add';
     addTab.title = '添加压缩图片进行对比';
-    addTab.textContent = '+';
+    addTab.innerHTML = '<span class="compare-tab-add-icon">+</span><span class="compare-tab-add-label">添加对比</span>';
     addTab.addEventListener('click', function (e) {
       e.stopPropagation();
       showComparePopover(addTab);
@@ -869,7 +1011,7 @@
     var mx = e.clientX - rect.left;
     var my = e.clientY - rect.top;
 
-    var delta = -Math.sign(e.deltaY) * 0.01; // 步进 1%
+    var delta = -Math.sign(e.deltaY) * 0.02; // 步进 2%
     var newZoom = compareZoom + delta;
     newZoom = Math.max(0.5, Math.min(5, newZoom)); // 限制 50%~500%
 

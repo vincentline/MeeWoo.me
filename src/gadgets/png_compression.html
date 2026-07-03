@@ -61,7 +61,7 @@
         <!-- 工具栏：压缩级别 + 操作按钮 -->
         <div class="toolbar">
           <div class="toolbar-quality">
-            <span class="toolbar-label">压缩级别</span>
+            <span class="toolbar-label">全局压缩质量</span>
             <div class="quality-presets">
               <button class="preset-btn" data-quality="40">极致压缩</button>
               <button class="preset-btn active" data-quality="70">推荐</button>
@@ -171,7 +171,33 @@
 
       <!-- 确认按钮 -->
       <div class="compare-confirm" id="compareConfirm" style="display: none;">
-        <button class="btn-large-primary" id="compareConfirmBtn">确认此版本</button>
+        <button class="btn-large-primary" id="compareConfirmBtn">确认此压缩质量</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 覆盖确认弹窗——点开始压缩时，若有已确认版本图片则询问是否保留 -->
+  <div class="overwrite-overlay" id="overwriteOverlay" style="display: none;">
+    <div class="overwrite-modal">
+      <button class="compare-modal-close" id="overwriteClose" title="取消">&times;</button>
+
+      <div class="overwrite-header">
+        <div class="overwrite-title" id="overwriteTitle">是否保留已确认压缩质量的图片？</div>
+        <div class="overwrite-hint">勾选需要保留的图片，不勾选将按全局压缩质量重新压缩</div>
+      </div>
+
+      <div class="overwrite-toolbar">
+        <button class="btn-secondary-outline" id="overwriteKeepAll">全部保留</button>
+        <button class="btn-secondary-outline" id="overwriteRecompressAll">全部重压</button>
+      </div>
+
+      <div class="overwrite-list" id="overwriteList">
+        <!-- JS 动态填充 -->
+      </div>
+
+      <div class="overwrite-actions">
+        <button class="btn-secondary-outline" id="overwriteCancel">取消</button>
+        <button class="btn-large-primary" id="overwriteStart">开始压缩</button>
       </div>
     </div>
   </div>
