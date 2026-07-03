@@ -791,19 +791,19 @@
       // 没选中任何图：下载全部已压缩的
       if (allCompressed.length > 0) {
         btn.disabled = false;
-        btn.textContent = '打包下载所有已压缩图片（' + allCompressed.length + '）';
+        btn.textContent = '下载所有已压缩图片（' + allCompressed.length + '）';
       } else {
         btn.disabled = true;
-        btn.textContent = '打包下载已压缩图片（无）';
+        btn.textContent = '下载已压缩图片（无）';
       }
     } else if (selectedCompressed.length === 0) {
       // 选中了但都没压缩
       btn.disabled = true;
-      btn.textContent = '打包下载已压缩图片（无）';
+      btn.textContent = '下载已压缩图片（无）';
     } else {
       // 选中的有压缩过的
       btn.disabled = false;
-      btn.textContent = '打包下载已压缩图片（' + selectedCompressed.length + '）';
+      btn.textContent = '下载已压缩图片（' + selectedCompressed.length + '）';
     }
   }
 
