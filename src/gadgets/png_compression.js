@@ -453,10 +453,10 @@
   // ==================== 压缩流程 ====================
 
   function getQualityLabel(quality) {
-    if (quality <= 40) return '极致压缩';
+    if (quality <= 40) return '极致';
     if (quality <= 70) return '推荐';
-    if (quality <= 90) return '高质量';
-    return '自定义';
+    if (quality <= 90) return '高质';
+    return String(quality);
   }
 
   async function startCompression() {
@@ -575,6 +575,8 @@
     app.compareCurrentQuality = null;
 
     els.compareModalTitle.textContent = image.name;
+
+    // 重置状态
     els.comparePlaceholder.style.display = 'block';
     els.compareTabs.style.display = 'none';
     els.compareTabs.innerHTML = '';
@@ -592,13 +594,22 @@
     }
     leftImg.src = image.dataUrl;
 
-    // 清空右侧
+    // 右侧：如果已有批量压缩结果，自动加载
     var rightImg = els.compareImageRight.querySelector('img');
     if (!rightImg) {
       rightImg = document.createElement('img');
       els.compareImageRight.appendChild(rightImg);
     }
-    rightImg.src = '';
+
+    if (image.compressedData && image.compressedQuality !== null) {
+      // 将批量压缩结果写入试压缓存（不覆盖已有同质量试压结果）
+      if (!image.trialResults[image.compressedQuality]) {
+        image.trialResults[image.compressedQuality] = image.compressedData;
+      }
+      app.compareCurrentQuality = image.compressedQuality;
+    } else {
+      rightImg.src = '';
+    }
 
     // 同步弹窗内预设按钮
     var modalPresetBtns = document.querySelectorAll('.compare-quality-picker .preset-btn[data-quality]');
