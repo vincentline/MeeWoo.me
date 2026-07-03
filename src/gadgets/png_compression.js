@@ -71,6 +71,9 @@
     els.compareTabs = document.getElementById('compareTabs');
     els.compareConfirm = document.getElementById('compareConfirm');
     els.compareConfirmBtn = document.getElementById('compareConfirmBtn');
+    els.comparePopover = document.getElementById('comparePopover');
+    els.comparePopoverQualityInput = document.getElementById('comparePopoverQualityInput');
+    els.comparePopoverCompressBtn = document.getElementById('comparePopoverCompressBtn');
     els.compareZoomLabel = document.getElementById('compareZoomLabel');
     els.compareInnerLeft = els.compareImageLeft.querySelector('.compare-image-inner');
     els.compareInnerRight = els.compareImageRight.querySelector('.compare-image-inner');
@@ -436,13 +439,6 @@
     // 收起自定义面板，取消自定义按钮高亮
     els.qualityCustomPanel.style.display = 'none';
     els.presetCustomBtn.classList.remove('active');
-
-    // 同时更新弹窗内的预设按钮
-    var modalPresetBtns = document.querySelectorAll('.compare-quality-picker .preset-btn[data-quality]');
-    modalPresetBtns.forEach(function (btn) {
-      btn.classList.toggle('active', parseInt(btn.dataset.quality) === quality);
-    });
-    els.compareQualityInput.value = quality;
   }
 
   function toggleCustomPanel() {
@@ -586,6 +582,7 @@
     els.compareTabs.style.display = 'none';
     els.compareTabs.innerHTML = '';
     els.compareConfirm.style.display = 'none';
+    hideComparePopover();
 
     // 重置分割线到中间
     els.compareDivider.style.left = '50%';
@@ -619,13 +616,6 @@
       rightImg.src = '';
     }
 
-    // 同步弹窗内预设按钮
-    var modalPresetBtns = document.querySelectorAll('.compare-quality-picker .preset-btn[data-quality]');
-    modalPresetBtns.forEach(function (btn) {
-      btn.classList.toggle('active', parseInt(btn.dataset.quality) === app.currentQuality);
-    });
-    els.compareQualityInput.value = app.currentQuality;
-
     // 构建已有试压结果的 tab
     buildCompareTabs(image);
 
@@ -645,21 +635,34 @@
   function buildCompareTabs(image) {
     els.compareTabs.innerHTML = '';
     var qualities = Object.keys(image.trialResults).map(Number).sort(function (a, b) { return a - b; });
-    if (qualities.length === 0) return;
 
-    els.compareTabs.style.display = 'flex';
-
+    // 渲染已有压缩结果 tab（方形卡片）
     qualities.forEach(function (q) {
       var tab = document.createElement('button');
       tab.className = 'compare-tab';
       tab.innerHTML =
-        '<span>' + getQualityLabel(q) + '</span>' +
+        '<span class="compare-tab-label">压缩质量: ' + getQualityLabel(q) + '</span>' +
         '<span class="compare-tab-size">' + formatSize(image.trialResults[q].length) + '</span>';
       tab.addEventListener('click', function () {
         selectCompareTab(image, q);
       });
       els.compareTabs.appendChild(tab);
     });
+
+    // + 号 tab：添加压缩图片
+    var addTab = document.createElement('button');
+    addTab.className = 'compare-tab compare-tab--add';
+    addTab.title = '添加压缩图片进行对比';
+    addTab.textContent = '+';
+    addTab.addEventListener('click', function (e) {
+      e.stopPropagation();
+      showComparePopover(addTab);
+    });
+    els.compareTabs.appendChild(addTab);
+
+    els.compareTabs.style.display = 'flex';
+
+    if (qualities.length === 0) return;
 
     // 默认选中第一个
     if (!app.compareCurrentQuality || !image.trialResults[app.compareCurrentQuality]) {
@@ -676,11 +679,33 @@
   }
 
   function updateCompareTabHighlight(image) {
-    var tabs = els.compareTabs.querySelectorAll('.compare-tab');
+    var tabs = els.compareTabs.querySelectorAll('.compare-tab:not(.compare-tab--add)');
     tabs.forEach(function (tab, idx) {
       var qualities = Object.keys(image.trialResults).map(Number).sort(function (a, b) { return a - b; });
       tab.classList.toggle('active', qualities[idx] === app.compareCurrentQuality);
     });
+  }
+
+  /**
+   * 显示浮层气泡
+   */
+  function showComparePopover(anchorTab) {
+    // 同步当前质量到浮层输入框
+    els.comparePopoverQualityInput.value = app.currentQuality;
+    var popoverPresetBtns = els.comparePopover.querySelectorAll('.preset-btn[data-quality]');
+    popoverPresetBtns.forEach(function (btn) {
+      btn.classList.toggle('active', parseInt(btn.dataset.quality) === app.currentQuality);
+    });
+
+    // 定位浮层在 + 号 tab 上方
+    var tabRect = anchorTab.getBoundingClientRect();
+    var tabsRect = els.compareTabs.getBoundingClientRect();
+    els.comparePopover.style.left = (tabRect.left + tabRect.width / 2 - tabsRect.left) + 'px';
+    els.comparePopover.style.display = 'block';
+  }
+
+  function hideComparePopover() {
+    els.comparePopover.style.display = 'none';
   }
 
   function showCompareResult(image, quality) {
@@ -707,10 +732,8 @@
     var image = getImageById(app.compareImageId);
     if (!image) return;
 
-    // 获取弹窗内的压缩率
-    var modalQuality = parseInt(els.compareQualityInput.value) || getCurrentQuality();
-
-    // 边界检查
+    // 从浮层读取压缩率
+    var modalQuality = parseInt(els.comparePopoverQualityInput.value) || getCurrentQuality();
     modalQuality = Math.max(10, Math.min(100, modalQuality));
 
     // 避免重复压缩同一质量
@@ -718,6 +741,7 @@
       app.compareCurrentQuality = modalQuality;
       buildCompareTabs(image);
       selectCompareTab(image, modalQuality);
+      hideComparePopover();
       return;
     }
 
@@ -727,8 +751,8 @@
       return;
     }
 
-    els.compareCompressBtn.disabled = true;
-    els.compareCompressBtn.textContent = '压缩中...';
+    els.comparePopoverCompressBtn.disabled = true;
+    els.comparePopoverCompressBtn.textContent = '压缩中...';
 
     try {
       var arrayBuffer = await readFileAsArrayBuffer(image.file);
@@ -738,6 +762,7 @@
       image.trialResults[modalQuality] = compressedData;
       app.compareCurrentQuality = modalQuality;
 
+      hideComparePopover();
       buildCompareTabs(image);
       showCompareResult(image, modalQuality);
     } catch (error) {
@@ -745,8 +770,8 @@
       showToast('试压失败');
     }
 
-    els.compareCompressBtn.disabled = false;
-    els.compareCompressBtn.textContent = '对比压缩';
+    els.comparePopoverCompressBtn.disabled = false;
+    els.comparePopoverCompressBtn.textContent = '添加压缩图片';
   }
 
   function confirmCompareVersion() {
@@ -1031,21 +1056,27 @@
     // 弹窗关闭
     els.compareModalClose.addEventListener('click', closeCompareModal);
 
-    // 弹窗对比压缩
-    els.compareCompressBtn.addEventListener('click', runTrialCompress);
+    // 弹窗对比压缩（浮层）
+    els.comparePopoverCompressBtn.addEventListener('click', runTrialCompress);
     els.compareConfirmBtn.addEventListener('click', confirmCompareVersion);
 
-    // 弹窗内预设按钮
-    document.querySelector('.compare-quality-picker').addEventListener('click', function (e) {
+    // 浮层内预设按钮
+    els.comparePopover.addEventListener('click', function (e) {
       var btn = e.target.closest('button');
-      if (!btn) return;
+      if (!btn || !btn.dataset.quality) return;
       var quality = parseInt(btn.dataset.quality);
       if (!isNaN(quality)) {
-        els.compareQualityInput.value = quality;
-        // 高亮当前预设
-        var btns = document.querySelectorAll('.compare-quality-picker .preset-btn[data-quality]');
+        els.comparePopoverQualityInput.value = quality;
+        var btns = els.comparePopover.querySelectorAll('.preset-btn[data-quality]');
         btns.forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
+      }
+    });
+
+    // 点击弹窗其他区域关闭浮层
+    els.compareModal.addEventListener('click', function (e) {
+      if (!e.target.closest('#comparePopover') && !e.target.closest('.compare-tab--add')) {
+        hideComparePopover();
       }
     });
 

@@ -153,14 +153,28 @@
       </div>
 
       <!-- 压缩率选择 + 对比压缩按钮 -->
-      <div class="compare-actions">
+      <div class="compare-actions" id="compareActions" style="display: none;">
         <div class="compare-quality-picker" id="compareQualityPicker">
           <button class="preset-btn preset-btn--sm" data-quality="40">极致</button>
           <button class="preset-btn preset-btn--sm active" data-quality="70">推荐</button>
           <button class="preset-btn preset-btn--sm" data-quality="90">高质</button>
           <input type="number" class="compare-quality-input" id="compareQualityInput" min="10" max="100" value="70" placeholder="自定义">
         </div>
-        <button class="btn-primary" id="compareCompressBtn">对比压缩</button>
+        <button class="btn-primary" id="compareCompressBtn">添加压缩图片</button>
+      </div>
+
+      <!-- 压缩等级选择浮层 -->
+      <div class="compare-popover" id="comparePopover" style="display: none;">
+        <div class="compare-popover-arrow"></div>
+        <div class="compare-popover-body">
+          <div class="compare-quality-picker">
+            <button class="preset-btn preset-btn--sm" data-quality="40">极致</button>
+            <button class="preset-btn preset-btn--sm active" data-quality="70">推荐</button>
+            <button class="preset-btn preset-btn--sm" data-quality="90">高质</button>
+            <input type="number" class="compare-quality-input" id="comparePopoverQualityInput" min="10" max="100" value="70" placeholder="自定义">
+          </div>
+          <button class="btn-primary" id="comparePopoverCompressBtn">添加压缩图片</button>
+        </div>
       </div>
 
       <!-- 压缩率 Tab -->
