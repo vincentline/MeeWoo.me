@@ -205,6 +205,7 @@
       compressedData: null,
       compressedSize: 0,
       compressionRate: 0,
+      compressedQuality: null,
       confirmedQuality: null,
       trialResults: {},
       selected: false,
@@ -255,6 +256,7 @@
           '<span class="image-card-dims">' + (image.width ? image.width + ' × ' + image.height : '读取中...') + '</span>' +
           '<span>·</span>' +
           '<span>' + formatSize(image.size) + '</span>' +
+          '<span class="image-card-quality" style="display:none"></span>' +
         '</div>' +
         '<span class="image-card-status image-card-status--pending">等待</span>' +
         '<span class="image-card-result"></span>' +
@@ -346,6 +348,15 @@
       confirmedEl.textContent = '已确认版本: ' + image.confirmedQuality + ' 质量';
     } else {
       confirmedEl.style.display = 'none';
+    }
+
+    // 压缩级别标签（meta 行）
+    var qualityEl = card.querySelector('.image-card-quality');
+    if (image.compressedQuality !== null) {
+      qualityEl.style.display = 'inline';
+      qualityEl.textContent = '· ' + getQualityLabel(image.compressedQuality);
+    } else {
+      qualityEl.style.display = 'none';
     }
   }
 
@@ -479,6 +490,7 @@
       image.compressedData = null;
       image.compressedSize = 0;
       image.compressionRate = 0;
+      image.compressedQuality = null;
       image.confirmedQuality = null;
       image.trialResults = {};
       updateImageCard(image);
@@ -496,6 +508,7 @@
         image.compressedData = compressedData;
         image.compressedSize = compressedData.length;
         image.compressionRate = Math.round((1 - compressedData.length / image.size) * 100);
+        image.compressedQuality = quality;
 
         app.totalSizeAfter += compressedData.length;
       } catch (error) {
@@ -716,6 +729,7 @@
     image.compressedData = data;
     image.compressedSize = data.length;
     image.compressionRate = Math.round((1 - data.length / image.size) * 100);
+    image.compressedQuality = quality;
     image.confirmedQuality = quality;
     image.status = 'completed';
 
