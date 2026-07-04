@@ -22,6 +22,7 @@
     totalSizeBefore: 0,
     totalSizeAfter: 0,
     currentQuality: 70,
+    lastCustomQuality: 70,
     theme: 'light',
     // 对比弹窗状态
     compareImageId: null,
@@ -236,7 +237,7 @@
       image.width = dim.width;
       image.height = dim.height;
       updateImageCardMeta(image);
-      checkResolutionLarge(image);
+      checkImageSizeLimit(image);
     });
 
     readFileAsDataURL(file).then(function (dataUrl) {
@@ -247,9 +248,16 @@
     renderImageCard(image);
   }
 
-  function checkResolutionLarge(image) {
-    if (image.width > 3000 || image.height > 3000) {
-      showToast('"' + image.name + '" 分辨率较大（' + image.width + '×' + image.height + '），压缩可能较慢');
+  /** 图片尺寸上限：宽或高超过此值拒绝添加 */
+  var MAX_IMAGE_DIM = 9000;
+
+  function checkImageSizeLimit(image) {
+    if (image.width > MAX_IMAGE_DIM || image.height > MAX_IMAGE_DIM) {
+      // 移除超出限制的图片
+      var idx = app.images.indexOf(image);
+      if (idx >= 0) app.images.splice(idx, 1);
+      updateListView();
+      showToast('"' + image.name + '" 尺寸超出限制（' + image.width + '×' + image.height + '），最大支持 ' + MAX_IMAGE_DIM + '×' + MAX_IMAGE_DIM);
     }
   }
 
@@ -438,11 +446,14 @@
     els.compressionQuality.value = quality;
     els.compressionValue.textContent = quality;
 
-    // 更新预设按钮激活状态——滑块始终可见，点击预设就同步数值
+    // 更新预设按钮激活状态——点击预设高亮对应按钮，取消自定义高亮
     var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
     presetBtns.forEach(function (btn) {
       btn.classList.toggle('active', parseInt(btn.dataset.quality) === quality);
     });
+    // 取消自定义按钮高亮（预设值不是自定义）
+    var customBtn = document.getElementById('presetCustom');
+    if (customBtn) customBtn.classList.remove('active');
   }
 
   // ==================== 压缩流程 ====================
@@ -1202,15 +1213,31 @@
       var val = parseInt(els.compressionQuality.value);
       els.compressionValue.textContent = val;
       app.currentQuality = val;
-      // 取消所有预设高亮
+      app.lastCustomQuality = val; // 记住用户手动调整的最后一个值
+      // 取消所有预设高亮，高亮自定义
       var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
       presetBtns.forEach(function (btn) { btn.classList.remove('active'); });
+      var customBtn = document.getElementById('presetCustom');
+      if (customBtn) customBtn.classList.add('active');
     });
 
     // 预设档位点击
     document.querySelector('.toolbar-quality .quality-presets').addEventListener('click', function (e) {
       var btn = e.target.closest('button');
-      if (!btn || !btn.dataset.quality) return;
+      if (!btn) return;
+      // 自定义按钮——恢复到上次调整的数值
+      if (btn.dataset.preset === 'custom') {
+        var val = app.lastCustomQuality;
+        els.compressionQuality.value = val;
+        els.compressionValue.textContent = val;
+        app.currentQuality = val;
+        // 取消所有预设高亮，高亮自定义
+        var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
+        presetBtns.forEach(function (b) { b.classList.remove('active'); });
+        var customBtn = document.getElementById('presetCustom');
+        if (customBtn) customBtn.classList.add('active');
+        return;
+      }
       var quality = parseInt(btn.dataset.quality);
       if (!isNaN(quality)) setQualityPreset(quality);
     });

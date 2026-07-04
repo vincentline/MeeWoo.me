@@ -7,9 +7,6 @@
  * 
  * 压缩策略：
  * - 首选：TinyPNG 有损压缩（支持质量参数）
- * - 超大图保护：超过 4096×4096（16M 像素）先等比缩放到安全尺寸再压缩
- *   浏览器 Canvas 最大尺寸因平台而异，Safari/iOS 上限为 4096，
- *   直接拿原尺寸绘入 Canvas 会静默失败，tinypng-lib 内部的 getImageData 正是这样做的
  * - 降级：直接返回原始数据（因为图片可能已经缩小，体积已减小）
  * 
  * 注意：
@@ -27,8 +24,6 @@
         initialized: false,
         compressionFailed: false,
         tinypngReady: false,
-        /** 浏览器 Canvas 安全尺寸上限——超过此值需预先缩放，避免 getImageData 静默失败 */
-        MAX_CANVAS_PIXELS: 4096 * 4096,
         compressionStats: {
             total: 0,
             tinypngSuccess: 0,
@@ -123,52 +118,6 @@
         },
 
         /**
-         * 将 PNG 数据等比缩放到安全尺寸内，避免 Canvas getImageData 失败
-         * @param {Uint8Array} pngData - 原始 PNG 数据
-         * @returns {Promise<{data: Uint8Array, width: number, height: number}>} 缩放结果
-         */
-        scaleToSafeSize: async function (pngData) {
-            return new Promise(function (resolve, reject) {
-                var img = new Image();
-                var blob = new Blob([pngData], { type: 'image/png' });
-                img.src = URL.createObjectURL(blob);
-                img.onload = function () {
-                    URL.revokeObjectURL(img.src);
-                    var w = img.width;
-                    var h = img.height;
-                    var totalPixels = w * h;
-
-                    if (totalPixels <= ImageCompressionService.MAX_CANVAS_PIXELS) {
-                        // 无需缩放
-                        resolve({ data: pngData, width: w, height: h });
-                        return;
-                    }
-
-                    // 等比缩放到安全像素数内
-                    var scale = Math.sqrt(ImageCompressionService.MAX_CANVAS_PIXELS / totalPixels);
-                    var newW = Math.floor(w * scale);
-                    var newH = Math.floor(h * scale);
-
-                    var canvas = document.createElement('canvas');
-                    canvas.width = newW;
-                    canvas.height = newH;
-                    var ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, newW, newH);
-
-                    canvas.toBlob(function (scaledBlob) {
-                        scaledBlob.arrayBuffer().then(function (buf) {
-                            resolve({ data: new Uint8Array(buf), width: newW, height: newH });
-                        });
-                    }, 'image/png');
-                };
-                img.onerror = function () {
-                    URL.revokeObjectURL(img.src);
-                    reject(new Error('Failed to load image for scaling'));
-                };
-            });
-        },
-
-        /**
          * 压缩 PNG 数据
          * @param {Uint8Array} pngData - PNG 数据
          * @param {number} quality - 压缩质量（0-100）
@@ -182,16 +131,9 @@
                 await this.init();
             }
 
-            // 超大图保护：先缩放到安全尺寸再压缩
-            var scaled = await this.scaleToSafeSize(pngData);
-            if (scaled.data !== pngData) {
-                console.log('[ImageCompression] 超大图缩放: ' +
-                    scaled.width + '×' + scaled.height + ' → 安全尺寸');
-            }
-
             if (this.isTinyPNGReady()) {
                 try {
-                    var compressedData = await this.compressWithTinyPNG(scaled.data, quality);
+                    var compressedData = await this.compressWithTinyPNG(pngData, quality);
                     this.compressionStats.tinypngSuccess++;
                     this.compressionStats.compressedBytes += compressedData.length;
                     return compressedData;

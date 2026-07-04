@@ -5,6 +5,9 @@
 
 ## 记录列表
 
+[2026-07-04 16:50:13] 【修改文件】 : src/gadgets/png_compression.html - 恢复自定义按钮(data-preset='custom')；拖放区+添加提示加"（最大支持 9000×9000）"
+[2026-07-04 16:50:13] 【修改文件】 : src/gadgets/png_compression.js - 新增 lastCustomQuality 记忆自定义值；滑块拖动→高亮自定义+存值；自定义按钮点击→恢复上次值；checkResolutionLarge→checkImageSizeLimit(MAX=9000)拒绝超大图
+[2026-07-04 16:50:13] 【修改文件】 : src/assets/js/service/image-compression-service.js - 移除 scaleToSafeSize()、MAX_CANVAS_PIXELS、compressPNG 中的缩放调用——不再缩放超大图，由上传层 9000×9000 硬限制保证安全
 [2026-07-04 16:37:25] 【修改文件】 : src/assets/js/service/image-compression-service.js - 新增 scaleToSafeSize()：超大图（>16M像素）等比缩放到安全尺寸后压缩；新增 MAX_CANVAS_PIXELS 常量；compressPNG 调用前先缩放保护
 [2026-07-04 16:37:25] 【修改文件】 : src/gadgets/png_compression.js - 压缩开始/结束时添加/移除 .is-compressing 类，禁用压缩中的图片预览和勾选交互
 [2026-07-04 16:37:25] 【修改文件】 : src/gadgets/png_compression.css - 新增 .is-compressing .image-card 规则：pointer-events:none + opacity:0.8，压缩中禁用卡片交互（预览、勾选）
