@@ -1,0 +1,441 @@
+diff --git a/src/assets/js/service/image-compression-service.js b/src/assets/js/service/image-compression-service.js
+index 85f4e19e..871a430c 100644
+--- a/src/assets/js/service/image-compression-service.js
++++ b/src/assets/js/service/image-compression-service.js
+@@ -133,7 +133,7 @@
+ 
+             if (this.isTinyPNGReady()) {
+                 try {
+-                    const compressedData = await this.compressWithTinyPNG(pngData, quality);
++                    var compressedData = await this.compressWithTinyPNG(pngData, quality);
+                     this.compressionStats.tinypngSuccess++;
+                     this.compressionStats.compressedBytes += compressedData.length;
+                     return compressedData;
+diff --git a/src/gadgets/png_compression.css b/src/gadgets/png_compression.css
+index f86e4dc9..71a672d1 100644
+--- a/src/gadgets/png_compression.css
++++ b/src/gadgets/png_compression.css
+@@ -1,5 +1,11 @@
+ /* ==================== PNG 压缩工具样式 ==================== */
+ 
++/* 强制先加载全局 styles.css，确保工具 CSS 能覆盖全局规则。
++   Vite 构建会按哈希名重排 <link> 顺序，导致 png_compression.css 先于 styles.css 加载，
++   全局白底+描边按钮、overflow:hidden 等会反向覆盖工具样式。
++   用 @import 在构建时把全局样式内联到本 bundle 顶部，加载顺序永不变。 */
++@import "../assets/css/styles.css";
++
+ /* ---------- 设计系统令牌 ---------- */
+ :root {
+   --primary-blue: #409eff;
+@@ -615,6 +621,12 @@ body {
+   animation: compressing-pulse 1.2s ease-in-out infinite;
+ }
+ 
++/* 压缩中禁用卡片交互：预览、勾选/取消勾选 */
++.is-compressing .image-card {
++  pointer-events: none;
++  opacity: 0.8;
++}
++
+ /* 状态标签 */
+ .image-card-status {
+   display: inline-block;
+@@ -1054,6 +1066,13 @@ body {
+   margin: 2px 0;
+ }
+ 
++/* 第 2 行后缀：预设值小字数值，如"（40）"，不加粗，跟随颜色 */
++.compare-tab-quality-value-num {
++  font-size: var(--font-size-xs);
++  font-weight: 400;
++  opacity: 0.7;
++}
++
+ /* 第 3 行：压缩前文件大小（小字灰色） */
+ .compare-tab-size-before {
+   font-size: var(--font-size-xs);
+@@ -1220,6 +1239,43 @@ body {
+   background-color: var(--bg-hover);
+ }
+ 
++/* 隐藏原生 checkbox，用 .overwrite-toggle 替代显示 */
++.overwrite-checkbox {
++  position: absolute;
++  opacity: 0;
++  width: 0;
++  height: 0;
++  pointer-events: none;
++}
++
++/* 跳过/不跳过切换标签——替代原 checkbox 的视觉呈现 */
++.overwrite-toggle {
++  flex-shrink: 0;
++  width: 56px;
++  height: 26px;
++  line-height: 26px;
++  text-align: center;
++  border-radius: var(--radius-sm);
++  font-size: var(--font-size-xs);
++  font-weight: 500;
++  cursor: pointer;
++  user-select: none;
++  transition: background-color 0.15s, color 0.15s;
++}
++
++/* 选中=跳过：深底白字 */
++.overwrite-toggle--skip {
++  background-color: var(--btn-dark);
++  color: #ffffff;
++}
++
++/* 未选=不跳过：浅底灰字+描边 */
++.overwrite-toggle--noskip {
++  background-color: transparent;
++  color: var(--text-muted);
++  border: 1px solid var(--border-light);
++}
++
+ .overwrite-item input[type="checkbox"] {
+   width: 18px;
+   height: 18px;
+diff --git a/src/gadgets/png_compression.html b/src/gadgets/png_compression.html
+index 603b2a03..3145e669 100644
+--- a/src/gadgets/png_compression.html
++++ b/src/gadgets/png_compression.html
+@@ -6,10 +6,8 @@
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>PNG 压缩工具</title>
+ 
+-  <!-- 引入设计系统样式 -->
+-  <link rel="stylesheet" href="../assets/css/styles.css">
+-
+-  <!-- 引入自定义样式 -->
++  <!-- 全局样式通过 png_compression.css 顶部 @import 引入
++       （Vite 构建会重排 <link> 顺序，导致全局样式后加载覆盖工具样式；改用 @import 合并到同一 bundle 保证顺序） -->
+   <link rel="stylesheet" href="png_compression.css">
+ </head>
+ 
+@@ -48,11 +46,11 @@
+             <path d="M12 3V15" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round" />
+           </svg>
+-          <h2 class="drag-title">拖入 PNG 图片进行压缩</h2>
++          <h2 class="drag-title">拖入 PNG 图片进行压缩（最大支持 9000×9000）</h2>
+           <p class="drag-description">或</p>
+           <button class="btn-select-files" id="selectFilesBtn">选择文件</button>
+           <input type="file" id="fileInput" multiple accept="image/png" style="display: none;">
+-          <p class="drag-hint" id="addMoreHint" style="display: none;">继续拖入或点击添加更多图片</p>
++          <p class="drag-hint" id="addMoreHint" style="display: none;">继续拖入或点击添加更多图片（最大支持 9000×9000）</p>
+         </div>
+       </section>
+ 
+@@ -61,21 +59,21 @@
+         <!-- 工具栏：压缩级别 + 操作按钮 -->
+         <div class="toolbar">
+           <div class="toolbar-quality">
+-            <span class="toolbar-label">全局压缩质量</span>
++            <span class="toolbar-label">批量压缩的压缩质量</span>
+             <div class="quality-presets">
+               <button class="preset-btn" data-quality="40">极致压缩</button>
+               <button class="preset-btn active" data-quality="70">推荐</button>
+               <button class="preset-btn" data-quality="90">高质量</button>
+-              <button class="preset-btn preset-custom" id="presetCustomBtn">自定义 ▾</button>
++              <button class="preset-btn" data-preset="custom" id="presetCustom">自定义</button>
+             </div>
+-            <div class="quality-custom" id="qualityCustomPanel" style="display: none;">
++            <div class="quality-custom" id="qualityCustomPanel">
+               <input type="range" id="compressionQuality" class="compression-slider" min="10" max="100" value="70">
+               <span class="compression-value" id="compressionValue">70</span>
+             </div>
+           </div>
+           <div class="toolbar-actions">
+-            <button class="btn-secondary-outline" id="clearBtn">清空列表</button>
+-            <button class="btn-primary" id="compressBtn">开始压缩</button>
++            <button class="btn-primary" id="compressBtn">批量压缩</button>
++            <button class="btn-primary" id="clearBtn">清空列表</button>
+             <button class="btn-danger" id="cancelBtn" style="display: none;">取消压缩</button>
+           </div>
+         </div>
+@@ -183,12 +181,12 @@
+ 
+       <div class="overwrite-header">
+         <div class="overwrite-title" id="overwriteTitle">是否保留已确认压缩质量的图片？</div>
+-        <div class="overwrite-hint">勾选需要保留的图片，不勾选将按全局压缩质量重新压缩</div>
++        <div class="overwrite-hint" id="overwriteHint">选中将跳过批量压缩，采用原来各图片确认的压缩质量。不跳过将采用批量压缩的压缩质量（<span id="overwriteHintQuality">70</span>）</div>
+       </div>
+ 
+       <div class="overwrite-toolbar">
+-        <button class="btn-secondary-outline" id="overwriteKeepAll">全部保留</button>
+-        <button class="btn-secondary-outline" id="overwriteRecompressAll">全部重压</button>
++        <button class="btn-secondary-outline" id="overwriteKeepAll">全部跳过</button>
++        <button class="btn-secondary-outline" id="overwriteRecompressAll">全部批量压缩</button>
+       </div>
+ 
+       <div class="overwrite-list" id="overwriteList">
+diff --git a/src/gadgets/png_compression.js b/src/gadgets/png_compression.js
+index f0fa643b..55fc80ea 100644
+--- a/src/gadgets/png_compression.js
++++ b/src/gadgets/png_compression.js
+@@ -22,6 +22,7 @@
+     totalSizeBefore: 0,
+     totalSizeAfter: 0,
+     currentQuality: 70,
++    lastCustomQuality: 70,
+     theme: 'light',
+     // 对比弹窗状态
+     compareImageId: null,
+@@ -46,7 +47,6 @@
+     els.compressionQuality = document.getElementById('compressionQuality');
+     els.compressionValue = document.getElementById('compressionValue');
+     els.qualityCustomPanel = document.getElementById('qualityCustomPanel');
+-    els.presetCustomBtn = document.getElementById('presetCustomBtn');
+     els.overallProgress = document.getElementById('overallProgress');
+     els.overallProgressFill = document.getElementById('overallProgressFill');
+     els.overallProgressStats = document.getElementById('overallProgressStats');
+@@ -75,6 +75,7 @@
+     els.compareZoomLabel = document.getElementById('compareZoomLabel');
+     els.compareInnerLeft = els.compareImageLeft.querySelector('.compare-image-inner');
+     els.compareInnerRight = els.compareImageRight.querySelector('.compare-image-inner');
++    els.compareLabelRight = els.compareImageRight.querySelector('.compare-label');
+     // 覆盖确认弹窗
+     els.overwriteOverlay = document.getElementById('overwriteOverlay');
+     els.overwriteClose = document.getElementById('overwriteClose');
+@@ -82,6 +83,7 @@
+     els.overwriteList = document.getElementById('overwriteList');
+     els.overwriteKeepAll = document.getElementById('overwriteKeepAll');
+     els.overwriteRecompressAll = document.getElementById('overwriteRecompressAll');
++    els.overwriteHintQuality = document.getElementById('overwriteHintQuality');
+     els.overwriteCancel = document.getElementById('overwriteCancel');
+     els.overwriteStart = document.getElementById('overwriteStart');
+   }
+@@ -235,7 +237,7 @@
+       image.width = dim.width;
+       image.height = dim.height;
+       updateImageCardMeta(image);
+-      checkResolutionLarge(image);
++      checkImageSizeLimit(image);
+     });
+ 
+     readFileAsDataURL(file).then(function (dataUrl) {
+@@ -246,9 +248,16 @@
+     renderImageCard(image);
+   }
+ 
+-  function checkResolutionLarge(image) {
+-    if (image.width > 3000 || image.height > 3000) {
+-      showToast('"' + image.name + '" 分辨率较大（' + image.width + '×' + image.height + '），压缩可能较慢');
++  /** 图片尺寸上限：宽或高超过此值拒绝添加 */
++  var MAX_IMAGE_DIM = 9000;
++
++  function checkImageSizeLimit(image) {
++    if (image.width > MAX_IMAGE_DIM || image.height > MAX_IMAGE_DIM) {
++      // 移除超出限制的图片
++      var idx = app.images.indexOf(image);
++      if (idx >= 0) app.images.splice(idx, 1);
++      updateListView();
++      showToast('"' + image.name + '" 尺寸超出限制（' + image.width + '×' + image.height + '），最大支持 ' + MAX_IMAGE_DIM + '×' + MAX_IMAGE_DIM);
+     }
+   }
+ 
+@@ -437,25 +446,14 @@
+     els.compressionQuality.value = quality;
+     els.compressionValue.textContent = quality;
+ 
+-    // 更新预设按钮激活状态
++    // 更新预设按钮激活状态——点击预设高亮对应按钮，取消自定义高亮
+     var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
+     presetBtns.forEach(function (btn) {
+       btn.classList.toggle('active', parseInt(btn.dataset.quality) === quality);
+     });
+-
+-    // 收起自定义面板，取消自定义按钮高亮
+-    els.qualityCustomPanel.style.display = 'none';
+-    els.presetCustomBtn.classList.remove('active');
+-  }
+-
+-  function toggleCustomPanel() {
+-    var isVisible = els.qualityCustomPanel.style.display === 'flex';
+-    if (isVisible) return; // 已展开，不取消——点击其他预设才切换
+-    els.qualityCustomPanel.style.display = 'flex';
+-    els.presetCustomBtn.classList.add('active');
+-    // 取消其他预设高亮
+-    var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
+-    presetBtns.forEach(function (btn) { btn.classList.remove('active'); });
++    // 取消自定义按钮高亮（预设值不是自定义）
++    var customBtn = document.getElementById('presetCustom');
++    if (customBtn) customBtn.classList.remove('active');
+   }
+ 
+   // ==================== 压缩流程 ====================
+@@ -475,21 +473,43 @@
+   function showConfirmOverwriteDialog(confirmedImages) {
+     return new Promise(function (resolve) {
+       // 标题
+-      els.overwriteTitle.textContent = '是否保留已确认压缩质量的图片？';
++      els.overwriteTitle.textContent = '部分图片已确认压缩质量，批量压缩是否跳过这些图片？';
++
++      // 说明文字：动态填充当前批量压缩质量
++      els.overwriteHintQuality.textContent = getCurrentQuality();
+ 
+-      // 渲染列表
++      // 渲染列表——checkbox 视觉隐藏，用 .overwrite-toggle 显示"跳过/不跳过"
+       els.overwriteList.innerHTML = '';
+       var checkboxes = [];
+       confirmedImages.forEach(function (img) {
+         var item = document.createElement('label');
+         item.className = 'overwrite-item';
+ 
++        // 隐藏的 checkbox——true=跳过（保留确认版本），默认 true
+         var cb = document.createElement('input');
+         cb.type = 'checkbox';
+-        cb.checked = true; // 默认勾选保留——保护用户已投入的调参成果
++        cb.checked = true;
+         cb.dataset.imageId = img.id;
++        cb.className = 'overwrite-checkbox';
+         checkboxes.push(cb);
+ 
++        // 可见的切换标签：显示"跳过"或"不跳过"
++        var toggle = document.createElement('span');
++        toggle.className = 'overwrite-toggle';
++
++        // 更新标签外观的回调
++        var updateToggle = function () {
++          if (cb.checked) {
++            toggle.textContent = '跳过';
++            toggle.className = 'overwrite-toggle overwrite-toggle--skip';
++          } else {
++            toggle.textContent = '不跳过';
++            toggle.className = 'overwrite-toggle overwrite-toggle--noskip';
++          }
++        };
++        updateToggle(); // 初始状态
++        cb.addEventListener('change', updateToggle);
++
+         var thumb = document.createElement('img');
+         thumb.className = 'overwrite-thumb';
+         thumb.src = img.dataUrl || '';
+@@ -516,6 +536,7 @@
+         info.appendChild(meta);
+ 
+         item.appendChild(cb);
++        item.appendChild(toggle);
+         item.appendChild(thumb);
+         item.appendChild(info);
+ 
+@@ -535,14 +556,14 @@
+         els.overwriteOverlay.style.display = 'none';
+       };
+ 
+-      // 全部保留
++      // 全部跳过（全选）
+       els.overwriteKeepAll.onclick = function () {
+-        checkboxes.forEach(function (cb) { cb.checked = true; });
++        checkboxes.forEach(function (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); });
+       };
+ 
+-      // 全部重压
++      // 全部批量压缩（全不选）
+       els.overwriteRecompressAll.onclick = function () {
+-        checkboxes.forEach(function (cb) { cb.checked = false; });
++        checkboxes.forEach(function (cb) { cb.checked = false; cb.dispatchEvent(new Event('change')); });
+       };
+ 
+       // 取消（含关闭按钮）
+@@ -553,7 +574,7 @@
+       els.overwriteCancel.onclick = onCancel;
+       els.overwriteClose.onclick = onCancel;
+ 
+-      // 开始压缩——收集勾选状态
++      // 开始压缩——收集勾选状态（true=跳过保留确认版本）
+       els.overwriteStart.onclick = function () {
+         var keepFlags = checkboxes.map(function (cb) { return cb.checked; });
+         cleanup();
+@@ -617,6 +638,8 @@
+     els.cancelBtn.style.display = 'inline-flex';
+     els.overallProgress.style.display = 'block';
+     els.downloadSection.style.display = 'none';
++    // 压缩中禁止卡片交互（预览、勾选）
++    document.getElementById('imageListSection').classList.add('is-compressing');
+ 
+     var targetTotal = targetImages.length;
+ 
+@@ -664,6 +687,8 @@
+     }
+ 
+     app.isCompressing = false;
++    // 恢复卡片交互
++    document.getElementById('imageListSection').classList.remove('is-compressing');
+ 
+     els.compressBtn.style.display = 'inline-flex';
+     els.cancelBtn.style.display = 'none';
+@@ -712,6 +737,9 @@
+ 
+     els.compareModalTitle.textContent = image.name;
+ 
++    // 重置右侧标签为默认文案（未选中任何压缩质量时）
++    els.compareLabelRight.textContent = '压缩后';
++
+     // 重置状态——只清除 tab 按钮，保留 #comparePopover 浮层 DOM
+     els.comparePlaceholder.style.display = 'block';
+     els.compareTabs.style.display = 'none';
+@@ -780,11 +808,17 @@
+ 
+     // 渲染已有压缩结果 tab（4 行：质量标签 / 质量值 / 压缩前 / 压缩后）
+     qualities.forEach(function (q) {
++      var qualityLabel = getQualityLabel(q);
++      var isPreset = (q === 40 || q === 70 || q === 90);
++      // 预设值显示小字数值后缀，如"极致（40）"；自定义值保持原样加粗大字
++      var qualityValueHtml = isPreset
++        ? '<span class="compare-tab-quality-value">' + qualityLabel + '</span><span class="compare-tab-quality-value-num">（' + q + '）</span>'
++        : '<span class="compare-tab-quality-value">' + qualityLabel + '</span>';
+       var tab = document.createElement('button');
+       tab.className = 'compare-tab';
+       tab.innerHTML =
+         '<span class="compare-tab-quality-label">压缩质量：</span>' +
+-        '<span class="compare-tab-quality-value">' + getQualityLabel(q) + '</span>' +
++        qualityValueHtml +
+         '<span class="compare-tab-size-before">' + formatSize(image.size) + '</span>' +
+         '<span class="compare-tab-size-after">→ ' + formatSize(image.trialResults[q].length) + '</span>';
+       tab.addEventListener('click', function () {
+@@ -870,6 +904,8 @@
+ 
+     els.comparePlaceholder.style.display = 'none';
+     els.compareConfirm.style.display = 'flex';
++    // 动态更新右侧标签：显示"压缩后（压缩质量：推荐）"格式
++    els.compareLabelRight.textContent = '压缩后（压缩质量：' + getQualityLabel(quality) + '）';
+   }
+ 
+   async function runTrialCompress() {
+@@ -1177,17 +1213,29 @@
+       var val = parseInt(els.compressionQuality.value);
+       els.compressionValue.textContent = val;
+       app.currentQuality = val;
+-      // 取消所有预设高亮
++      app.lastCustomQuality = val; // 记住用户手动调整的最后一个值
++      // 取消所有预设高亮，高亮自定义
+       var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
+       presetBtns.forEach(function (btn) { btn.classList.remove('active'); });
++      var customBtn = document.getElementById('presetCustom');
++      if (customBtn) customBtn.classList.add('active');
+     });
+ 
+     // 预设档位点击
+     document.querySelector('.toolbar-quality .quality-presets').addEventListener('click', function (e) {
+       var btn = e.target.closest('button');
+       if (!btn) return;
+-      if (btn.id === 'presetCustomBtn') {
+-        toggleCustomPanel();
++      // 自定义按钮——恢复到上次调整的数值
++      if (btn.dataset.preset === 'custom') {
++        var val = app.lastCustomQuality;
++        els.compressionQuality.value = val;
++        els.compressionValue.textContent = val;
++        app.currentQuality = val;
++        // 取消所有预设高亮，高亮自定义
++        var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
++        presetBtns.forEach(function (b) { b.classList.remove('active'); });
++        var customBtn = document.getElementById('presetCustom');
++        if (customBtn) customBtn.classList.add('active');
+         return;
+       }
+       var quality = parseInt(btn.dataset.quality);
