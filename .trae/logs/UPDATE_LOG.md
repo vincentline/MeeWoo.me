@@ -5,6 +5,8 @@
 
 ## 记录列表
 
+[2026-07-04 14:57:39] 【修改文件】 : .trae/skills/coder/scripts/log_change.py - 移除注释中硬编码的 v3.0 版本号（SKILL.md 已升级到 v3.6，避免版本信息不一致）
+[2026-07-04 14:57:38] 【修改文件】 : .trae/skills/coder/SKILL.md - v3.5→v3.6：去除"类脑知识引擎"措辞；Triage 三态(Simple/Medium/Complex)+Complex升级到complex-dev-task-lite；AskUserQuestion 整合为步骤2唯一入口；经验检查对齐用户规则auto-write；自检按文件类型分支+检测配置可用性；提交升级为实际执行git commit（对齐原则五）
 [2026-07-04 06:03:48] 【修改文件】 : src/gadgets/png_compression.css - 文件顶部新增 @import "../assets/css/styles.css"——将全局样式合并进同一 bundle 且永居工具样式之前，确保覆盖关系在开发服/测试服一致
 [2026-07-04 06:03:44] 【修改文件】 : src/gadgets/png_compression.html - 删除 styles.css 的 <link> 标签，改由 png_compression.css 顶部 @import 引入——修复 Vite 构建重排 link 顺序导致全局样式反向覆盖工具样式的问题
 [2026-05-15 04:59:22] 【修改文件】 : .trae/skills/css-to-dar-style/scripts/css_to_json.py - 扩充CSS转换脚本：支持border: Npx solid #COLOR → strokeColor+strokeWidth
