@@ -133,7 +133,7 @@
 
             if (this.isTinyPNGReady()) {
                 try {
-                    var compressedData = await this.compressWithTinyPNG(pngData, quality);
+                    const compressedData = await this.compressWithTinyPNG(pngData, quality);
                     this.compressionStats.tinypngSuccess++;
                     this.compressionStats.compressedBytes += compressedData.length;
                     return compressedData;

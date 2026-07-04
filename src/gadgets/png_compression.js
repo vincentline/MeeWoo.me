@@ -18,6 +18,7 @@
     images: [],
     isCompressing: false,
     cancelled: false,
+    overwriteDialogOpen: false,
     compressedCount: 0,
     totalSizeBefore: 0,
     totalSizeAfter: 0,
@@ -46,7 +47,7 @@
     els.clearBtn = document.getElementById('clearBtn');
     els.compressionQuality = document.getElementById('compressionQuality');
     els.compressionValue = document.getElementById('compressionValue');
-    els.qualityCustomPanel = document.getElementById('qualityCustomPanel');
+    els.presetCustom = document.getElementById('presetCustom');
     els.overallProgress = document.getElementById('overallProgress');
     els.overallProgressFill = document.getElementById('overallProgressFill');
     els.overallProgressStats = document.getElementById('overallProgressStats');
@@ -253,7 +254,12 @@
 
   function checkImageSizeLimit(image) {
     if (image.width > MAX_IMAGE_DIM || image.height > MAX_IMAGE_DIM) {
-      // 移除超出限制的图片
+      // 移除 DOM 卡片
+      var card = getImageCard(image.id);
+      if (card) card.remove();
+      // 扣减总大小
+      app.totalSizeBefore -= image.size;
+      // 从数组移除
       var idx = app.images.indexOf(image);
       if (idx >= 0) app.images.splice(idx, 1);
       updateListView();
@@ -452,8 +458,7 @@
       btn.classList.toggle('active', parseInt(btn.dataset.quality) === quality);
     });
     // 取消自定义按钮高亮（预设值不是自定义）
-    var customBtn = document.getElementById('presetCustom');
-    if (customBtn) customBtn.classList.remove('active');
+    if (els.presetCustom) els.presetCustom.classList.remove('active');
   }
 
   // ==================== 压缩流程 ====================
@@ -545,6 +550,7 @@
 
       // 显示弹窗
       els.overwriteOverlay.style.display = 'flex';
+      app.overwriteDialogOpen = true;
 
       // 清理事件绑定——避免重复调用时叠加
       var cleanup = function () {
@@ -554,6 +560,7 @@
         els.overwriteStart.onclick = null;
         els.overwriteClose.onclick = null;
         els.overwriteOverlay.style.display = 'none';
+        app.overwriteDialogOpen = false;
       };
 
       // 全部跳过（全选）
@@ -585,6 +592,7 @@
 
   async function startCompression() {
     if (app.isCompressing) return;
+    if (app.overwriteDialogOpen) return; // 覆盖弹窗已打开，防止重入
     if (app.images.length === 0) {
       showToast('请先添加 PNG 图片');
       return;
@@ -1217,8 +1225,7 @@
       // 取消所有预设高亮，高亮自定义
       var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
       presetBtns.forEach(function (btn) { btn.classList.remove('active'); });
-      var customBtn = document.getElementById('presetCustom');
-      if (customBtn) customBtn.classList.add('active');
+      if (els.presetCustom) els.presetCustom.classList.add('active');
     });
 
     // 预设档位点击
@@ -1234,8 +1241,7 @@
         // 取消所有预设高亮，高亮自定义
         var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
         presetBtns.forEach(function (b) { b.classList.remove('active'); });
-        var customBtn = document.getElementById('presetCustom');
-        if (customBtn) customBtn.classList.add('active');
+        if (els.presetCustom) els.presetCustom.classList.add('active');
         return;
       }
       var quality = parseInt(btn.dataset.quality);

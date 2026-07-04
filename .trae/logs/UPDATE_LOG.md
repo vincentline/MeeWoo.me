@@ -5,6 +5,7 @@
 
 ## 记录列表
 
+[2026-07-04 17:00:26] 【修改文件】 : src/gadgets/png_compression.js,src/gadgets/png_compression.css,src/assets/js/service/image-compression-service.js - 审查者反馈修复：P1-1 checkImageSizeLimit补DOM删除+total扣减；P1-2 覆盖弹窗加overwriteDialogOpen防重入；P1-3 checkbox选择器加:not(.overwrite-checkbox)；P2-4 var恢复const；P2-5 移除unused els.qualityCustomPanel；Nit-7 presetCustom改为els缓存
 [2026-07-04 16:50:13] 【修改文件】 : src/gadgets/png_compression.html - 恢复自定义按钮(data-preset='custom')；拖放区+添加提示加"（最大支持 9000×9000）"
 [2026-07-04 16:50:13] 【修改文件】 : src/gadgets/png_compression.js - 新增 lastCustomQuality 记忆自定义值；滑块拖动→高亮自定义+存值；自定义按钮点击→恢复上次值；checkResolutionLarge→checkImageSizeLimit(MAX=9000)拒绝超大图
 [2026-07-04 16:50:13] 【修改文件】 : src/assets/js/service/image-compression-service.js - 移除 scaleToSafeSize()、MAX_CANVAS_PIXELS、compressPNG 中的缩放调用——不再缩放超大图，由上传层 9000×9000 硬限制保证安全
