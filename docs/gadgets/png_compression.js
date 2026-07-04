@@ -250,7 +250,7 @@
   }
 
   /** 图片尺寸上限：宽或高超过此值拒绝添加 */
-  var MAX_IMAGE_DIM = 9000;
+  var MAX_IMAGE_DIM = 4095;
 
   function checkImageSizeLimit(image) {
     if (image.width > MAX_IMAGE_DIM || image.height > MAX_IMAGE_DIM) {
