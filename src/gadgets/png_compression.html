@@ -64,16 +64,15 @@
               <button class="preset-btn" data-quality="40">极致压缩</button>
               <button class="preset-btn active" data-quality="70">推荐</button>
               <button class="preset-btn" data-quality="90">高质量</button>
-              <button class="preset-btn preset-custom" id="presetCustomBtn">自定义 ▾</button>
             </div>
-            <div class="quality-custom" id="qualityCustomPanel" style="display: none;">
+            <div class="quality-custom" id="qualityCustomPanel">
               <input type="range" id="compressionQuality" class="compression-slider" min="10" max="100" value="70">
               <span class="compression-value" id="compressionValue">70</span>
             </div>
           </div>
           <div class="toolbar-actions">
-            <button class="btn-secondary-outline" id="clearBtn">清空列表</button>
             <button class="btn-primary" id="compressBtn">批量压缩</button>
+            <button class="btn-primary" id="clearBtn">清空列表</button>
             <button class="btn-danger" id="cancelBtn" style="display: none;">取消压缩</button>
           </div>
         </div>

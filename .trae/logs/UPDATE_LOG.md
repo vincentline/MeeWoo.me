@@ -5,6 +5,8 @@
 
 ## 记录列表
 
+[2026-07-04 16:27:21] 【修改文件】 : src/gadgets/png_compression.html - 工具栏重构：移除"自定义 ▾"按钮、滑块始终可见（去 display:none）、清空列表改为 btn-primary 同款、按钮顺序→批量压缩|清空列表
+[2026-07-04 16:27:20] 【修改文件】 : src/gadgets/png_compression.js - 移除 toggleCustomPanel()、presetCustomBtn 引用和事件绑定；预设点击不再隐藏滑块面板；清空列表按钮改用 btn-primary
 [2026-07-04 16:11:33] 【修改文件】 : src/gadgets/png_compression.js - 覆盖确认弹窗重构：标题/说明/按钮文案更新、checkbox隐藏改用toggle标签（跳过=深底白字/不跳过=浅底描边）、说明动态填充批量压缩质量
 [2026-07-04 16:11:33] 【修改文件】 : src/gadgets/png_compression.html - 覆盖确认弹窗文案：标题→"部分图片已确认压缩质量…"、说明填充动态质量数字、按钮→"全部跳过/全部批量压缩"、页面"全局压缩质量"→"批量压缩的压缩质量"
 [2026-07-04 16:11:33] 【修改文件】 : src/gadgets/png_compression.css - 新增 .overwrite-checkbox(隐藏原生)、.overwrite-toggle(56×26圆角标签)、.overwrite-toggle--skip(深底白字)、.overwrite-toggle--noskip(浅底描边)

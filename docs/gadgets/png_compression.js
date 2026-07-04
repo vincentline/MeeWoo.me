@@ -46,7 +46,6 @@
     els.compressionQuality = document.getElementById('compressionQuality');
     els.compressionValue = document.getElementById('compressionValue');
     els.qualityCustomPanel = document.getElementById('qualityCustomPanel');
-    els.presetCustomBtn = document.getElementById('presetCustomBtn');
     els.overallProgress = document.getElementById('overallProgress');
     els.overallProgressFill = document.getElementById('overallProgressFill');
     els.overallProgressStats = document.getElementById('overallProgressStats');
@@ -439,25 +438,11 @@
     els.compressionQuality.value = quality;
     els.compressionValue.textContent = quality;
 
-    // 更新预设按钮激活状态
+    // 更新预设按钮激活状态——滑块始终可见，点击预设就同步数值
     var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
     presetBtns.forEach(function (btn) {
       btn.classList.toggle('active', parseInt(btn.dataset.quality) === quality);
     });
-
-    // 收起自定义面板，取消自定义按钮高亮
-    els.qualityCustomPanel.style.display = 'none';
-    els.presetCustomBtn.classList.remove('active');
-  }
-
-  function toggleCustomPanel() {
-    var isVisible = els.qualityCustomPanel.style.display === 'flex';
-    if (isVisible) return; // 已展开，不取消——点击其他预设才切换
-    els.qualityCustomPanel.style.display = 'flex';
-    els.presetCustomBtn.classList.add('active');
-    // 取消其他预设高亮
-    var presetBtns = document.querySelectorAll('.toolbar-quality .preset-btn[data-quality]');
-    presetBtns.forEach(function (btn) { btn.classList.remove('active'); });
   }
 
   // ==================== 压缩流程 ====================
@@ -1221,11 +1206,7 @@
     // 预设档位点击
     document.querySelector('.toolbar-quality .quality-presets').addEventListener('click', function (e) {
       var btn = e.target.closest('button');
-      if (!btn) return;
-      if (btn.id === 'presetCustomBtn') {
-        toggleCustomPanel();
-        return;
-      }
+      if (!btn || !btn.dataset.quality) return;
       var quality = parseInt(btn.dataset.quality);
       if (!isNaN(quality)) setQualityPreset(quality);
     });
