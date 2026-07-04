@@ -75,6 +75,7 @@
     els.compareZoomLabel = document.getElementById('compareZoomLabel');
     els.compareInnerLeft = els.compareImageLeft.querySelector('.compare-image-inner');
     els.compareInnerRight = els.compareImageRight.querySelector('.compare-image-inner');
+    els.compareLabelRight = els.compareImageRight.querySelector('.compare-label');
     // 覆盖确认弹窗
     els.overwriteOverlay = document.getElementById('overwriteOverlay');
     els.overwriteClose = document.getElementById('overwriteClose');
@@ -712,6 +713,9 @@
 
     els.compareModalTitle.textContent = image.name;
 
+    // 重置右侧标签为默认文案（未选中任何压缩质量时）
+    els.compareLabelRight.textContent = '压缩后';
+
     // 重置状态——只清除 tab 按钮，保留 #comparePopover 浮层 DOM
     els.comparePlaceholder.style.display = 'block';
     els.compareTabs.style.display = 'none';
@@ -870,6 +874,8 @@
 
     els.comparePlaceholder.style.display = 'none';
     els.compareConfirm.style.display = 'flex';
+    // 动态更新右侧标签：显示当前选中 tab 的压缩质量
+    els.compareLabelRight.textContent = '压缩质量' + getQualityLabel(quality) + '压缩后';
   }
 
   async function runTrialCompress() {
