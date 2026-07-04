@@ -627,6 +627,8 @@
     els.cancelBtn.style.display = 'inline-flex';
     els.overallProgress.style.display = 'block';
     els.downloadSection.style.display = 'none';
+    // 压缩中禁止卡片交互（预览、勾选）
+    document.getElementById('imageListSection').classList.add('is-compressing');
 
     var targetTotal = targetImages.length;
 
@@ -674,6 +676,8 @@
     }
 
     app.isCompressing = false;
+    // 恢复卡片交互
+    document.getElementById('imageListSection').classList.remove('is-compressing');
 
     els.compressBtn.style.display = 'inline-flex';
     els.cancelBtn.style.display = 'none';

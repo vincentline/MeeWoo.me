@@ -5,6 +5,9 @@
 
 ## 记录列表
 
+[2026-07-04 16:37:25] 【修改文件】 : src/assets/js/service/image-compression-service.js - 新增 scaleToSafeSize()：超大图（>16M像素）等比缩放到安全尺寸后压缩；新增 MAX_CANVAS_PIXELS 常量；compressPNG 调用前先缩放保护
+[2026-07-04 16:37:25] 【修改文件】 : src/gadgets/png_compression.js - 压缩开始/结束时添加/移除 .is-compressing 类，禁用压缩中的图片预览和勾选交互
+[2026-07-04 16:37:25] 【修改文件】 : src/gadgets/png_compression.css - 新增 .is-compressing .image-card 规则：pointer-events:none + opacity:0.8，压缩中禁用卡片交互（预览、勾选）
 [2026-07-04 16:27:21] 【修改文件】 : src/gadgets/png_compression.html - 工具栏重构：移除"自定义 ▾"按钮、滑块始终可见（去 display:none）、清空列表改为 btn-primary 同款、按钮顺序→批量压缩|清空列表
 [2026-07-04 16:27:20] 【修改文件】 : src/gadgets/png_compression.js - 移除 toggleCustomPanel()、presetCustomBtn 引用和事件绑定；预设点击不再隐藏滑块面板；清空列表按钮改用 btn-primary
 [2026-07-04 16:11:33] 【修改文件】 : src/gadgets/png_compression.js - 覆盖确认弹窗重构：标题/说明/按钮文案更新、checkbox隐藏改用toggle标签（跳过=深底白字/不跳过=浅底描边）、说明动态填充批量压缩质量

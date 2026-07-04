@@ -621,6 +621,12 @@ body {
   animation: compressing-pulse 1.2s ease-in-out infinite;
 }
 
+/* 压缩中禁用卡片交互：预览、勾选/取消勾选 */
+.is-compressing .image-card {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
 /* 状态标签 */
 .image-card-status {
   display: inline-block;
