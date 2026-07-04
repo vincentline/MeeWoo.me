@@ -784,11 +784,17 @@
 
     // 渲染已有压缩结果 tab（4 行：质量标签 / 质量值 / 压缩前 / 压缩后）
     qualities.forEach(function (q) {
+      var qualityLabel = getQualityLabel(q);
+      var isPreset = (q === 40 || q === 70 || q === 90);
+      // 预设值显示小字数值后缀，如"极致（40）"；自定义值保持原样加粗大字
+      var qualityValueHtml = isPreset
+        ? '<span class="compare-tab-quality-value">' + qualityLabel + '</span><span class="compare-tab-quality-value-num">（' + q + '）</span>'
+        : '<span class="compare-tab-quality-value">' + qualityLabel + '</span>';
       var tab = document.createElement('button');
       tab.className = 'compare-tab';
       tab.innerHTML =
         '<span class="compare-tab-quality-label">压缩质量：</span>' +
-        '<span class="compare-tab-quality-value">' + getQualityLabel(q) + '</span>' +
+        qualityValueHtml +
         '<span class="compare-tab-size-before">' + formatSize(image.size) + '</span>' +
         '<span class="compare-tab-size-after">→ ' + formatSize(image.trialResults[q].length) + '</span>';
       tab.addEventListener('click', function () {
@@ -874,8 +880,8 @@
 
     els.comparePlaceholder.style.display = 'none';
     els.compareConfirm.style.display = 'flex';
-    // 动态更新右侧标签：显示当前选中 tab 的压缩质量
-    els.compareLabelRight.textContent = '压缩质量' + getQualityLabel(quality) + '压缩后';
+    // 动态更新右侧标签：显示"压缩后（压缩质量：推荐）"格式
+    els.compareLabelRight.textContent = '压缩后（压缩质量：' + getQualityLabel(quality) + '）';
   }
 
   async function runTrialCompress() {

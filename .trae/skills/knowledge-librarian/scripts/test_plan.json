@@ -1,8 +1,0 @@
-[
-    {
-        "source": "test_note.md",
-        "target": ".trae/rules/modules/test/test_module.ts.md",
-        "action": "create",
-        "content_file": ".trae/temp/test_content.md"
-    }
-]

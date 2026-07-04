@@ -1,9 +1,9 @@
 # MeeWoo 项目最高指引 (Prime Directive)
 
-> 本文档是项目的**核心原则**与**知识引擎入口**。所有开发行为必须遵循以下规则，并优先查阅知识引擎中的具体规范。
+> 本文档是项目的**核心原则**与**规则入口**。所有开发行为必须遵循以下规则，优先查阅 `.trae/rules/` 下的具体规范。
 
-## 1. 知识引擎指引 (Knowledge Engine Router)
-项目已全面启用“类脑知识引擎”，所有技术决策必须基于 `.trae/rules/` 下的最新规范。
+## 1. 规则导航 (Rules Navigation)
+所有技术决策必须基于 `.trae/rules/` 下的最新规范。
 
 - **查阅代码规范**: 请移步 [.trae/rules/core/coding-style.ts.md](.trae/rules/core/coding-style.ts.md)
 - **查阅技术栈**: 请移步 [.trae/rules/core/tech-stack.ts.md](.trae/rules/core/tech-stack.ts.md)
@@ -22,7 +22,7 @@
 | **1. 识别领域** | 判断属于 `graphics` / `media` / `ui` / `engineering` / `core` |
 | **2. 查规则** | 读 `rules/index.md` 定位规则文件 |
 | **3. 读领域规则** | 读 `modules/<domain>/` 获取开发规范 |
-| **4. 查经验** | 读 `inbox/index.md` 查看未归档经验 |
+| **4. 查经验** | 读 `inbox/index.md` 查看临时经验记录 |
 
 #### ⚠️ 开发中 (During Coding)
 - **禁止猜测 API**：未知 API 必须查阅官方文档或 `WebSearch`
@@ -31,10 +31,10 @@
 
 #### ✅ 开发后 (After Coding)
 - **测试验证**：`webapp-testing` 或手动测试，确保功能正常、无报错
-- **记录经验**：解决非显而易见 Bug / 发现技术坑点 / 完成复杂功能 / 性能优化 → 调用 `/skill knowledge-gardener`
+- **记录经验**：解决非显而易见 Bug / 发现技术坑点 / 完成复杂功能 / 性能优化 → 通过 `memory-steward` Agent 或直接调用 MCP `memory_write` 沉淀到记忆系统
 
 #### 🔒 提交前 (Before Commit)
-- **检查覆盖率**：调用 `/skill integrity-check` 确保 Inbox 覆盖率
+- **经验备案**：调用 `/skill integrity-check` 检查变更经验是否已记录
 
 #### 🔄 异常处理 (Exception Handling)
 - **测试失败** → 修复 → 重测 → 记录经验

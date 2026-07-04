@@ -27,7 +27,7 @@
     *   `ci`: CI 配置
     *   `chore`: 杂项
     *   `revert`: 回退
-*   **执行**: 必须使用 `/skill integrity-check` 生成规范消息。
+*   **执行**: 使用 `/skill integrity-check` 生成规范消息。
 
 ### 1.3 变更日志协议 (Change Log)
 *   **文件**: `.trae/logs/UPDATE_LOG.md`
@@ -44,7 +44,7 @@
 *   **Action**: 调用 `/skill coder`
 *   **流程**: 
     1.  **Triage**: 评估任务复杂度。
-    2.  **Context**: 查阅 Rules 和 Inbox。
+    2.  **Context**: 查阅 Rules 和临时经验记录 (inbox/)。
     3.  **Execute**: 编写代码并实时更新 `UPDATE_LOG.md`。
     4.  **Verify**: 自检与测试。
 
@@ -53,17 +53,17 @@
 
 *   **Action**: 调用 `/skill integrity-check`
 *   **流程**:
-    1.  **Scan**: 检查变更是否已在 Inbox 备案。
-    2.  **Fix**: 若无备案，交互式补录经验。
+    1.  **Scan**: 检查变更经验是否已记录。
+    2.  **Fix**: 若无记录，交互式补录经验。
     3.  **Commit**: 生成规范消息并提交。
 
 ### 2.3 知识流 (Knowledge)
 > 我学到了新知识，或者要整理旧经验。
 
-*   **记录 (Input)**: 调用 `/skill knowledge-gardener`
-    *   用于快速捕捉碎片化经验。
-*   **整理 (Organize)**: 调用 `/skill knowledge-librarian`
-    *   用于批量归档 Inbox，拆分大文件，维护 Rules 结构。
+*   **记录 (Input)**: 调用 MCP `memory_write`（通过 `memory-steward` Agent）
+    *   用于快速捕捉碎片化经验，写入记忆系统。
+*   **整理 (Organize)**: 调用 `memory-steward` Agent
+    *   用于语义去重、健康检查、经验整合。
 
 ### 2.4 发布流 (Release)
 > 功能攒够了，我要发新版本。
@@ -75,7 +75,7 @@
     3.  **CI/CD**: GitHub Actions 自动打 Tag、生成 Changelog 并发布 Release。
 
 ### 2.5 自动化发布原理 (Automated Release Mechanics)
-> 基于 `release-please` 和 `integrity-check` 的协同工作机制。
+> 基于 `release-please` 的自动化发布机制。
 
 *   **前置条件 (Prerequisite)**:
     *   **Git Tag**: 必须存在初始 Tag (e.g. `v1.0.0`) 作为基准。
@@ -88,15 +88,15 @@
     1.  Push 代码到 `main`。
     2.  GitHub Actions 运行，检测到变更。
     3.  创建/更新 `chore: release x.x.x` 的 PR。
-    4.  用户调用 `integrity-check` 脚本合并该 PR。
+    4.  合并 Release PR。
     5.  合并触发新 Action -> 打 Tag -> 发布 Release。
 
 ## 3. 存储架构 (Storage Architecture)
 
-*   **Inbox (海马体)**: `.trae/rules/inbox/`
-    *   短期记忆，碎片化，读写快。
-*   **Rules (皮层)**: `.trae/rules/modules/`
-    *   长期记忆，结构化。
+*   **临时经验**: `.trae/rules/inbox/`
+    *   碎片化经验记录，读写快。
+*   **正式规则**: `.trae/rules/modules/`
+    *   结构化，长期维护。
     *   **Index Pattern**: 采用 `dir/index.ts.md` 索引大文件。
 
 

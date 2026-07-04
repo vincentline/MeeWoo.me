@@ -5,6 +5,8 @@
 
 ## 记录列表
 
+[2026-07-04 15:28:36] 【修改文件】 : src/gadgets/png_compression.css - 新增 .compare-tab-quality-value-num 样式——预设值小字数值后缀（如（40）），font-size:xs + font-weight:400 + opacity:0.7
+[2026-07-04 15:28:36] 【修改文件】 : src/gadgets/png_compression.js - 对比弹窗标签文案格式改为"压缩后（压缩质量：推荐）"；tab预设值(40/70/90)第二行加小字实际值后缀"推荐（70）"，自定义值保持原样
 [2026-07-04 15:10:08] 【修改文件】 : src/gadgets/png_compression.js - showCompareResult() 中动态更新右侧"压缩后"标签文案为"压缩质量X压缩后"（如"压缩质量推荐压缩后"），openCompareModal() 中重置为默认"压缩后"
 [2026-07-04 14:57:39] 【修改文件】 : .trae/skills/coder/scripts/log_change.py - 移除注释中硬编码的 v3.0 版本号（SKILL.md 已升级到 v3.6，避免版本信息不一致）
 [2026-07-04 14:57:38] 【修改文件】 : .trae/skills/coder/SKILL.md - v3.5→v3.6：去除"类脑知识引擎"措辞；Triage 三态(Simple/Medium/Complex)+Complex升级到complex-dev-task-lite；AskUserQuestion 整合为步骤2唯一入口；经验检查对齐用户规则auto-write；自检按文件类型分支+检测配置可用性；提交升级为实际执行git commit（对齐原则五）
