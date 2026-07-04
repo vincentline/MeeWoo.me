@@ -473,6 +473,12 @@ body {
   color: var(--text-primary);
 }
 
+/* 清空列表按钮——与批量压缩同内间距+圆角，但保留描边浅色风格 */
+#clearBtn {
+  padding: 0 18px;
+  border-radius: var(--radius-sm);
+}
+
 /* ---------- 图片卡片网格 ---------- */
 .image-grid {
   display: grid;
