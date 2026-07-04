@@ -6,11 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PNG 压缩工具</title>
 
-  <!-- 引入设计系统样式 -->
-
-  <!-- 引入自定义样式 -->
-  <link rel="stylesheet" crossorigin href="/assets/png_compression-CUUSV6fl.css">
-  <link rel="stylesheet" crossorigin href="/assets/styles-CbZxro6k.css">
+  <!-- 全局样式通过 png_compression.css 顶部 @import 引入
+       （Vite 构建会重排 <link> 顺序，导致全局样式后加载覆盖工具样式；改用 @import 合并到同一 bundle 保证顺序） -->
+  <link rel="stylesheet" crossorigin href="/assets/png_compression-8JKLqxnW.css">
 </head>
 
 <body>

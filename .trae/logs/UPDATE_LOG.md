@@ -5,6 +5,8 @@
 
 ## 记录列表
 
+[2026-07-04 06:03:48] 【修改文件】 : src/gadgets/png_compression.css - 文件顶部新增 @import "../assets/css/styles.css"——将全局样式合并进同一 bundle 且永居工具样式之前，确保覆盖关系在开发服/测试服一致
+[2026-07-04 06:03:44] 【修改文件】 : src/gadgets/png_compression.html - 删除 styles.css 的 <link> 标签，改由 png_compression.css 顶部 @import 引入——修复 Vite 构建重排 link 顺序导致全局样式反向覆盖工具样式的问题
 [2026-05-15 04:59:22] 【修改文件】 : .trae/skills/css-to-dar-style/scripts/css_to_json.py - 扩充CSS转换脚本：支持border: Npx solid #COLOR → strokeColor+strokeWidth
 [2026-05-15 04:59:10] 【修改文件】 : src/assets/dar_svga/file-list.json - 新增dtop01_xunzhang头像框：渐变+描边(border)+投影，fontWeight=500
 [2026-05-15 04:52:31] 【修改文件】 : src/assets/dar_svga/file-list.json - dtop5头像框字体字重从700改为500

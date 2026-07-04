@@ -1,5 +1,11 @@
 /* ==================== PNG 压缩工具样式 ==================== */
 
+/* 强制先加载全局 styles.css，确保工具 CSS 能覆盖全局规则。
+   Vite 构建会按哈希名重排 <link> 顺序，导致 png_compression.css 先于 styles.css 加载，
+   全局白底+描边按钮、overflow:hidden 等会反向覆盖工具样式。
+   用 @import 在构建时把全局样式内联到本 bundle 顶部，加载顺序永不变。 */
+@import "../assets/css/styles.css";
+
 /* ---------- 设计系统令牌 ---------- */
 :root {
   --primary-blue: #409eff;
