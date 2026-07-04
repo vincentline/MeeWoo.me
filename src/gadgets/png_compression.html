@@ -59,7 +59,7 @@
         <!-- 工具栏：压缩级别 + 操作按钮 -->
         <div class="toolbar">
           <div class="toolbar-quality">
-            <span class="toolbar-label">全局压缩质量</span>
+            <span class="toolbar-label">批量压缩的压缩质量</span>
             <div class="quality-presets">
               <button class="preset-btn" data-quality="40">极致压缩</button>
               <button class="preset-btn active" data-quality="70">推荐</button>
@@ -181,12 +181,12 @@
 
       <div class="overwrite-header">
         <div class="overwrite-title" id="overwriteTitle">是否保留已确认压缩质量的图片？</div>
-        <div class="overwrite-hint">勾选需要保留的图片，不勾选将按全局压缩质量重新压缩</div>
+        <div class="overwrite-hint" id="overwriteHint">选中将跳过批量压缩，采用原来各图片确认的压缩质量。不跳过将采用批量压缩的压缩质量（<span id="overwriteHintQuality">70</span>）</div>
       </div>
 
       <div class="overwrite-toolbar">
-        <button class="btn-secondary-outline" id="overwriteKeepAll">全部保留</button>
-        <button class="btn-secondary-outline" id="overwriteRecompressAll">全部重压</button>
+        <button class="btn-secondary-outline" id="overwriteKeepAll">全部跳过</button>
+        <button class="btn-secondary-outline" id="overwriteRecompressAll">全部批量压缩</button>
       </div>
 
       <div class="overwrite-list" id="overwriteList">

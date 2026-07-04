@@ -5,6 +5,9 @@
 
 ## 记录列表
 
+[2026-07-04 16:11:33] 【修改文件】 : src/gadgets/png_compression.js - 覆盖确认弹窗重构：标题/说明/按钮文案更新、checkbox隐藏改用toggle标签（跳过=深底白字/不跳过=浅底描边）、说明动态填充批量压缩质量
+[2026-07-04 16:11:33] 【修改文件】 : src/gadgets/png_compression.html - 覆盖确认弹窗文案：标题→"部分图片已确认压缩质量…"、说明填充动态质量数字、按钮→"全部跳过/全部批量压缩"、页面"全局压缩质量"→"批量压缩的压缩质量"
+[2026-07-04 16:11:33] 【修改文件】 : src/gadgets/png_compression.css - 新增 .overwrite-checkbox(隐藏原生)、.overwrite-toggle(56×26圆角标签)、.overwrite-toggle--skip(深底白字)、.overwrite-toggle--noskip(浅底描边)
 [2026-07-04 15:28:36] 【修改文件】 : src/gadgets/png_compression.css - 新增 .compare-tab-quality-value-num 样式——预设值小字数值后缀（如（40）），font-size:xs + font-weight:400 + opacity:0.7
 [2026-07-04 15:28:36] 【修改文件】 : src/gadgets/png_compression.js - 对比弹窗标签文案格式改为"压缩后（压缩质量：推荐）"；tab预设值(40/70/90)第二行加小字实际值后缀"推荐（70）"，自定义值保持原样
 [2026-07-04 15:10:08] 【修改文件】 : src/gadgets/png_compression.js - showCompareResult() 中动态更新右侧"压缩后"标签文案为"压缩质量X压缩后"（如"压缩质量推荐压缩后"），openCompareModal() 中重置为默认"压缩后"

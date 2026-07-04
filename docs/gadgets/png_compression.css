@@ -1233,6 +1233,43 @@ body {
   background-color: var(--bg-hover);
 }
 
+/* 隐藏原生 checkbox，用 .overwrite-toggle 替代显示 */
+.overwrite-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* 跳过/不跳过切换标签——替代原 checkbox 的视觉呈现 */
+.overwrite-toggle {
+  flex-shrink: 0;
+  width: 56px;
+  height: 26px;
+  line-height: 26px;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+/* 选中=跳过：深底白字 */
+.overwrite-toggle--skip {
+  background-color: var(--btn-dark);
+  color: #ffffff;
+}
+
+/* 未选=不跳过：浅底灰字+描边 */
+.overwrite-toggle--noskip {
+  background-color: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+}
+
 .overwrite-item input[type="checkbox"] {
   width: 18px;
   height: 18px;

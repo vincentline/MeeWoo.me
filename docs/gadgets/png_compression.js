@@ -83,6 +83,7 @@
     els.overwriteList = document.getElementById('overwriteList');
     els.overwriteKeepAll = document.getElementById('overwriteKeepAll');
     els.overwriteRecompressAll = document.getElementById('overwriteRecompressAll');
+    els.overwriteHintQuality = document.getElementById('overwriteHintQuality');
     els.overwriteCancel = document.getElementById('overwriteCancel');
     els.overwriteStart = document.getElementById('overwriteStart');
   }
@@ -476,20 +477,42 @@
   function showConfirmOverwriteDialog(confirmedImages) {
     return new Promise(function (resolve) {
       // 标题
-      els.overwriteTitle.textContent = '是否保留已确认压缩质量的图片？';
+      els.overwriteTitle.textContent = '部分图片已确认压缩质量，批量压缩是否跳过这些图片？';
 
-      // 渲染列表
+      // 说明文字：动态填充当前批量压缩质量
+      els.overwriteHintQuality.textContent = getCurrentQuality();
+
+      // 渲染列表——checkbox 视觉隐藏，用 .overwrite-toggle 显示"跳过/不跳过"
       els.overwriteList.innerHTML = '';
       var checkboxes = [];
       confirmedImages.forEach(function (img) {
         var item = document.createElement('label');
         item.className = 'overwrite-item';
 
+        // 隐藏的 checkbox——true=跳过（保留确认版本），默认 true
         var cb = document.createElement('input');
         cb.type = 'checkbox';
-        cb.checked = true; // 默认勾选保留——保护用户已投入的调参成果
+        cb.checked = true;
         cb.dataset.imageId = img.id;
+        cb.className = 'overwrite-checkbox';
         checkboxes.push(cb);
+
+        // 可见的切换标签：显示"跳过"或"不跳过"
+        var toggle = document.createElement('span');
+        toggle.className = 'overwrite-toggle';
+
+        // 更新标签外观的回调
+        var updateToggle = function () {
+          if (cb.checked) {
+            toggle.textContent = '跳过';
+            toggle.className = 'overwrite-toggle overwrite-toggle--skip';
+          } else {
+            toggle.textContent = '不跳过';
+            toggle.className = 'overwrite-toggle overwrite-toggle--noskip';
+          }
+        };
+        updateToggle(); // 初始状态
+        cb.addEventListener('change', updateToggle);
 
         var thumb = document.createElement('img');
         thumb.className = 'overwrite-thumb';
@@ -517,6 +540,7 @@
         info.appendChild(meta);
 
         item.appendChild(cb);
+        item.appendChild(toggle);
         item.appendChild(thumb);
         item.appendChild(info);
 
@@ -536,14 +560,14 @@
         els.overwriteOverlay.style.display = 'none';
       };
 
-      // 全部保留
+      // 全部跳过（全选）
       els.overwriteKeepAll.onclick = function () {
-        checkboxes.forEach(function (cb) { cb.checked = true; });
+        checkboxes.forEach(function (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); });
       };
 
-      // 全部重压
+      // 全部批量压缩（全不选）
       els.overwriteRecompressAll.onclick = function () {
-        checkboxes.forEach(function (cb) { cb.checked = false; });
+        checkboxes.forEach(function (cb) { cb.checked = false; cb.dispatchEvent(new Event('change')); });
       };
 
       // 取消（含关闭按钮）
@@ -554,7 +578,7 @@
       els.overwriteCancel.onclick = onCancel;
       els.overwriteClose.onclick = onCancel;
 
-      // 开始压缩——收集勾选状态
+      // 开始压缩——收集勾选状态（true=跳过保留确认版本）
       els.overwriteStart.onclick = function () {
         var keepFlags = checkboxes.map(function (cb) { return cb.checked; });
         cleanup();
