@@ -1055,7 +1055,7 @@
     var mx = e.clientX - rect.left;
     var my = e.clientY - rect.top;
 
-    var delta = -Math.sign(e.deltaY) * 0.03; // 步进 3%
+    var delta = -Math.sign(e.deltaY) * 0.04; // 步进 4%
     var newZoom = compareZoom + delta;
     newZoom = Math.max(0.5, Math.min(5, newZoom)); // 限制 50%~500%
 
