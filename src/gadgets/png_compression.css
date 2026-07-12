@@ -528,6 +528,14 @@ body {
   height: 18px;
   accent-color: var(--primary-blue);
   cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+/* hover 或已勾选时显示 */
+.image-card:hover .image-card-checkbox,
+.image-card-checkbox:checked {
+  opacity: 1;
 }
 
 .image-card-delete {
