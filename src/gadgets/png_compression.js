@@ -1159,11 +1159,7 @@
 
     var zip = new JSZip();
     targets.forEach(function (img) {
-      var qualityLabel = img.compressedQuality !== null
-        ? '_' + getQualityLabel(img.compressedQuality)
-        : '';
-      var name = img.name.replace(/\.png$/i, '') + qualityLabel + '_compressed.png';
-      zip.file(name, img.compressedData);
+      zip.file(img.name, img.compressedData);
     });
 
     zip.generateAsync({ type: 'blob' }).then(function (content) {
