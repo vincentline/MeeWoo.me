@@ -496,7 +496,7 @@ body {
 
 /* 图片卡片 */
 .image-card {
-  background: var(--bg-input);
+  background: var(--bg-elevated);
   border: 1px solid var(--border-base);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -575,10 +575,10 @@ body {
 
 /* 卡片信息区 */
 .image-card-info {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-3);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .image-card-name {
