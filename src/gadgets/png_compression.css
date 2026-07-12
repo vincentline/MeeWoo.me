@@ -902,7 +902,11 @@ body {
 }
 
 .compare-image--left .compare-label { left: var(--space-3); }
-.compare-image--right .compare-label { right: var(--space-3); }
+/* 右侧标签蓝色底，与底部激活 tab 颜色呼应 */
+.compare-image--right .compare-label {
+  right: var(--space-3);
+  background: var(--primary-blue);
+}
 
 /* 分割线 */
 .compare-divider {
