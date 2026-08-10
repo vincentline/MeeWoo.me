@@ -649,5 +649,25 @@
         }
       }
     }
+  },
+  {
+    "name": "wangzuo_toushitop1",
+    "svga": "https://blog-1258489735.cos.accelerate.myqcloud.com/other/avatar_frame_dar/wangzuo_toushitop1.svga",
+    "textStyle": {
+      "nick": {
+        "fontWeight": "700",
+        "textShadow": "0px 3px 5px rgba(0, 0, 0, 0.8)",
+        "gradient": {
+          "colors": [
+            "#FFE479",
+            "#FFFFFF"
+          ],
+          "positions": [
+            0.0,
+            1.0
+          ]
+        }
+      }
+    }
   }
 ]
