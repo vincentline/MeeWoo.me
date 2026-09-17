@@ -7,4 +7,6 @@ risk_level: ''
 memory_namespace: project:MeeWoo-1.0
 allowed_cross_refs: []
 commands: {}
-run: {}
+run:
+  command: npm run dev
+  port: 4000
