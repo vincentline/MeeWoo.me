@@ -1,0 +1,10 @@
+project_id: MeeWoo-1.0
+name: MeeWoo 1.0 本地
+stack: ''
+package_manager: ''
+default_branch: ''
+risk_level: ''
+memory_namespace: project:MeeWoo-1.0
+allowed_cross_refs: []
+commands: {}
+run: {}
