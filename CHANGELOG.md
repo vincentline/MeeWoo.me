@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.3.0](https://github.com/vincentline/MeeWoo.me/compare/v1.2.0...v1.3.0) (2026-09-17)
+
+
+### Features
+
+* **dar:** 新增大R头像框 D91（文字 key img_19） ([be531ef](https://github.com/vincentline/MeeWoo.me/commit/be531efbd152973cf3df4ee171fcd694e68dfe54))
+* **png-compression:** 图片卡片勾选框默认隐藏，hover或已勾选时显示 ([5d624a6](https://github.com/vincentline/MeeWoo.me/commit/5d624a64822bf8dc96ce7bc65cea75434b7f8b5c))
+* **png-compression:** 对比弹窗右侧标签底色改为蓝色（与底部tab激活色一致） ([ac6576b](https://github.com/vincentline/MeeWoo.me/commit/ac6576b30e3b6a639a028761e7816e793e684092))
+* **png-compression:** 对比弹窗滚轮缩放步进 2%→3% ([95e89bb](https://github.com/vincentline/MeeWoo.me/commit/95e89bb01f0cde239129491c87258702d5cfd679))
+
+
+### Bug Fixes
+
+* **png压缩工具:** 调整缩放步进值并更新静态资源哈希 ([7aa626f](https://github.com/vincentline/MeeWoo.me/commit/7aa626f31a3f7339653d18383bb6ce9cd9f233d5))
+
 ## [1.2.0](https://github.com/vincentline/MeeWoo.me/compare/v1.1.0...v1.2.0) (2026-07-10)
 
 
