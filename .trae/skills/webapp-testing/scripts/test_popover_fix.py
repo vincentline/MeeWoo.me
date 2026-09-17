@@ -99,8 +99,8 @@ with sync_playwright() as p:
     print('点击后浮层状态:', popover_after)
 
     # 截图
-    page.screenshot(path='/tmp/popover_test.png', full_page=False)
-    print('截图已保存: /tmp/popover_test.png')
+    page.screenshot(path='.trae/temp/popover_test.png', full_page=False)
+    print('截图已保存: .trae/temp/popover_test.png')
 
     # 浮层内的预设按钮数量
     preset_count = page.locator('#comparePopover .preset-btn[data-quality]').count()

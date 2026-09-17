@@ -17,7 +17,7 @@ def test_yyeva_restore():
         page.goto('http://localhost:5173/')
         page.wait_for_load_state('networkidle')
         
-        page.screenshot(path='/tmp/01_initial.png')
+        page.screenshot(path='.trae/temp/01_initial.png')
         print("✓ 页面加载完成")
         
         page.evaluate('''

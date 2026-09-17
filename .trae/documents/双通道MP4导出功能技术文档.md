@@ -232,14 +232,14 @@ this.$nextTick(function() {
 """
 测试脚本：验证SVGA模式下转双通道MP4弹窗修复
 
-使用用户提供的测试文件：f:\my_tools\MeeWoo\MeeWoo\src\assets\svga\kangua_05.svga
+使用用户提供的测试文件：src/assets/svga/kangua_05.svga（相对仓库根）
 """
 
 import time
 from playwright.sync_api import sync_playwright
 
-# 测试文件路径
-TEST_SVGA_FILE = r"f:\my_tools\MeeWoo\MeeWoo\src\assets\svga\kangua_05.svga"
+# 测试文件路径（相对仓库根）
+TEST_SVGA_FILE = r"src/assets/svga/kangua_05.svga"
 
 # 测试页面URL
 TEST_URL = "http://localhost:4005"
@@ -527,7 +527,7 @@ if __name__ == "__main__":
 **测试结果**：
 ```
 开始测试SVGA模式下转双通道MP4弹窗...
-测试文件: f:\my_tools\MeeWoo\MeeWoo\src\assets\svga\kangua_05.svga
+测试文件: src/assets/svga/kangua_05.svga（相对仓库根）
 测试页面: http://localhost:4005
 等待文件加载完成...
 检查文件加载状态...

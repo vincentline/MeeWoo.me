@@ -64,7 +64,7 @@ with sync_playwright() as p:
     }""")
     print('浮层位置:', info)
 
-    page.screenshot(path='/tmp/popover_above.png', full_page=False)
+    page.screenshot(path='.trae/temp/popover_above.png', full_page=False)
 
     print()
     print('=== 验证结论 ===')

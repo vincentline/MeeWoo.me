@@ -31,7 +31,7 @@ def test_dual_channel_export():
         page.wait_for_load_state('networkidle')
         
         print("Page loaded, taking screenshot...")
-        page.screenshot(path='/tmp/initial_page.png')
+        page.screenshot(path='.trae/temp/initial_page.png')
         
         print("\nLooking for file input...")
         file_input = page.query_selector('input[type="file"]')
@@ -51,7 +51,7 @@ def test_dual_channel_export():
             
             print("Waiting for SVGA to load...")
             time.sleep(3)
-            page.screenshot(path='/tmp/after_upload.png')
+            page.screenshot(path='.trae/temp/after_upload.png')
             
             print("\nLooking for dual channel export button...")
             dual_channel_btns = page.query_selector_all('button, [class*="btn"], [class*="button"]')
@@ -74,14 +74,14 @@ def test_dual_channel_export():
                 print(f"\nClicking convert button: '{convert_btn.inner_text()}'")
                 convert_btn.click()
                 time.sleep(2)
-                page.screenshot(path='/tmp/after_convert_click.png')
+                page.screenshot(path='.trae/temp/after_convert_click.png')
                 
                 print("\nWaiting for conversion to complete or error...")
                 time.sleep(10)
-                page.screenshot(path='/tmp/final_state.png')
+                page.screenshot(path='.trae/temp/final_state.png')
             else:
                 print("\nDual channel button not found")
-                page.screenshot(path='/tmp/no_convert_btn.png')
+                page.screenshot(path='.trae/temp/no_convert_btn.png')
         else:
             print("File input not found!")
         
