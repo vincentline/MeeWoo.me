@@ -669,5 +669,29 @@
         }
       }
     }
+  },
+  {
+    "name": "D91",
+    "svga": "https://blog-1258489735.cos.accelerate.myqcloud.com/other/avatar_frame_dar/D91.svga",
+    "textStyle": {
+      "img_19": {
+        "fontWeight": "700",
+        "textShadow": "0px 2px 1.5px #694D41",
+        "gradient": {
+          "colors": [
+            "#FFFFFF",
+            "#FFFFFF",
+            "#FDEA91",
+            "#FDEA91"
+          ],
+          "positions": [
+            0.0,
+            0.1971,
+            0.7981,
+            1.0
+          ]
+        }
+      }
+    }
   }
 ]
