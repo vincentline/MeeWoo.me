@@ -44,6 +44,20 @@ CSS: background: linear-gradient(180deg, #AAA 0%, #BBB 50%, #CCC 100%)
 JSON: "gradient": { "colors": ["#AAA","#BBB","#CCC"], "positions": [0.0,0.5,1.0] }
 ```
 
+### 素材 key 必须与 SVGA 实际 key 一致（默认 `name01` 不可盲信）
+
+`--key` 默认 `name01` 只是常见值，**必须与 SVGA 内部动态素材 key 逐字一致**，否则静默失败：
+条目照常写入、页面无任何报错，但输入文字后画面纹丝不动（仍显示素材自带的示例文字），
+根因是代码 `videoItem.images[key]` 取不到该素材。
+
+核对方法（打开头像框弹窗即见）：
+
+- 看右栏「文本效果区域：xxx」与「素材」区是否出现该 key——**素材区为空 = key 不匹配**
+- 或直接列 SVGA 动态 key：`Object.keys(app.dar.svgaVideoItem.images)`
+- 实例：`D91.svga` 的名字区 key 是 `img_19`（不是 `name01`）；`D02`/`D90` 等才是 `name01`
+
+多可替换区域时，每个 key 都要单独核对（见模式四）。
+
 ## 工作流
 
 ### 模式一：纯换算预览
@@ -51,7 +65,7 @@ JSON: "gradient": { "colors": ["#AAA","#BBB","#CCC"], "positions": [0.0,0.5,1.0]
 只把 CSS 转成 textStyle JSON，不写文件：
 
 ```bash
-python .trae/skills/css-to-dar-style/scripts/css_to_json.py --css-text "font-weight: 700; color: #FFF;"
+python .agents/skills/css-to-dar-style/scripts/css_to_json.py --css-text "font-weight: 700; color: #FFF;"
 ```
 
 ### 模式二：生成完整条目（推荐）
@@ -59,7 +73,7 @@ python .trae/skills/css-to-dar-style/scripts/css_to_json.py --css-text "font-wei
 一行命令，CSS 直传 + 名称 + 链接，输出可直接插入 file-list.json 的 JSON 对象：
 
 ```bash
-python .trae/skills/css-to-dar-style/scripts/css_to_json.py \
+python .agents/skills/css-to-dar-style/scripts/css_to_json.py \
   --name Dnew --svga-url "https://..." \
   --css-text "font-weight: 700; color: #FFF;"
 ```
@@ -69,7 +83,7 @@ python .trae/skills/css-to-dar-style/scripts/css_to_json.py \
 加上 `--file-list` 自动去重并追加到 `src/assets/dar_svga/file-list.json`：
 
 ```bash
-python .trae/skills/css-to-dar-style/scripts/css_to_json.py \
+python .agents/skills/css-to-dar-style/scripts/css_to_json.py \
   --name Dnew --svga-url "https://..." \
   --css-text "font-weight: 700; background: linear-gradient(...); text-shadow: ...;" \
   --file-list src/assets/dar_svga/file-list.json
@@ -81,10 +95,10 @@ python .trae/skills/css-to-dar-style/scripts/css_to_json.py \
 
 ```bash
 # 第一套 → 紧凑输出
-python .trae/skills/css-to-dar-style/scripts/css_to_json.py --key name01 --compact --css-text "..."
+python .agents/skills/css-to-dar-style/scripts/css_to_json.py --key name01 --compact --css-text "..."
 
 # 第二套 → 紧凑输出
-python .trae/skills/css-to-dar-style/scripts/css_to_json.py --key Username01 --compact --css-text "..."
+python .agents/skills/css-to-dar-style/scripts/css_to_json.py --key Username01 --compact --css-text "..."
 ```
 
 然后由 AI 拼装成完整条目写入 file-list.json。
@@ -111,7 +125,7 @@ python .trae/skills/css-to-dar-style/scripts/css_to_json.py --key Username01 --c
 
 **关键约定**：
 - `name` 即为图标文件名（无需 `.png` 后缀，代码自动补全）
-- 图标需放入 `src/assets/dar_svga/<name>.png`
+- 图标需放入 `src/assets/dar_svga/<name>.png`，建议 300×300（列表按 80×80 展示，现有素材以 300 为主）
 - SVGA 素材需要可公网访问
 - **只修改 `src/`**，`docs/` 由 `npm run build` 自动生成
 
@@ -120,7 +134,8 @@ python .trae/skills/css-to-dar-style/scripts/css_to_json.py --key Username01 --c
 - [ ] `src/assets/dar_svga/file-list.json` JSON 合法
 - [ ] 图标 PNG 文件已存在于 `src/assets/dar_svga/`
 - [ ] 刷新浏览器验证头像框列表中出现新条目
-- [ ] 点击弹窗确认文字样式渲染正确
+- [ ] 弹窗内确认「素材」区出现该 key，且输入文字后**画面文字真的变了**（不是只变了右栏预览）
+- [ ] 点击弹窗确认文字样式渲染正确（白→金渐变等，放大看细节）
 
 ## 脚本参数速查
 
