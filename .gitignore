@@ -84,3 +84,4 @@ package-lock.json
 
 # 回收站（本机临时产物，不入库）
 .trash/
+.stardot.yml
