@@ -693,5 +693,75 @@
         }
       }
     }
+  },
+  {
+    "name": "cp-frame-01",
+    "svga": "https://blog-1258489735.cos.accelerate.myqcloud.com/other/avatar_frame_dar/cp-frame-01-v3.svga",
+    "textStyle": {
+      "Username01": {
+        "fontWeight": "700",
+        "strokeWidth": 1.0,
+        "strokeColor": "#FFF3B9",
+        "multiShadow": [
+          "0px 1px 0px #EF9A4B",
+          "0px 2px 6px rgba(0, 0, 0, 0.7)"
+        ],
+        "gradient": {
+          "colors": [
+            "#FFEABD",
+            "#FEFBD8",
+            "#FFFFFF",
+            "#FFF16A",
+            "#FFB87B",
+            "#FFE096",
+            "#FFFFFF"
+          ],
+          "positions": [
+            0.0,
+            0.2019,
+            0.56,
+            0.58,
+            0.6,
+            0.7837,
+            1.0
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "cp-frame-02",
+    "svga": "https://blog-1258489735.cos.accelerate.myqcloud.com/other/avatar_frame_dar/cp-frame-02.svga",
+    "textStyle": {
+      "Username01": {
+        "fontWeight": "700",
+        "strokeWidth": 1.0,
+        "strokeColor": "#FFF3B9",
+        "multiShadow": [
+          "0px 1px 0px #EF9A4B",
+          "0px 2px 6px rgba(0, 0, 0, 0.7)"
+        ],
+        "gradient": {
+          "colors": [
+            "#FFEABD",
+            "#FEFBD8",
+            "#FFFFFF",
+            "#FFF16A",
+            "#FFB87B",
+            "#FFE096",
+            "#FFFFFF"
+          ],
+          "positions": [
+            0.0,
+            0.2019,
+            0.56,
+            0.58,
+            0.6,
+            0.7837,
+            1.0
+          ]
+        }
+      }
+    }
   }
 ]
