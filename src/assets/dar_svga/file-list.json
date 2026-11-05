@@ -518,7 +518,10 @@
   },
   {
     "name": "n04",
-    "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/n04.svga"
+    "svga": "https://blog-1258489735.cos.ap-chengdu.myqcloud.com/other/avatar_frame_dar/n04.svga",
+    "textStyle": {
+      "Username01": {}
+    }
   },
   {
     "name": "n05",
