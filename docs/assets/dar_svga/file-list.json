@@ -699,7 +699,7 @@
     "svga": "https://blog-1258489735.cos.accelerate.myqcloud.com/other/avatar_frame_dar/cp-frame-01-v3.svga",
     "textStyle": {
       "Username01": {
-        "fontWeight": "700",
+        "fontWeight": "500",
         "strokeWidth": 1.0,
         "strokeColor": "#FFF3B9",
         "multiShadow": [
@@ -734,7 +734,7 @@
     "svga": "https://blog-1258489735.cos.accelerate.myqcloud.com/other/avatar_frame_dar/cp-frame-02.svga",
     "textStyle": {
       "Username01": {
-        "fontWeight": "700",
+        "fontWeight": "500",
         "strokeWidth": 1.0,
         "strokeColor": "#FFF3B9",
         "multiShadow": [

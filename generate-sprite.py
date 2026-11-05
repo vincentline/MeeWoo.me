@@ -7,8 +7,15 @@
 
 import os
 import shutil
+import sys
 from PIL import Image
 import json
+
+# 确保脚本使用 UTF-8 编码（Windows 控制台默认 GBK，输出的 emoji 会 UnicodeEncodeError）
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr.reconfigure(encoding='utf-8')
 
 # 配置
 IMG_DIR = 'src/assets/png'
